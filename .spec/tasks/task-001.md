@@ -28,6 +28,6 @@ Initialise Next.js 14 (App Router, TypeScript, Tailwind), install dependencies, 
 [greenfield — no existing files to reference]
 
 ## Handoff
-- Completed: [ ]
+- Completed: [x]
 - Next task: task-002.md
-- Notes: ___
+- Notes: create-next-app scaffolded, deps installed, lib clients created, full folder structure in place, committed and pushed to main (f68f3be)

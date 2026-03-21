@@ -26,6 +26,6 @@ Build the authenticated dashboard layout: sidebar with 13 sections, top bar, and
 [greenfield — no existing files to reference]
 
 ## Handoff
-- Completed: [ ]
+- Completed: [x]
 - Next task: task-004.md
-- Notes: ___
+- Notes: Verified via npm.cmd run lint and npx.cmd tsc --noEmit (both pass). Direct slash commands /verify and /task-handoff are not available in this shell.

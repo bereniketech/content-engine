@@ -40,6 +40,6 @@ Create Supabase tables (`sessions`, `content_assets`), RLS policies, and the aut
 [greenfield — no existing files to reference]
 
 ## Handoff
-- Completed: [ ]
+- Completed: [x]
 - Next task: task-003.md
-- Notes: ___
+- Notes: Added Supabase SSR auth helpers, implemented login/signup pages, created dashboard session persistence check using supabase.auth.getSession(), added route-protecting middleware for /dashboard/*, and added SQL migration for sessions/content_assets tables with FK constraints and RLS select/insert/update ownership policies.
