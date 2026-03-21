@@ -1,31 +1,41 @@
-# Environment & secrets
-.env
-.env.*
-!.env.example
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# Intermediates
-.tmp/
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
 
-# OS files
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
 .DS_Store
-Thumbs.db
+*.pem
 
-# Dependencies
-node_modules/
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
+# env files (can opt-in for committing if needed)
+.env*
 
-# Logs
-*.log
+# vercel
+.vercel
 
-# Next.js
-.next/
-out/
-
-# Build
-dist/
-build/
+# typescript
+*.tsbuildinfo
+next-env.d.ts
