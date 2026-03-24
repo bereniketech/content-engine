@@ -1,12 +1,13 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useMemo, useState, useRef } from 'react'
 import { Copy, RefreshCw, Check } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { SeoResult } from '@/app/api/seo/route'
+import type { TopicTone } from '@/types'
 
 interface ResearchOutput {
   intent: 'informational' | 'commercial' | 'transactional'
@@ -23,13 +24,77 @@ interface BlogPanelProps {
   topic: string
   seo: SeoResult
   research: ResearchOutput
-  tone?: 'authority' | 'casual' | 'storytelling'
+  tone?: TopicTone
 }
 
-interface ParsedSection {
-  title: string
-  content: string
-  fullContent: string
+interface StreamEvent {
+  text?: string
+  done?: boolean
+  error?: string
+  markdown?: string
+  wordCount?: number
+}
+
+const TONE_OPTIONS: Array<{ label: string; value: TopicTone }> = [
+  { label: 'Authority', value: 'authority' },
+  { label: 'Casual', value: 'casual' },
+  { label: 'Storytelling', value: 'storytelling' },
+]
+
+function parseSSEChunk(chunk: string): StreamEvent[] {
+  const events: StreamEvent[] = []
+  const rawEvents = chunk.split('\n\n')
+
+  for (const rawEvent of rawEvents) {
+    const lines = rawEvent.split('\n').filter((line) => line.startsWith('data: '))
+    if (lines.length === 0) {
+      continue
+    }
+
+    const payload = lines.map((line) => line.slice(6)).join('')
+    try {
+      events.push(JSON.parse(payload) as StreamEvent)
+    } catch {
+      // Ignore malformed partial events and wait for complete buffered payload.
+    }
+  }
+
+  return events
+}
+
+function extractH2Headings(content: string): string[] {
+  const matches = content.match(/^##\s+(.+)$/gm) ?? []
+  return matches.map((line) => line.replace(/^##\s+/, '').trim()).filter(Boolean)
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function replaceSectionInMarkdown(markdown: string, sectionTitle: string, sectionMarkdown: string): string {
+  const safeTitle = escapeRegex(sectionTitle)
+  const sectionPattern = new RegExp(`(^##\\s+${safeTitle}\\s*$)[\\s\\S]*?(?=^##\\s+|$)`, 'm')
+  const normalizedSection = sectionMarkdown.trim().startsWith('## ')
+    ? sectionMarkdown.trim()
+    : `## ${sectionTitle}\n${sectionMarkdown.trim()}`
+
+  return markdown.replace(sectionPattern, `${normalizedSection}\n\n`)
+}
+
+function getTextFromNode(node: React.ReactNode): string {
+  if (typeof node === 'string' || typeof node === 'number') {
+    return String(node)
+  }
+
+  if (Array.isArray(node)) {
+    return node.map(getTextFromNode).join('')
+  }
+
+  if (React.isValidElement<{ children?: React.ReactNode }>(node)) {
+    return getTextFromNode(node.props.children)
+  }
+
+  return ''
 }
 
 export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone = 'authority' }) => {
@@ -38,16 +103,19 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone
   const [error, setError] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [wordCount, setWordCount] = useState(0)
+  const [streamComplete, setStreamComplete] = useState(false)
   const [expandingSection, setExpandingSection] = useState<string | null>(null)
-  const [sections, setSections] = useState<ParsedSection[]>([])
+  const [selectedTone, setSelectedTone] = useState<TopicTone>(tone)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const h2Sections = useMemo(() => extractH2Headings(markdown), [markdown])
 
   const generateBlog = async () => {
+    abortControllerRef.current?.abort()
     setMarkdown('')
     setError(null)
     setIsLoading(true)
     setWordCount(0)
-    setSections([])
+    setStreamComplete(false)
     abortControllerRef.current = new AbortController()
 
     try {
@@ -60,7 +128,7 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone
           topic,
           seo,
           research,
-          tone,
+          tone: selectedTone,
         }),
         signal: abortControllerRef.current.signal,
       })
@@ -76,40 +144,39 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
       let accumulatedMarkdown = ''
+      let buffer = ''
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
+        buffer += decoder.decode(value, { stream: true })
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6))
+        const completeEvents = buffer.split('\n\n')
+        buffer = completeEvents.pop() ?? ''
 
-              if (data.text) {
-                accumulatedMarkdown += data.text
-                setMarkdown(accumulatedMarkdown)
-                setWordCount(accumulatedMarkdown.split(/\s+/).length)
-              }
+        for (const rawEvent of completeEvents) {
+          const parsedEvents = parseSSEChunk(rawEvent)
+          for (const data of parsedEvents) {
+            if (data.text) {
+              accumulatedMarkdown += data.text
+              setMarkdown(accumulatedMarkdown)
+            }
 
-              if (data.done) {
-                // Parse sections from final markdown
-                parseSections(accumulatedMarkdown)
-                setIsLoading(false)
-              }
+            if (data.error) {
+              throw new Error(data.error)
+            }
 
-              if (data.error) {
-                throw new Error(data.error)
-              }
-            } catch (parseError) {
-              // Skip lines that aren't valid JSON
+            if (data.done) {
+              const finalWordCount = data.wordCount ?? accumulatedMarkdown.trim().split(/\s+/).filter(Boolean).length
+              setWordCount(finalWordCount)
+              setStreamComplete(true)
             }
           }
         }
       }
+
+      setIsLoading(false)
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
         // Cancelled by user
@@ -118,35 +185,6 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone
       }
       setIsLoading(false)
     }
-  }
-
-  const parseSections = (content: string) => {
-    const lines = content.split('\n')
-    const parsedSections: ParsedSection[] = []
-    let currentSection: ParsedSection | null = null
-
-    for (const line of lines) {
-      if (line.startsWith('## ') && !line.startsWith('### ')) {
-        if (currentSection) {
-          parsedSections.push(currentSection)
-        }
-        const title = line.slice(3).trim()
-        currentSection = {
-          title,
-          content: '',
-          fullContent: `## ${title}\n`,
-        }
-      } else if (currentSection) {
-        currentSection.content += line + '\n'
-        currentSection.fullContent += line + '\n'
-      }
-    }
-
-    if (currentSection) {
-      parsedSections.push(currentSection)
-    }
-
-    setSections(parsedSections)
   }
 
   const expandSection = async (sectionTitle: string) => {
@@ -176,36 +214,36 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone
       const reader = response.body.getReader()
       const decoder = new TextDecoder()
       let newSectionContent = ''
+      let buffer = ''
 
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
 
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n')
+        buffer += decoder.decode(value, { stream: true })
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6))
-              if (data.text) {
-                newSectionContent += data.text
-              }
-            } catch {
-              // Skip invalid JSON
+        const completeEvents = buffer.split('\n\n')
+        buffer = completeEvents.pop() ?? ''
+
+        for (const rawEvent of completeEvents) {
+          const parsedEvents = parseSSEChunk(rawEvent)
+          for (const data of parsedEvents) {
+            if (data.text) {
+              newSectionContent += data.text
+            }
+
+            if (data.error) {
+              throw new Error(data.error)
             }
           }
         }
       }
 
-      // Replace section in markdown
-      const sectionRegex = new RegExp(`(## ${sectionTitle}\\n)[\\s\\S]*?(?=##|$)`)
-      const updatedMarkdown = markdown.replace(
-        sectionRegex,
-        `## ${sectionTitle}\n${newSectionContent}\n\n`
-      )
+      const updatedMarkdown = replaceSectionInMarkdown(markdown, sectionTitle, newSectionContent)
       setMarkdown(updatedMarkdown)
-      setWordCount(updatedMarkdown.split(/\s+/).length)
+      if (streamComplete) {
+        setWordCount(updatedMarkdown.trim().split(/\s+/).filter(Boolean).length)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to expand section')
     } finally {
@@ -219,6 +257,40 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const H2WithExpand = ({ children }: { children: React.ReactNode }) => {
+    const title = getTextFromNode(children).trim()
+
+    const canExpand = Boolean(title) && h2Sections.includes(title)
+
+    return (
+      <div className="mt-6 mb-2 flex items-center justify-between gap-2 border-b pb-2">
+        <h2 className="text-base font-semibold">{children}</h2>
+        {canExpand && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={() => expandSection(title)}
+            disabled={isLoading || expandingSection === title}
+            className="h-7 px-2 text-xs"
+          >
+            {expandingSection === title ? (
+              <>
+                <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+                Expanding...
+              </>
+            ) : (
+              <>
+                <RefreshCw className="mr-1 h-3 w-3" />
+                Expand section
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+    )
+  }
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -227,19 +299,48 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone
             <CardTitle>Blog Article</CardTitle>
             <CardDescription>AI-generated article optimized for SEO</CardDescription>
           </div>
-          <Button onClick={generateBlog} disabled={isLoading} className="gap-2">
-            {isLoading ? (
-              <>
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="h-4 w-4" />
-                Generate
-              </>
+          <div className="flex items-center gap-2">
+            <select
+              value={selectedTone}
+              onChange={(event) => setSelectedTone(event.target.value as TopicTone)}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm"
+              disabled={isLoading}
+            >
+              {TONE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            {markdown && (
+              <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
+                {copied ? (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-4 w-4" />
+                    Copy full article
+                  </>
+                )}
+              </Button>
             )}
-          </Button>
+            <Button onClick={generateBlog} disabled={isLoading} className="gap-2">
+              {isLoading ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-4 w-4" />
+                  Generate
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </CardHeader>
 
@@ -253,21 +354,9 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone
         {markdown && (
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {wordCount > 0 && <Badge variant="secondary">{wordCount} words</Badge>}
+              {streamComplete && wordCount > 0 && <Badge variant="secondary">{wordCount} words</Badge>}
+              {!streamComplete && isLoading && <Badge variant="outline">Streaming...</Badge>}
             </div>
-            <Button variant="outline" size="sm" onClick={handleCopy} className="gap-2">
-              {copied ? (
-                <>
-                  <Check className="h-4 w-4" />
-                  Copied
-                </>
-              ) : (
-                <>
-                  <Copy className="h-4 w-4" />
-                  Copy Article
-                </>
-              )}
-            </Button>
           </div>
         )}
 
@@ -286,37 +375,13 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone
         {markdown && (
           <div className="prose prose-sm max-w-none dark:prose-invert">
             <div className="space-y-4 text-sm leading-relaxed">
-              <ReactMarkdown>{markdown}</ReactMarkdown>
-
-              {sections.length > 0 && (
-                <div className="mt-6 space-y-2 border-t pt-4">
-                  <p className="text-xs font-semibold text-muted-foreground">Quick Actions:</p>
-                  <div className="flex flex-wrap gap-2">
-                    {sections.map((section) => (
-                      <Button
-                        key={section.title}
-                        variant="outline"
-                        size="sm"
-                        onClick={() => expandSection(section.title)}
-                        disabled={expandingSection === section.title}
-                        className="text-xs"
-                      >
-                        {expandingSection === section.title ? (
-                          <>
-                            <RefreshCw className="h-3 w-3 animate-spin mr-1" />
-                            Expanding...
-                          </>
-                        ) : (
-                          <>
-                            <RefreshCw className="h-3 w-3 mr-1" />
-                            Expand: {section.title.slice(0, 20)}...
-                          </>
-                        )}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <ReactMarkdown
+                components={{
+                  h2: ({ children }) => <H2WithExpand>{children}</H2WithExpand>,
+                }}
+              >
+                {markdown}
+              </ReactMarkdown>
             </div>
           </div>
         )}

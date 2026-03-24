@@ -48,17 +48,20 @@ Requirements:
 - End with a transitional sentence or call-to-action
 - Maintain the same tone and style as the context provided
 - Use markdown formatting (bold for emphasis, bullet points, etc.)
+- Do not write any other section title
 
 Return ONLY the markdown section. No explanations, no code blocks, no additional text.`
 
+    const encoder = new TextEncoder()
+
     // Create streaming response
-    const readable = new ReadableStream<string>({
+    const readable = new ReadableStream<Uint8Array>({
       async start(controller) {
         try {
           let fullMarkdown = ''
 
           // Call Claude with streaming
-          const stream = await claude.messages.stream({
+          const stream = claude.messages.stream({
             model: 'claude-sonnet-4-6',
             max_tokens: 1000,
             messages: [
@@ -69,27 +72,22 @@ Return ONLY the markdown section. No explanations, no code blocks, no additional
             ],
           })
 
-          // Pipe text events to the stream
-          stream.on('text', (text) => {
-            fullMarkdown += text
-            controller.enqueue(`data: ${JSON.stringify({ text })}\n\n`)
-          })
+          for await (const event of stream) {
+            if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+              const chunk = event.delta.text
+              fullMarkdown += chunk
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`))
+            }
+          }
 
-          // On stream completion
-          stream.on('end', () => {
-            controller.enqueue(`data: ${JSON.stringify({ done: true, markdown: fullMarkdown })}\n\n`)
-            controller.close()
-          })
-
-          stream.on('error', (error) => {
-            console.error('Stream error:', error)
-            controller.enqueue(`data: ${JSON.stringify({ error: 'Stream error' })}\n\n`)
-            controller.close()
-          })
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ done: true, markdown: fullMarkdown })}\n\n`)
+          )
+          controller.close()
         } catch (error) {
           console.error('Error initializing stream:', error)
           controller.enqueue(
-            `data: ${JSON.stringify({ error: 'Failed to initialize stream' })}\n\n`
+            encoder.encode(`data: ${JSON.stringify({ error: 'Failed to stream section expansion' })}\n\n`)
           )
           controller.close()
         }
@@ -102,7 +100,6 @@ Return ONLY the markdown section. No explanations, no code blocks, no additional
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*',
       },
     })
   } catch (error) {

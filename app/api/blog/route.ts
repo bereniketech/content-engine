@@ -16,6 +16,15 @@ interface ResearchOutput {
   alternatives?: string[]
 }
 
+const VALID_TONES: TopicTone[] = ['authority', 'casual', 'storytelling']
+
+function normalizeTone(value: unknown): TopicTone {
+  if (typeof value === 'string' && VALID_TONES.includes(value as TopicTone)) {
+    return value as TopicTone
+  }
+  return 'authority'
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Get Supabase client
@@ -65,7 +74,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { topic, seo, research, tone = 'authority' } = body
+    const { topic, seo, research } = body
+    const tone = normalizeTone(body.tone)
 
     if (!topic?.trim() || !seo || !research) {
       return NextResponse.json(
@@ -85,15 +95,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Get or create session
-    const { data: sessionData } = await supabase
+    const { data: sessionData, error: sessionError } = await supabase
       .from('sessions')
       .select('id')
       .eq('user_id', user.id)
       .single()
 
     let sessionId: string
-    if (!sessionData) {
-      const { data: newSession } = await supabase
+    if (sessionError || !sessionData) {
+      const { data: newSession, error: createSessionError } = await supabase
         .from('sessions')
         .insert({
           user_id: user.id,
@@ -103,7 +113,14 @@ export async function POST(request: NextRequest) {
         .select('id')
         .single()
 
-      sessionId = newSession?.id || ''
+      if (createSessionError || !newSession) {
+        return NextResponse.json(
+          { error: { code: 'storage_error', message: 'Failed to create session' } },
+          { status: 500 }
+        )
+      }
+
+      sessionId = newSession.id
     } else {
       sessionId = sessionData.id
     }
@@ -112,13 +129,15 @@ export async function POST(request: NextRequest) {
     const prompt = getBlogPrompt(topic, seo as SeoResult, research as ResearchOutput, tone as TopicTone)
 
     // Create streaming response
-    const readable = new ReadableStream<string>({
+    const encoder = new TextEncoder()
+
+    const readable = new ReadableStream<Uint8Array>({
       async start(controller) {
         try {
           let fullMarkdown = ''
 
           // Call Claude with streaming
-          const stream = await claude.messages.stream({
+          const stream = claude.messages.stream({
             model: 'claude-sonnet-4-6',
             max_tokens: 4000,
             messages: [
@@ -129,48 +148,43 @@ export async function POST(request: NextRequest) {
             ],
           })
 
-          // Pipe text events to the stream
-          stream.on('text', (text) => {
-            fullMarkdown += text
-            // Send text chunk as SSE
-            controller.enqueue(`data: ${JSON.stringify({ text })}\n\n`)
-          })
-
-          // On stream completion, save to database
-          stream.on('end', async () => {
-            try {
-              // Save to content_assets
-              await supabase.from('content_assets').insert({
-                session_id: sessionId,
-                asset_type: 'blog',
-                content: {
-                  topic,
-                  tone,
-                  markdown: fullMarkdown,
-                  wordCount: fullMarkdown.split(/\s+/).length,
-                },
-              })
-
-              // Send final event with completion status
-              controller.enqueue(`data: ${JSON.stringify({ done: true, markdown: fullMarkdown })}\n\n`)
-            } catch (dbError) {
-              console.error('Error saving blog to database:', dbError)
-              controller.enqueue(`data: ${JSON.stringify({ error: 'Failed to save blog' })}\n\n`)
+          for await (const event of stream) {
+            if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+              const chunk = event.delta.text
+              fullMarkdown += chunk
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`))
             }
+          }
 
-            controller.close()
+          const { error: assetError } = await supabase.from('content_assets').insert({
+            session_id: sessionId,
+            asset_type: 'blog',
+            content: {
+              topic,
+              tone,
+              markdown: fullMarkdown,
+              wordCount: fullMarkdown.trim().split(/\s+/).filter(Boolean).length,
+            },
           })
 
-          stream.on('error', (error) => {
-            console.error('Stream error:', error)
-            controller.enqueue(`data: ${JSON.stringify({ error: 'Stream error' })}\n\n`)
+          if (assetError) {
+            console.error('Error saving blog to database:', assetError)
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ error: 'Failed to save blog' })}\n\n`)
+            )
             controller.close()
-          })
+            return
+          }
+
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ done: true, wordCount: fullMarkdown.trim().split(/\s+/).filter(Boolean).length })}\n\n`
+            )
+          )
+          controller.close()
         } catch (error) {
           console.error('Error initializing stream:', error)
-          controller.enqueue(
-            `data: ${JSON.stringify({ error: 'Failed to initialize stream' })}\n\n`
-          )
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Failed to stream blog content' })}\n\n`))
           controller.close()
         }
       },
@@ -182,7 +196,6 @@ export async function POST(request: NextRequest) {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*',
       },
     })
   } catch (error) {

@@ -34,7 +34,21 @@ Build `POST /api/blog` with SSE streaming via Claude and a Blog panel UI that re
 ## Key Patterns
 [greenfield — no existing files to reference]
 
-## Handoff
-- Completed: [ ]
-- Next task: task-008.md
-- Notes: ___
+## Handoff — What Was Done
+- Implemented streaming blog generation in `/api/blog` with SSE chunks and end-of-stream persistence to `content_assets` with `asset_type = 'blog'`.
+- Implemented streaming section regeneration in `/api/blog/expand` so individual H2 sections can be regenerated in place.
+- Updated Blog panel UI to stream-render markdown incrementally, support tone selection, show a top-level copy button, and provide per-H2 "Expand section" controls.
+
+## Handoff — Patterns Learned
+- Anthropic SDK stream iteration in this workspace uses `for await (const event of stream)` with `content_block_delta` text events, not `textStream`.
+- SSE parsing on the client must keep a rolling buffer and split by event boundaries (`\n\n`) to avoid losing partial JSON chunks.
+- Section replacement works most reliably by matching from a specific H2 until the next H2 boundary and escaping regex-sensitive heading text.
+
+## Handoff — Files Changed
+- `app/api/blog/route.ts`
+- `app/api/blog/expand/route.ts`
+- `components/sections/BlogPanel.tsx`
+- `.spec/tasks/task-007.md`
+
+## Status
+COMPLETE
