@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Check, Copy, Pencil, RefreshCw, Save, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -25,12 +25,6 @@ export function SocialEditableBlock({
   const [isEditing, setIsEditing] = useState(false)
   const [draft, setDraft] = useState(value)
   const [copied, setCopied] = useState(false)
-
-  useEffect(() => {
-    if (!isEditing) {
-      setDraft(value)
-    }
-  }, [value, isEditing])
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(value)
@@ -72,7 +66,16 @@ export function SocialEditableBlock({
           </Button>
 
           {!isEditing && (
-            <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => setIsEditing(true)}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="gap-1"
+              onClick={() => {
+                setDraft(value)
+                setIsEditing(true)
+              }}
+            >
               <Pencil className="h-3.5 w-3.5" />
               Edit
             </Button>

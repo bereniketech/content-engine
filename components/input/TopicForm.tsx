@@ -15,14 +15,16 @@ const toneOptions: Array<{ label: string; value: TopicTone }> = [
 ];
 
 export function TopicForm() {
-	const { createSession, isSubmitting, error: sessionError, sessionId } = useSessionContext();
+	const { createSession, isSubmitting, error: sessionError, sessionId, inputType, inputData } = useSessionContext();
+	const prefilledTopicData =
+		inputType === "topic" && inputData && "topic" in inputData ? inputData : null;
 
 	const [formData, setFormData] = useState<TopicInputData>({
-		topic: "",
+		topic: prefilledTopicData?.topic ?? "",
 		audience: "",
 		tone: "authority",
-		keywords: "",
-		geography: "",
+		keywords: prefilledTopicData?.keywords ?? "",
+		geography: prefilledTopicData?.geography ?? "",
 	});
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);

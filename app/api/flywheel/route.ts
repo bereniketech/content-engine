@@ -1,8 +1,206 @@
-import { NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+import { NextRequest, NextResponse } from 'next/server'
+import { claude } from '@/lib/claude'
+import { getFlywheelPrompt, type FlywheelIdea } from '@/lib/prompts/flywheel'
 
-export async function POST() {
-  return NextResponse.json(
-    { error: { code: 'not_implemented', message: 'API not yet implemented' } },
-    { status: 501 }
-  )
+type FlywheelRequestBody = {
+  topic?: unknown
+  keywords?: unknown
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function extractJsonPayload(raw: string): unknown {
+  const trimmed = raw.trim()
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    const fencedJsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
+    if (fencedJsonMatch) {
+      return JSON.parse(fencedJsonMatch[1])
+    }
+    throw new Error('Claude response did not contain valid JSON')
+  }
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    : []
+}
+
+function buildFallbackIdeas(topic: string, keywords: string[], count: number): FlywheelIdea[] {
+  const fallbackClusters = [
+    'Beginner Guides',
+    'Tactical Playbooks',
+    'Case Studies',
+    'Comparisons',
+    'Workflows',
+  ]
+
+  return Array.from({ length: count }, (_, index) => ({
+    topic: `${topic}: angle ${index + 1}`,
+    keywords: keywords.length > 0 ? keywords.slice(0, 5) : [topic, 'strategy', 'framework'],
+    cluster: fallbackClusters[index % fallbackClusters.length],
+  }))
+}
+
+function normalizeFlywheelIdeas(payload: unknown, topic: string, keywords: string[]): FlywheelIdea[] {
+  if (!isRecord(payload) || !Array.isArray(payload.ideas)) {
+    return buildFallbackIdeas(topic, keywords, 10)
+  }
+
+  const ideas = payload.ideas
+    .filter((item): item is Record<string, unknown> => isRecord(item))
+    .map((item) => ({
+      topic: typeof item.topic === 'string' ? item.topic.trim() : '',
+      keywords: asStringArray(item.keywords),
+      cluster: typeof item.cluster === 'string' ? item.cluster.trim() : '',
+    }))
+    .filter((item) => item.topic.length > 0 && item.cluster.length > 0)
+
+  if (ideas.length >= 10) {
+    return ideas
+  }
+
+  return [...ideas, ...buildFallbackIdeas(topic, keywords, 10 - ideas.length)]
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json(
+        { error: { code: 'server_error', message: 'Missing server configuration' } },
+        { status: 500 }
+      )
+    }
+
+    const supabase = createServerClient(supabaseUrl, supabaseServiceKey, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll() {
+          // No-op in route handlers.
+        },
+      },
+    })
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: { code: 'unauthorized', message: 'Authentication required' } },
+        { status: 401 }
+      )
+    }
+
+    let body: FlywheelRequestBody
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json(
+        { error: { code: 'invalid_json', message: 'Invalid JSON in request body' } },
+        { status: 400 }
+      )
+    }
+
+    const topic = typeof body.topic === 'string' ? body.topic.trim() : ''
+    const keywords = asStringArray(body.keywords)
+
+    if (!topic) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'validation_error',
+            message: 'Validation failed',
+            details: [{ field: 'topic', message: 'Topic is required' }],
+          },
+        },
+        { status: 400 }
+      )
+    }
+
+    const { data: latestSession } = await supabase
+      .from('sessions')
+      .select('id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    let sessionId = latestSession?.id
+    if (!sessionId) {
+      const { data: createdSession, error: createSessionError } = await supabase
+        .from('sessions')
+        .insert({
+          user_id: user.id,
+          input_type: 'topic',
+          input_data: { topic, keywords },
+        })
+        .select('id')
+        .single()
+
+      if (createSessionError || !createdSession) {
+        return NextResponse.json(
+          { error: { code: 'storage_error', message: 'Failed to create session' } },
+          { status: 500 }
+        )
+      }
+
+      sessionId = createdSession.id
+    }
+
+    const prompt = getFlywheelPrompt(topic, keywords)
+
+    const message = await claude.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1800,
+      messages: [{ role: 'user', content: prompt }],
+    })
+
+    const responseText = message.content[0]?.type === 'text' ? message.content[0].text : '{}'
+    const flywheelIdeas = normalizeFlywheelIdeas(extractJsonPayload(responseText), topic, keywords)
+
+    const { error: saveError } = await supabase.from('content_assets').insert({
+      session_id: sessionId,
+      asset_type: 'flywheel',
+      content: {
+        topic,
+        keywords,
+        ideas: flywheelIdeas,
+      },
+    })
+
+    if (saveError) {
+      return NextResponse.json(
+        { error: { code: 'storage_error', message: 'Failed to save flywheel ideas' } },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json(
+      {
+        data: {
+          sessionId,
+          ideas: flywheelIdeas,
+        },
+      },
+      { status: 201 }
+    )
+  } catch (error) {
+    console.error('Flywheel API error:', error)
+    return NextResponse.json(
+      { error: { code: 'internal_error', message: 'Internal server error' } },
+      { status: 500 }
+    )
+  }
 }

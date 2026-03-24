@@ -33,6 +33,7 @@ interface SessionContextValue {
     inputData: SessionInputData,
   ) => Promise<CreateSessionResult>;
   applyImprovedArticle: (article: string) => void;
+  prefillTopicForm: (topic: string, keywords?: string[]) => void;
   setAssets: (assets: ContentAsset[]) => void;
 }
 
@@ -114,6 +115,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setInputData({ article: sanitizedArticle });
   }, []);
 
+  const prefillTopicForm = useCallback((topic: string, keywords: string[] = []) => {
+    const sanitizedTopic = topic.trim();
+
+    if (!sanitizedTopic) {
+      return;
+    }
+
+    setInputType("topic");
+    setInputData({
+      topic: sanitizedTopic,
+      audience: "",
+      tone: "authority",
+      keywords: keywords.length > 0 ? keywords.join(", ") : undefined,
+      geography: undefined,
+    });
+  }, []);
+
   const value = useMemo<SessionContextValue>(
     () => ({
       sessionId,
@@ -125,9 +143,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       error,
       createSession,
       applyImprovedArticle,
+      prefillTopicForm,
       setAssets,
     }),
-    [sessionId, inputType, inputData, improvedArticle, assets, isSubmitting, error, createSession, applyImprovedArticle],
+    [
+      sessionId,
+      inputType,
+      inputData,
+      improvedArticle,
+      assets,
+      isSubmitting,
+      error,
+      createSession,
+      applyImprovedArticle,
+      prefillTopicForm,
+    ],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

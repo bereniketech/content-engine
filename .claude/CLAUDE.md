@@ -14,7 +14,7 @@
 ## Active Feature
 Feature: initial build
 Tasks: .spec/tasks/
-Current task: .spec/tasks/task-011.md
+Current task: .spec/tasks/task-012.md
 Branch: main
 
 ## Start Here

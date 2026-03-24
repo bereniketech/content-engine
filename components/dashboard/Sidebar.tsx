@@ -17,6 +17,7 @@ import {
   PinIcon,
   Calendar,
   BarChart2,
+  Repeat,
   Menu,
   X,
 } from "lucide-react";
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
   { label: "Pinterest",  href: "/dashboard/social/pinterest",       icon: PinIcon },
   { label: "Calendar",   href: "/dashboard/calendar",               icon: Calendar },
   { label: "Analytics",  href: "/dashboard/analytics",              icon: BarChart2 },
+  { label: "Flywheel",   href: "/dashboard/flywheel",               icon: Repeat },
 ] as const;
 
 export function Sidebar() {
