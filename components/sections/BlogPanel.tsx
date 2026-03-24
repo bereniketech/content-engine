@@ -362,7 +362,7 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone
 
         {!markdown && !isLoading && (
           <div className="rounded bg-muted p-8 text-center text-muted-foreground">
-            Click "Generate" to create your blog article
+            Click Generate to create your blog article
           </div>
         )}
 
