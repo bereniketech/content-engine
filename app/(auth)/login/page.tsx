@@ -1,50 +1,50 @@
-"use client";
+'use client'
 
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { FormEvent, useMemo, useState } from "react";
-import { getSupabaseBrowserClient } from "@/lib/supabase";
+import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { FormEvent, useMemo, useState, Suspense } from 'react'
+import { getSupabaseBrowserClient } from '@/lib/supabase'
 
-export default function LoginPage() {
-	const router = useRouter();
-	const searchParams = useSearchParams();
+function LoginForm() {
+	const router = useRouter()
+	const searchParams = useSearchParams()
 	const nextPath = useMemo(
 		() => {
-			const requestedPath = searchParams.get("next");
-			if (requestedPath && requestedPath.startsWith("/")) {
-				return requestedPath;
+			const requestedPath = searchParams.get('next')
+			if (requestedPath && requestedPath.startsWith('/')) {
+				return requestedPath
 			}
 
-			return "/dashboard";
+			return '/dashboard'
 		},
 		[searchParams],
-	);
+	)
 
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
-	const [error, setError] = useState<string | null>(null);
-	const [loading, setLoading] = useState(false);
+	const [email, setEmail] = useState('')
+	const [password, setPassword] = useState('')
+	const [error, setError] = useState<string | null>(null)
+	const [loading, setLoading] = useState(false)
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-		setLoading(true);
-		setError(null);
+		event.preventDefault()
+		setLoading(true)
+		setError(null)
 
-		const supabase = getSupabaseBrowserClient();
+		const supabase = getSupabaseBrowserClient()
 		const { error: signInError } = await supabase.auth.signInWithPassword({
 			email,
 			password,
-		});
+		})
 
 		if (signInError) {
-			setError(signInError.message);
-			setLoading(false);
-			return;
+			setError(signInError.message)
+			setLoading(false)
+			return
 		}
 
-		router.replace(nextPath);
-		router.refresh();
-	};
+		router.replace(nextPath)
+		router.refresh()
+	}
 
 	return (
 		<main className="min-h-screen bg-zinc-50 px-6 py-12">
@@ -91,7 +91,7 @@ export default function LoginPage() {
 						disabled={loading}
 						className="w-full rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-70"
 					>
-						{loading ? "Logging in..." : "Log in"}
+						{loading ? 'Logging in...' : 'Log in'}
 					</button>
 				</form>
 
@@ -103,5 +103,13 @@ export default function LoginPage() {
 				</p>
 			</div>
 		</main>
-	);
+	)
+}
+
+export default function LoginPage() {
+	return (
+		<Suspense fallback={<div className="min-h-screen bg-zinc-50" />}>
+			<LoginForm />
+		</Suspense>
+	)
 }
