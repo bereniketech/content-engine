@@ -6,6 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSessionContext } from "@/lib/context/SessionContext";
 
+interface ImproveApiResponse {
+	original: string;
+	improved: string;
+	changes: Array<{ type: string; description: string }>;
+}
+
 const ARTICLE_MIN_LENGTH = 101;
 const COMING_SOON_EXTENSIONS = ["pdf", "doc", "docx"];
 const SUPPORTED_EXTENSIONS = ["txt", "md"];
@@ -23,6 +29,7 @@ export function ArticleUpload() {
 	const [showComingSoon, setShowComingSoon] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [success, setSuccess] = useState<string | null>(null);
+	const [isImproving, setIsImproving] = useState(false);
 
 	const isArticleValid = useMemo(
 		() => article.trim().length >= ARTICLE_MIN_LENGTH,
@@ -71,13 +78,42 @@ export function ArticleUpload() {
 		}
 
 		setError(null);
-		const result = await createSession("upload", { article: article.trim() });
+		const normalizedArticle = article.trim();
+		const result = await createSession("upload", { article: normalizedArticle });
 
 		if (result.error) {
 			return;
 		}
 
-		setSuccess("Session created successfully for uploaded content.");
+		setIsImproving(true);
+
+		try {
+			const response = await fetch("/api/improve", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({ article: normalizedArticle }),
+			});
+
+			if (!response.ok) {
+				const payload = (await response.json()) as { error?: { message?: string } };
+				throw new Error(payload.error?.message ?? "Failed to improve article.");
+			}
+
+			const improvedPayload = (await response.json()) as ImproveApiResponse;
+			sessionStorage.setItem("uploadImprovement", JSON.stringify(improvedPayload));
+			sessionStorage.setItem("activeUploadArticle", improvedPayload.improved);
+			setSuccess("Session created and article improved successfully.");
+		} catch (improveError) {
+			setError(
+				improveError instanceof Error
+					? improveError.message
+					: "Failed to improve article. Please try again.",
+			);
+		} finally {
+			setIsImproving(false);
+		}
 	};
 
 	return (
@@ -132,8 +168,12 @@ export function ArticleUpload() {
 						</p>
 					) : null}
 
-					<Button type="submit" disabled={isSubmitting}>
-						{isSubmitting ? "Creating session..." : "Create Upload Session"}
+					<Button type="submit" disabled={isSubmitting || isImproving}>
+						{isSubmitting
+							? "Creating session..."
+							: isImproving
+								? "Improving article..."
+								: "Create Upload Session"}
 					</Button>
 				</form>
 			</CardContent>

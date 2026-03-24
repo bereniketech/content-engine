@@ -1,0 +1,259 @@
+import { createServerClient } from '@supabase/ssr'
+import { NextRequest, NextResponse } from 'next/server'
+import { claude } from '@/lib/claude'
+import {
+  getSocialRegeneratePrompt,
+  SOCIAL_ASSET_TYPE_BY_KEY,
+  SOCIAL_PLATFORM_KEYS,
+  type SocialPlatform,
+  type SocialOutput,
+} from '@/lib/prompts/social'
+
+type RegenerateRequestBody = {
+  platform?: unknown
+  blog?: unknown
+  seo?: unknown
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
+}
+
+function parseJsonPayload(raw: string): unknown {
+  const trimmed = raw.trim()
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    const fencedJsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
+    if (fencedJsonMatch) {
+      return JSON.parse(fencedJsonMatch[1])
+    }
+    throw new Error('Claude response did not contain valid JSON')
+  }
+}
+
+function normalizePlatform(platform: unknown): SocialPlatform | null {
+  if (typeof platform !== 'string') {
+    return null
+  }
+
+  return SOCIAL_PLATFORM_KEYS.includes(platform as SocialPlatform) ? (platform as SocialPlatform) : null
+}
+
+function normalizePlatformOutput(platform: SocialPlatform, payload: unknown): SocialOutput[SocialPlatform] {
+  const data = isRecord(payload) ? payload : {}
+
+  if (platform === 'x') {
+    return {
+      tweet: typeof data.tweet === 'string' ? data.tweet : '',
+      thread: asStringArray(data.thread),
+      hooks: asStringArray(data.hooks),
+      replies: asStringArray(data.replies),
+    }
+  }
+
+  if (platform === 'linkedin') {
+    return {
+      storytelling: typeof data.storytelling === 'string' ? data.storytelling : '',
+      authority: typeof data.authority === 'string' ? data.authority : '',
+      carousel: typeof data.carousel === 'string' ? data.carousel : '',
+    }
+  }
+
+  if (platform === 'instagram') {
+    return {
+      carouselCaptions: asStringArray(data.carouselCaptions),
+      reelCaption: typeof data.reelCaption === 'string' ? data.reelCaption : '',
+      hooks: asStringArray(data.hooks),
+      cta: typeof data.cta === 'string' ? data.cta : '',
+    }
+  }
+
+  if (platform === 'medium') {
+    return {
+      article: typeof data.article === 'string' ? data.article : '',
+      canonicalSuggestion: typeof data.canonicalSuggestion === 'string' ? data.canonicalSuggestion : '',
+    }
+  }
+
+  if (platform === 'reddit') {
+    return {
+      post: typeof data.post === 'string' ? data.post : '',
+      subreddits: asStringArray(data.subreddits),
+      questions: asStringArray(data.questions),
+    }
+  }
+
+  if (platform === 'newsletter') {
+    return {
+      subjectLines: asStringArray(data.subjectLines),
+      body: typeof data.body === 'string' ? data.body : '',
+      cta: typeof data.cta === 'string' ? data.cta : '',
+    }
+  }
+
+  return {
+    pins: Array.isArray(data.pins)
+      ? data.pins
+          .filter((pin): pin is Record<string, unknown> => isRecord(pin))
+          .map((pin) => ({
+            title: typeof pin.title === 'string' ? pin.title : '',
+            description: typeof pin.description === 'string' ? pin.description : '',
+            keywords: asStringArray(pin.keywords),
+          }))
+      : [],
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      return NextResponse.json(
+        { error: { code: 'server_error', message: 'Missing server configuration' } },
+        { status: 500 }
+      )
+    }
+
+    const supabase = createServerClient(supabaseUrl, supabaseServiceKey, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll() {
+          // No-op in route handlers.
+        },
+      },
+    })
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json(
+        { error: { code: 'unauthorized', message: 'Authentication required' } },
+        { status: 401 }
+      )
+    }
+
+    let body: RegenerateRequestBody
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json(
+        { error: { code: 'invalid_json', message: 'Invalid JSON in request body' } },
+        { status: 400 }
+      )
+    }
+
+    const platform = normalizePlatform(body.platform)
+    const blog = typeof body.blog === 'string' ? body.blog.trim() : ''
+    const seo = isRecord(body.seo) ? body.seo : null
+
+    if (!platform || !blog || !seo) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'validation_error',
+            message: 'Validation failed',
+            details: [
+              ...(!platform ? [{ field: 'platform', message: 'Valid platform is required' }] : []),
+              ...(!blog ? [{ field: 'blog', message: 'Blog content is required' }] : []),
+              ...(!seo ? [{ field: 'seo', message: 'SEO object is required' }] : []),
+            ],
+          },
+        },
+        { status: 400 }
+      )
+    }
+
+    const { data: latestSession } = await supabase
+      .from('sessions')
+      .select('id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    let sessionId = latestSession?.id
+    if (!sessionId) {
+      const { data: createdSession, error: createSessionError } = await supabase
+        .from('sessions')
+        .insert({
+          user_id: user.id,
+          input_type: 'upload',
+          input_data: { article: blog },
+        })
+        .select('id')
+        .single()
+
+      if (createSessionError || !createdSession) {
+        return NextResponse.json(
+          { error: { code: 'storage_error', message: 'Failed to create session' } },
+          { status: 500 }
+        )
+      }
+      sessionId = createdSession.id
+    }
+
+    const prompt = getSocialRegeneratePrompt(platform, blog, seo)
+
+    const message = await claude.messages.create({
+      model: 'claude-sonnet-4-6',
+      max_tokens: 1400,
+      messages: [
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+    })
+
+    const responseText = message.content[0]?.type === 'text' ? message.content[0].text : '{}'
+    const rawPayload = parseJsonPayload(responseText)
+    const payloadObject = isRecord(rawPayload) ? rawPayload : {}
+
+    const platformPayload = normalizePlatformOutput(platform, payloadObject)
+
+    const { error: saveError } = await supabase.from('content_assets').insert({
+      session_id: sessionId,
+      asset_type: SOCIAL_ASSET_TYPE_BY_KEY[platform],
+      content: {
+        platform,
+        ...platformPayload,
+      },
+    })
+
+    if (saveError) {
+      return NextResponse.json(
+        { error: { code: 'storage_error', message: 'Failed to save social asset' } },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json(
+      {
+        data: {
+          sessionId,
+          platform,
+          content: platformPayload,
+        },
+      },
+      { status: 200 }
+    )
+  } catch (error) {
+    console.error('Social regenerate API error:', error)
+    return NextResponse.json(
+      { error: { code: 'internal_error', message: 'Internal server error' } },
+      { status: 500 }
+    )
+  }
+}

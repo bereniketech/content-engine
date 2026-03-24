@@ -36,6 +36,6 @@ Build `POST /api/improve` and the improvement panel for upload mode with side-by
 [greenfield — no existing files to reference]
 
 ## Handoff
-- Completed: [ ]
+- Completed: [x]
 - Next task: task-009.md
-- Notes: ___
+- Notes: Implemented improve prompt/API, upload auto-improve flow, upload-mode side-by-side improvement UI, and SessionContext improved-article handoff for downstream engines.

@@ -24,6 +24,7 @@ interface SessionContextValue {
   sessionId: string | null;
   inputType: SessionInputType | null;
   inputData: SessionInputData | null;
+  improvedArticle: string | null;
   assets: ContentAsset[];
   isSubmitting: boolean;
   error: string | null;
@@ -31,6 +32,7 @@ interface SessionContextValue {
     inputType: SessionInputType,
     inputData: SessionInputData,
   ) => Promise<CreateSessionResult>;
+  applyImprovedArticle: (article: string) => void;
   setAssets: (assets: ContentAsset[]) => void;
 }
 
@@ -40,6 +42,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [inputType, setInputType] = useState<SessionInputType | null>(null);
   const [inputData, setInputData] = useState<SessionInputData | null>(null);
+  const [improvedArticle, setImprovedArticle] = useState<string | null>(null);
   const [assets, setAssets] = useState<ContentAsset[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -99,18 +102,32 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const applyImprovedArticle = useCallback((article: string) => {
+    const sanitizedArticle = article.trim();
+
+    if (!sanitizedArticle) {
+      return;
+    }
+
+    setImprovedArticle(sanitizedArticle);
+    setInputType("upload");
+    setInputData({ article: sanitizedArticle });
+  }, []);
+
   const value = useMemo<SessionContextValue>(
     () => ({
       sessionId,
       inputType,
       inputData,
+      improvedArticle,
       assets,
       isSubmitting,
       error,
       createSession,
+      applyImprovedArticle,
       setAssets,
     }),
-    [sessionId, inputType, inputData, assets, isSubmitting, error, createSession],
+    [sessionId, inputType, inputData, improvedArticle, assets, isSubmitting, error, createSession, applyImprovedArticle],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
