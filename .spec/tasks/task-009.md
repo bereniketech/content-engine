@@ -50,7 +50,36 @@ Build `POST /api/social` producing all 8 platform variants in one Claude call. B
 ## Key Patterns
 [greenfield — no existing files to reference]
 
-## Handoff
-- Completed: [ ]
-- Next task: task-010.md
-- Notes: ___
+## Handoff — What Was Done
+- Implemented full social generation backend with typed prompt contract, robust JSON normalization, and persistence of all eight social outputs into content_assets using per-platform asset_type values.
+- Added single-platform regenerate endpoint and wired block-level regenerate controls in the UI to selectively update content blocks.
+- Built and connected seven platform panel UIs (X, LinkedIn, Instagram, Medium, Reddit, Newsletter, Pinterest) with Copy, inline Edit, and Regenerate actions for each block.
+
+## Handoff — Patterns Learned
+- Existing API routes expect Supabase auth via createServerClient in route handlers, with strict JSON validation and standard error envelopes.
+- Claude responses should be parsed with fenced-JSON fallback, then normalized into safe defaults to avoid runtime and type drift.
+- Social UI pages are simple shell pages; shared, stateful section components are the right place for workflow orchestration.
+
+## Handoff — Files Changed
+- lib/prompts/social.ts
+- app/api/social/route.ts
+- app/api/social/regenerate/route.ts
+- components/sections/SocialPanel.tsx
+- components/sections/SocialEditableBlock.tsx
+- components/sections/XPanel.tsx
+- components/sections/LinkedInPanel.tsx
+- components/sections/InstagramPanel.tsx
+- components/sections/MediumPanel.tsx
+- components/sections/RedditPanel.tsx
+- components/sections/NewsletterPanel.tsx
+- components/sections/PinterestPanel.tsx
+- app/dashboard/social/x/page.tsx
+- app/dashboard/social/linkedin/page.tsx
+- app/dashboard/social/instagram/page.tsx
+- app/dashboard/social/medium/page.tsx
+- app/dashboard/social/reddit/page.tsx
+- app/dashboard/social/newsletter/page.tsx
+- app/dashboard/social/pinterest/page.tsx
+
+## Status
+COMPLETE
