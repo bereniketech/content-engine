@@ -35,7 +35,24 @@ Build `POST /api/images` to generate image prompts via Claude (optimised for fal
 ## Key Patterns
 [greenfield — no existing files to reference]
 
-## Handoff
-- Completed: [ ]
-- Next task: task-011.md
-- Notes: ___
+## Handoff — What Was Done
+- Implemented `/lib/prompts/images.ts` with Claude prompt for generating 5 image types across different visual styles
+- Created `/app/api/images/route.ts` API endpoint that calls Claude for prompts and saves to Supabase content_assets
+- Built `/app/api/images/generate/route.ts` for optional fal.ai image generation with Flux model
+- Implemented `/components/sections/ImagesPanel.tsx` with style selector, prompt cards, copy buttons, and inline image generation
+
+## Handoff — Patterns Learned
+- Image style descriptions are stored as constants for consistency across prompts
+- JSON payload extraction handles both raw JSON and markdown-fenced JSON from Claude
+- Image generation uses fal.ai Flux model with 1024x1024 base size; can be enhanced per card type
+- Panel state management separates generating flags and generated images for independent card control
+
+## Handoff — Files Changed
+- `/lib/prompts/images.ts` — prompt generation with 5 style options
+- `/app/api/images/route.ts` — API endpoint for generating prompts via Claude
+- `/app/api/images/generate/route.ts` — API endpoint for calling fal.ai Flux model
+- `/components/sections/ImagesPanel.tsx` — UI component with style selector and prompt cards
+- `package.json` & `package-lock.json` — added fal.ai dependencies (already present)
+
+## Status
+COMPLETE

@@ -82,4 +82,4 @@ Build `POST /api/social` producing all 8 platform variants in one Claude call. B
 - app/dashboard/social/pinterest/page.tsx
 
 ## Status
-COMPLETE
+
