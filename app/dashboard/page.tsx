@@ -4,11 +4,20 @@ import { useState } from "react";
 import { ArticleUpload } from "@/components/input/ArticleUpload";
 import { TopicForm } from "@/components/input/TopicForm";
 import { Button } from "@/components/ui/button";
+import { SummaryPanel } from "@/components/dashboard/SummaryPanel";
+import { useSessionContext } from "@/lib/context/SessionContext";
 
 type InputTab = "topic" | "upload";
 
+const SUMMARY_THRESHOLD = 5;
+
 export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<InputTab>("topic");
+  const { assets } = useSessionContext();
+
+  if (assets.length >= SUMMARY_THRESHOLD) {
+    return <SummaryPanel />;
+  }
 
   return (
     <div className="space-y-6">

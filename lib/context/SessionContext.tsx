@@ -35,6 +35,7 @@ interface SessionContextValue {
   applyImprovedArticle: (article: string) => void;
   prefillTopicForm: (topic: string, keywords?: string[]) => void;
   setAssets: (assets: ContentAsset[]) => void;
+  clearSession: () => void;
 }
 
 const SessionContext = createContext<SessionContextValue | undefined>(undefined);
@@ -115,6 +116,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setInputData({ article: sanitizedArticle });
   }, []);
 
+  const clearSession = useCallback(() => {
+    setSessionId(null);
+    setInputType(null);
+    setInputData(null);
+    setImprovedArticle(null);
+    setAssets([]);
+    setError(null);
+  }, []);
+
   const prefillTopicForm = useCallback((topic: string, keywords: string[] = []) => {
     const sanitizedTopic = topic.trim();
 
@@ -145,6 +155,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       applyImprovedArticle,
       prefillTopicForm,
       setAssets,
+      clearSession,
     }),
     [
       sessionId,
@@ -157,6 +168,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       createSession,
       applyImprovedArticle,
       prefillTopicForm,
+      clearSession,
     ],
   );
 
