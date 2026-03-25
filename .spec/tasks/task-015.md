@@ -42,6 +42,7 @@ Harden all API routes with Supabase JWT validation, add Vercel Edge rate limitin
 - Use user-scoped Supabase clients with anon key plus Bearer token headers to preserve RLS, instead of service-role route clients.
 - Route-level prompt hardening is safer when sanitization is centralized (sanitizeInput/sanitizeUnknown) and applied before prompt construction.
 - Middleware-based API throttling can coexist with existing dashboard auth redirects when matcher includes both /api and dashboard/auth paths.
+- Runtime impersonation tests for RLS need seeded User A/User B credentials; this pass verified policy correctness from supabase/migrations/20260321_task_002_schema_auth.sql and user-scoped client usage.
 
 ## Handoff — Files Changed
 - app/api/blog/route.ts
