@@ -30,7 +30,21 @@ Build session history list on the dashboard home (loads past sessions from Supab
 ## Key Patterns
 [greenfield — no existing files to reference]
 
-## Handoff
-- Completed: [ ]
-- Next task: task-015.md
-- Notes: ___
+## Handoff — What Was Done
+- Added session history loading on dashboard home with Supabase user-scoped session query, per-session asset counts, and empty/error/loading states.
+- Implemented click-to-restore for past sessions by loading `content_assets`, mapping to `SessionContext` assets, and hydrating session metadata through a new context helper.
+- Replaced analytics page with Phase 2 placeholder cards (Google Analytics/Search Console) and added a History nav item below Analytics in the sidebar.
+
+## Handoff — Patterns Learned
+- Avoid calling browser Supabase client constructors during render in client components; initialize inside client-only flows (`useEffect`/event handlers) to prevent prerender failures.
+- Session restore is cleaner when context exposes an atomic `loadSession` helper instead of setting session fields separately.
+
+## Handoff — Files Changed
+- app/dashboard/page.tsx
+- app/dashboard/analytics/page.tsx
+- components/dashboard/Sidebar.tsx
+- lib/context/SessionContext.tsx
+- .spec/tasks/task-014.md
+
+## Status
+COMPLETE

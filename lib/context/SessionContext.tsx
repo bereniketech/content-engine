@@ -35,6 +35,12 @@ interface SessionContextValue {
   applyImprovedArticle: (article: string) => void;
   prefillTopicForm: (topic: string, keywords?: string[]) => void;
   setAssets: (assets: ContentAsset[]) => void;
+  loadSession: (session: {
+    sessionId: string;
+    inputType: SessionInputType;
+    inputData: SessionInputData;
+    assets: ContentAsset[];
+  }) => void;
   clearSession: () => void;
 }
 
@@ -142,6 +148,23 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const loadSession = useCallback(
+    (session: {
+      sessionId: string;
+      inputType: SessionInputType;
+      inputData: SessionInputData;
+      assets: ContentAsset[];
+    }) => {
+      setSessionId(session.sessionId);
+      setInputType(session.inputType);
+      setInputData(session.inputData);
+      setImprovedArticle(null);
+      setAssets(session.assets);
+      setError(null);
+    },
+    [],
+  );
+
   const value = useMemo<SessionContextValue>(
     () => ({
       sessionId,
@@ -155,6 +178,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       applyImprovedArticle,
       prefillTopicForm,
       setAssets,
+      loadSession,
       clearSession,
     }),
     [
@@ -168,6 +192,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       createSession,
       applyImprovedArticle,
       prefillTopicForm,
+      loadSession,
       clearSession,
     ],
   );
