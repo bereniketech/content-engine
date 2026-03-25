@@ -35,6 +35,7 @@ interface SessionContextValue {
   applyImprovedArticle: (article: string) => void;
   prefillTopicForm: (topic: string, keywords?: string[]) => void;
   setAssets: (assets: ContentAsset[]) => void;
+  upsertAsset: (asset: ContentAsset) => void;
   loadSession: (session: {
     sessionId: string;
     inputType: SessionInputType;
@@ -62,6 +63,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     ): Promise<CreateSessionResult> => {
       setInputType(nextInputType);
       setInputData(nextInputData);
+      setImprovedArticle(null);
+      setAssets([]);
       setError(null);
       setIsSubmitting(true);
 
@@ -165,6 +168,26 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const upsertAsset = useCallback((asset: ContentAsset) => {
+    setAssets((currentAssets) => {
+      const nextAssets = currentAssets.filter((currentAsset) => currentAsset.id !== asset.id)
+      nextAssets.push(asset)
+      nextAssets.sort((left, right) =>
+        new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime(),
+      )
+      return nextAssets
+    })
+
+    if (asset.assetType === 'improved') {
+      const improved = typeof asset.content.improved === 'string' ? asset.content.improved.trim() : ''
+      if (improved) {
+        setImprovedArticle(improved)
+        setInputType('upload')
+        setInputData({ article: improved })
+      }
+    }
+  }, [])
+
   const value = useMemo<SessionContextValue>(
     () => ({
       sessionId,
@@ -178,6 +201,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       applyImprovedArticle,
       prefillTopicForm,
       setAssets,
+      upsertAsset,
       loadSession,
       clearSession,
     }),
@@ -192,6 +216,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       createSession,
       applyImprovedArticle,
       prefillTopicForm,
+      upsertAsset,
       loadSession,
       clearSession,
     ],

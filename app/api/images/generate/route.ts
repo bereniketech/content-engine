@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as fal from '@fal-ai/serverless-client'
-import type { ImageStyle } from '@/lib/prompts/images'
 import { requireAuth } from '@/lib/auth'
 import { sanitizeInput } from '@/lib/sanitize'
 

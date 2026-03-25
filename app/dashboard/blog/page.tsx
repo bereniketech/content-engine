@@ -1,9 +1,10 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useMemo, useState } from 'react'
 import { BlogPanel } from '@/components/sections/BlogPanel'
 import { useSessionContext } from '@/lib/context/SessionContext'
 import { Button } from '@/components/ui/button'
+import { getLatestAssetByType } from '@/lib/session-assets'
 import type { SeoResult } from '@/app/api/seo/route'
 
 interface ResearchOutput {
@@ -24,55 +25,34 @@ interface UploadImprovementData {
 }
 
 export default function BlogPage() {
-  const { inputType, applyImprovedArticle, improvedArticle } = useSessionContext()
-  const [mode, setMode] = useState<'topic' | 'upload' | null>(null)
-  const [data, setData] = useState<{
-    topic: string
-    seo: SeoResult
-    research: ResearchOutput
-    tone: 'authority' | 'casual' | 'storytelling'
-  } | null>(null)
-  const [uploadData, setUploadData] = useState<UploadImprovementData | null>(null)
+  const { inputType, applyImprovedArticle, improvedArticle, inputData, assets } = useSessionContext()
   const [focusedVersion, setFocusedVersion] = useState<'original' | 'improved'>('improved')
   const [selectionNotice, setSelectionNotice] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const loadData = () => {
-      try {
-        const storedUpload = sessionStorage.getItem('uploadImprovement')
+  const topicData = useMemo(() => {
+    const researchAsset = getLatestAssetByType(assets, 'research')
+    const seoAsset = getLatestAssetByType(assets, 'seo')
 
-        if (inputType === 'upload' || storedUpload) {
-          if (storedUpload) {
-            setUploadData(JSON.parse(storedUpload) as UploadImprovementData)
-          }
-          const activeArticle = sessionStorage.getItem('activeUploadArticle')
-          setFocusedVersion(activeArticle ? 'improved' : 'original')
-          setMode('upload')
-          setError(storedUpload ? null : 'Upload an article first to generate improvements.')
-          return
-        }
-
-        const storedTopic = sessionStorage.getItem('blogData')
-        if (storedTopic) {
-          setData(JSON.parse(storedTopic))
-          setMode('topic')
-          setError(null)
-        } else {
-          setMode(null)
-          setError('Please generate research and SEO data first')
-        }
-      } catch {
-        setMode(null)
-        setError('Failed to load data')
-      } finally {
-        setIsLoading(false)
-      }
+    if (!researchAsset || !seoAsset || inputType !== 'topic' || !inputData || !('topic' in inputData)) {
+      return null
     }
 
-    loadData()
-  }, [inputType])
+    return {
+      topic: inputData.topic,
+      seo: seoAsset.content as unknown as SeoResult,
+      research: researchAsset.content as unknown as ResearchOutput,
+      tone: inputData.tone,
+    }
+  }, [assets, inputData, inputType])
+
+  const uploadData = useMemo(() => {
+    const improvedAsset = getLatestAssetByType(assets, 'improved')
+    if (!improvedAsset) {
+      return null
+    }
+
+    return improvedAsset.content as unknown as UploadImprovementData
+  }, [assets])
 
   const handleToggleView = () => {
     setFocusedVersion((previous) => (previous === 'improved' ? 'original' : 'improved'))
@@ -84,7 +64,6 @@ export default function BlogPage() {
     }
 
     applyImprovedArticle(uploadData.improved)
-    sessionStorage.setItem('activeUploadArticle', uploadData.improved)
     setFocusedVersion('improved')
     setSelectionNotice('Improved version is now the default input for downstream engines.')
   }
@@ -98,13 +77,13 @@ export default function BlogPage() {
         </p>
       </div>
 
-      {isLoading ? (
-        <div className="text-muted-foreground">Loading...</div>
-      ) : error ? (
+      {!topicData && !uploadData ? (
         <div className="rounded bg-red-50 border border-red-200 p-4 text-red-800 text-sm">
-          {error}
+          {inputType === 'upload'
+            ? 'Upload an article first to generate improvements.'
+            : 'Generate research and SEO assets first to draft the blog.'}
         </div>
-      ) : mode === 'upload' && uploadData ? (
+      ) : inputType === 'upload' && uploadData ? (
         <div className="space-y-5">
           <div className="flex flex-wrap items-center gap-2">
             <Button variant="outline" onClick={handleToggleView}>
@@ -149,12 +128,12 @@ export default function BlogPage() {
             )}
           </div>
         </div>
-      ) : data ? (
+      ) : topicData ? (
         <BlogPanel
-          topic={data.topic}
-          seo={data.seo}
-          research={data.research}
-          tone={data.tone}
+          topic={topicData.topic}
+          seo={topicData.seo}
+          research={topicData.research}
+          tone={topicData.tone}
         />
       ) : null}
     </div>

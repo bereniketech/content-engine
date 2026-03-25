@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useEffect, useState, FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ResearchPanel } from '@/components/sections/ResearchPanel'
@@ -28,7 +28,7 @@ interface ResearchData {
 }
 
 export default function ResearchPage() {
-  const { sessionId } = useSessionContext()
+  const { sessionId, inputData, inputType, upsertAsset } = useSessionContext()
   const [formData, setFormData] = useState({
     topic: '',
     audience: '',
@@ -37,6 +37,17 @@ export default function ResearchPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [researchData, setResearchData] = useState<ResearchData | null>(null)
+
+  useEffect(() => {
+    if (inputType === 'topic' && inputData && 'topic' in inputData) {
+      setFormData((current) => ({
+        ...current,
+        topic: inputData.topic,
+        audience: inputData.audience,
+        geography: inputData.geography ?? '',
+      }))
+    }
+  }, [inputData, inputType])
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -62,6 +73,7 @@ export default function ResearchPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          sessionId,
           topic: formData.topic.trim(),
           audience: formData.audience.trim(),
           geography: formData.geography?.trim() || undefined,
@@ -75,6 +87,13 @@ export default function ResearchPage() {
 
       const result = await response.json()
       setResearchData(result.data)
+      upsertAsset({
+        id: result.data.id,
+        assetType: result.data.assetType,
+        content: result.data.content,
+        version: result.data.version,
+        createdAt: result.data.createdAt,
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -94,6 +113,7 @@ export default function ResearchPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          sessionId,
           topic,
           audience: formData.audience,
           geography: formData.geography || undefined,
@@ -107,6 +127,13 @@ export default function ResearchPage() {
 
       const result = await response.json()
       setResearchData(result.data)
+      upsertAsset({
+        id: result.data.id,
+        assetType: result.data.assetType,
+        content: result.data.content,
+        version: result.data.version,
+        createdAt: result.data.createdAt,
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {

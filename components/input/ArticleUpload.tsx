@@ -7,9 +7,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useSessionContext } from "@/lib/context/SessionContext";
 
 interface ImproveApiResponse {
+	id?: string;
+	sessionId?: string;
+	assetType?: string;
+	version?: number;
+	createdAt?: string;
 	original: string;
 	improved: string;
 	changes: Array<{ type: string; description: string }>;
+	data?: {
+		id: string;
+		sessionId: string;
+		assetType: string;
+		content: Record<string, unknown>;
+		version: number;
+		createdAt: string;
+	};
 }
 
 const ARTICLE_MIN_LENGTH = 101;
@@ -22,7 +35,7 @@ function getFileExtension(fileName: string): string {
 }
 
 export function ArticleUpload() {
-	const { createSession, isSubmitting, error: sessionError, sessionId } = useSessionContext();
+	const { createSession, isSubmitting, error: sessionError, sessionId, upsertAsset, applyImprovedArticle } = useSessionContext();
 
 	const [article, setArticle] = useState("");
 	const [fileName, setFileName] = useState<string | null>(null);
@@ -93,7 +106,7 @@ export function ArticleUpload() {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({ article: normalizedArticle }),
+				body: JSON.stringify({ article: normalizedArticle, sessionId: result.sessionId }),
 			});
 
 			if (!response.ok) {
@@ -102,8 +115,16 @@ export function ArticleUpload() {
 			}
 
 			const improvedPayload = (await response.json()) as ImproveApiResponse;
-			sessionStorage.setItem("uploadImprovement", JSON.stringify(improvedPayload));
-			sessionStorage.setItem("activeUploadArticle", improvedPayload.improved);
+			applyImprovedArticle(improvedPayload.improved);
+			if (improvedPayload.data) {
+				upsertAsset({
+					id: improvedPayload.data.id,
+					assetType: improvedPayload.data.assetType,
+					content: improvedPayload.data.content,
+					version: improvedPayload.data.version,
+					createdAt: improvedPayload.data.createdAt,
+				});
+			}
 			setSuccess("Session created and article improved successfully.");
 		} catch (improveError) {
 			setError(

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { claude } from '@/lib/claude'
 import { getFlywheelPrompt, type FlywheelIdea } from '@/lib/prompts/flywheel'
-import { createSupabaseUserClient, requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
+import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput } from '@/lib/sanitize'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
@@ -9,6 +10,7 @@ import { sanitizeInput } from '@/lib/sanitize'
 type FlywheelRequestBody = {
   topic?: unknown
   keywords?: unknown
+  sessionId?: unknown
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -83,8 +85,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { user, token } = auth
-    const supabase = createSupabaseUserClient(token)
+    const { user, supabase } = auth
 
     let body: FlywheelRequestBody
     try {
@@ -115,34 +116,20 @@ export async function POST(request: NextRequest) {
     const sanitizedTopic = sanitizeInput(topic)
     const sanitizedKeywords = keywords.map((keyword) => sanitizeInput(keyword))
 
-    const { data: latestSession } = await supabase
-      .from('sessions')
-      .select('id')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    let sessionId = latestSession?.id
-    if (!sessionId) {
-      const { data: createdSession, error: createSessionError } = await supabase
-        .from('sessions')
-        .insert({
-          user_id: user.id,
-          input_type: 'topic',
-          input_data: { topic: sanitizedTopic, keywords: sanitizedKeywords },
-        })
-        .select('id')
-        .single()
-
-      if (createSessionError || !createdSession) {
-        return NextResponse.json(
-          { error: { code: 'storage_error', message: 'Failed to create session' } },
-          { status: 500 }
-        )
-      }
-
-      sessionId = createdSession.id
+    let sessionId: string
+    try {
+      sessionId = await resolveSessionId({
+        supabase,
+        userId: user.id,
+        providedSessionId: body.sessionId,
+        fallbackInputType: 'topic',
+        fallbackInputData: { topic: sanitizedTopic, keywords: sanitizedKeywords },
+      })
+    } catch (sessionError) {
+      return NextResponse.json(
+        { error: { code: 'storage_error', message: sessionError instanceof Error ? sessionError.message : 'Failed to resolve session' } },
+        { status: 500 },
+      )
     }
 
     const prompt = getFlywheelPrompt(sanitizedTopic, sanitizedKeywords)
@@ -160,7 +147,7 @@ export async function POST(request: NextRequest) {
       sanitizedKeywords
     )
 
-    const { error: saveError } = await supabase.from('content_assets').insert({
+    const { data: savedAsset, error: saveError } = await supabase.from('content_assets').insert({
       session_id: sessionId,
       asset_type: 'flywheel',
       content: {
@@ -169,6 +156,8 @@ export async function POST(request: NextRequest) {
         ideas: flywheelIdeas,
       },
     })
+      .select('*')
+      .single()
 
     if (saveError) {
       return NextResponse.json(
@@ -182,6 +171,7 @@ export async function POST(request: NextRequest) {
         data: {
           sessionId,
           ideas: flywheelIdeas,
+          asset: savedAsset ? mapAssetRowToContentAsset(savedAsset) : null,
         },
       },
       { status: 201 }

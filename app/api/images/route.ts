@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { claude } from '@/lib/claude'
-import { createSupabaseUserClient, requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
+import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
 import {
   getImagesPrompt,
@@ -79,8 +80,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { user, token } = auth
-    const supabase = createSupabaseUserClient(token)
+    const { user, supabase } = auth
 
     let body: Record<string, unknown>
     try {
@@ -137,37 +137,39 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Resolve or create session
-    const { data: sessionData } = await supabase
-      .from('sessions')
-      .select('id')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single()
-
-    let sessionId: string | null = sessionData?.id ?? null
-
-    if (!sessionId) {
-      const { data: newSession } = await supabase
-        .from('sessions')
-        .insert({ user_id: user.id, topic })
-        .select('id')
-        .single()
-      sessionId = newSession?.id ?? null
+    let sessionId: string
+    try {
+      sessionId = await resolveSessionId({
+        supabase,
+        userId: user.id,
+        providedSessionId: body.sessionId,
+        fallbackInputType: 'topic',
+        fallbackInputData: { topic: sanitizedTopic },
+      })
+    } catch (sessionError) {
+      return NextResponse.json(
+        { error: { code: 'storage_error', message: sessionError instanceof Error ? sessionError.message : 'Failed to resolve session' } },
+        { status: 500 },
+      )
     }
 
-    if (sessionId) {
-      await supabase.from('content_assets').insert({
-        session_id: sessionId,
-        user_id: user.id,
-        asset_type: 'images',
-        content: JSON.stringify({ style, prompts: images }),
-      })
+    const { data: savedAsset, error: saveError } = await supabase.from('content_assets').insert({
+      session_id: sessionId,
+      asset_type: 'images',
+      content: { style, ...images },
+    })
+      .select('*')
+      .single()
+
+    if (saveError) {
+      return NextResponse.json(
+        { error: { code: 'storage_error', message: 'Failed to save image prompts' } },
+        { status: 500 },
+      )
     }
 
     return NextResponse.json(
-      { data: { sessionId, style, images } },
+      { data: { sessionId, style, images, asset: mapAssetRowToContentAsset(savedAsset) } },
       { status: 201 }
     )
   } catch (err) {

@@ -4,7 +4,6 @@ import React, { useState } from 'react'
 import { Check, Copy, Loader2, DownloadIcon } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { IMAGE_STYLES, type ImagePromptsOutput, type ImageStyle } from '@/lib/prompts/images'
 
 interface ImagesPanelProps {
@@ -85,6 +84,7 @@ const PromptCard: React.FC<{
 
         {generatedImageUrl && (
           <div className="mt-3 rounded border overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={generatedImageUrl}
               alt={label}

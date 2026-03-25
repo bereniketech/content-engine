@@ -36,6 +36,8 @@ const NAV_ITEMS = [
   { label: "Reddit",     href: "/dashboard/social/reddit",          icon: MessageSquare },
   { label: "Newsletter", href: "/dashboard/social/newsletter",      icon: Mail },
   { label: "Pinterest",  href: "/dashboard/social/pinterest",       icon: PinIcon },
+  { label: "Distribute", href: "/dashboard/distribute",             icon: History },
+  { label: "Traffic",    href: "/dashboard/traffic",                icon: BarChart2 },
   { label: "Calendar",   href: "/dashboard/calendar",               icon: Calendar },
   { label: "Analytics",  href: "/dashboard/analytics",              icon: BarChart2 },
   { label: "History",    href: "/dashboard",                        icon: History },

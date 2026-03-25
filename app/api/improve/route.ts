@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { claude } from '@/lib/claude'
 import { getImprovePrompt } from '@/lib/prompts/improve'
-import { createSupabaseUserClient, requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
+import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput } from '@/lib/sanitize'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
@@ -61,10 +62,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { user, token } = auth
-    const supabase = createSupabaseUserClient(token)
+    const { user, supabase } = auth
 
-    let body: { article?: unknown }
+    let body: { article?: unknown; sessionId?: unknown }
     try {
       body = await request.json()
     } catch {
@@ -97,35 +97,20 @@ export async function POST(request: NextRequest) {
 
     const sanitizedArticle = sanitizeInput(article)
 
-    const { data: latestSession } = await supabase
-      .from('sessions')
-      .select('id,input_type')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    let sessionId = latestSession?.id
-
-    if (!sessionId || latestSession?.input_type !== 'upload') {
-      const { data: createdSession, error: createSessionError } = await supabase
-        .from('sessions')
-        .insert({
-          user_id: user.id,
-          input_type: 'upload',
-          input_data: { article: sanitizedArticle },
-        })
-        .select('id')
-        .single()
-
-      if (createSessionError || !createdSession) {
-        return NextResponse.json(
-          { error: { code: 'storage_error', message: 'Failed to create upload session' } },
-          { status: 500 }
-        )
-      }
-
-      sessionId = createdSession.id
+    let sessionId: string
+    try {
+      sessionId = await resolveSessionId({
+        supabase,
+        userId: user.id,
+        providedSessionId: body.sessionId,
+        fallbackInputType: 'upload',
+        fallbackInputData: { article: sanitizedArticle },
+      })
+    } catch (sessionError) {
+      return NextResponse.json(
+        { error: { code: 'storage_error', message: sessionError instanceof Error ? sessionError.message : 'Failed to resolve session' } },
+        { status: 500 },
+      )
     }
 
     const prompt = getImprovePrompt(sanitizedArticle)
@@ -144,7 +129,7 @@ export async function POST(request: NextRequest) {
     const responseText = message.content[0]?.type === 'text' ? message.content[0].text : ''
     const normalized = normalizeImproveResponse(extractJsonPayload(responseText))
 
-    const { error: saveError } = await supabase.from('content_assets').insert({
+    const { data: savedAsset, error: saveError } = await supabase.from('content_assets').insert({
       session_id: sessionId,
       asset_type: 'improved',
       content: {
@@ -153,6 +138,8 @@ export async function POST(request: NextRequest) {
         changes: normalized.changes,
       },
     })
+      .select('*')
+      .single()
 
     if (saveError) {
       return NextResponse.json(
@@ -166,6 +153,7 @@ export async function POST(request: NextRequest) {
         original: article,
         improved: normalized.improved,
         changes: normalized.changes,
+        data: savedAsset ? mapAssetRowToContentAsset(savedAsset) : null,
       },
       { status: 200 }
     )

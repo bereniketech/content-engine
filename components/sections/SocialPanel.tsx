@@ -1,9 +1,11 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useSessionContext } from '@/lib/context/SessionContext'
+import { getLatestAssetByType } from '@/lib/session-assets'
 import {
   SOCIAL_PLATFORM_KEYS,
   type SocialOutput,
@@ -220,12 +222,71 @@ function normalizeSocialOutput(payload: unknown): SocialOutput {
 }
 
 export function SocialPanel({ platform }: SocialPanelProps) {
+  const { sessionId, assets, upsertAsset } = useSessionContext()
+  const latestBlogAsset = useMemo(() => getLatestAssetByType(assets, 'blog'), [assets])
+  const latestImprovedAsset = useMemo(() => getLatestAssetByType(assets, 'improved'), [assets])
+  const latestSeoAsset = useMemo(() => getLatestAssetByType(assets, 'seo'), [assets])
+  const derivedSourceContent = useMemo(() => {
+    const blogMarkdown = typeof latestBlogAsset?.content.markdown === 'string'
+      ? latestBlogAsset.content.markdown.trim()
+      : ''
+    if (blogMarkdown) {
+      return blogMarkdown
+    }
+
+    return typeof latestImprovedAsset?.content.improved === 'string'
+      ? latestImprovedAsset.content.improved.trim()
+      : ''
+  }, [latestBlogAsset, latestImprovedAsset])
+  const derivedSeoRaw = useMemo(
+    () => JSON.stringify(latestSeoAsset?.content ?? {}, null, 2),
+    [latestSeoAsset],
+  )
+
   const [blog, setBlog] = useState('')
   const [seoRaw, setSeoRaw] = useState('{}')
   const [social, setSocial] = useState<SocialOutput>(createEmptySocialOutput)
   const [isGenerating, setIsGenerating] = useState(false)
   const [regeneratingPath, setRegeneratingPath] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setBlog(derivedSourceContent)
+  }, [derivedSourceContent])
+
+  useEffect(() => {
+    setSeoRaw(derivedSeoRaw)
+  }, [derivedSeoRaw])
+
+  useEffect(() => {
+    const nextSocial = createEmptySocialOutput()
+
+    const xAsset = getLatestAssetByType(assets, 'social_x')
+    const linkedinAsset = getLatestAssetByType(assets, 'social_linkedin')
+    const instagramAsset = getLatestAssetByType(assets, 'social_instagram')
+    const mediumAsset = getLatestAssetByType(assets, 'social_medium')
+    const redditAsset = getLatestAssetByType(assets, 'social_reddit')
+    const newsletterAsset = getLatestAssetByType(assets, 'social_newsletter')
+    const pinterestAsset = getLatestAssetByType(assets, 'social_pinterest')
+    const extrasAsset = getLatestAssetByType(assets, 'social_extras')
+
+    if (xAsset) nextSocial.x = normalizePlatformData('x', xAsset.content)
+    if (linkedinAsset) nextSocial.linkedin = normalizePlatformData('linkedin', linkedinAsset.content)
+    if (instagramAsset) nextSocial.instagram = normalizePlatformData('instagram', instagramAsset.content)
+    if (mediumAsset) nextSocial.medium = normalizePlatformData('medium', mediumAsset.content)
+    if (redditAsset) nextSocial.reddit = normalizePlatformData('reddit', redditAsset.content)
+    if (newsletterAsset) nextSocial.newsletter = normalizePlatformData('newsletter', newsletterAsset.content)
+    if (pinterestAsset) nextSocial.pinterest = normalizePlatformData('pinterest', pinterestAsset.content)
+    if (extrasAsset && isRecord(extrasAsset.content)) {
+      nextSocial.extras = {
+        quotes: asStringArray(extrasAsset.content.quotes),
+        discussionQuestions: asStringArray(extrasAsset.content.discussionQuestions),
+        miniPosts: asStringArray(extrasAsset.content.miniPosts),
+      }
+    }
+
+    setSocial(nextSocial)
+  }, [assets])
 
   const platformLabel = useMemo(() => PLATFORM_LABELS[platform], [platform])
 
@@ -253,6 +314,7 @@ export function SocialPanel({ platform }: SocialPanelProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          sessionId,
           blog,
           seo,
           platforms: [...SOCIAL_PLATFORM_KEYS],
@@ -271,6 +333,22 @@ export function SocialPanel({ platform }: SocialPanelProps) {
       }
 
       setSocial(normalizeSocialOutput(generated))
+      const generatedAssets = Array.isArray(payload?.data?.assets) ? payload.data.assets : []
+      generatedAssets.forEach((asset: {
+        id: string
+        assetType: string
+        content: Record<string, unknown>
+        version: number
+        createdAt: string
+      }) => {
+        upsertAsset({
+          id: asset.id,
+          assetType: asset.assetType,
+          content: asset.content,
+          version: asset.version,
+          createdAt: asset.createdAt,
+        })
+      })
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Failed to generate social content')
     } finally {
@@ -297,6 +375,7 @@ export function SocialPanel({ platform }: SocialPanelProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          sessionId,
           platform,
           blog,
           seo,
@@ -311,6 +390,16 @@ export function SocialPanel({ platform }: SocialPanelProps) {
       const regeneratedPlatform = payload?.data?.content
       if (!regeneratedPlatform) {
         throw new Error('Malformed regenerate response')
+      }
+
+      if (payload?.data?.asset) {
+        upsertAsset({
+          id: payload.data.asset.id,
+          assetType: payload.data.asset.assetType,
+          content: payload.data.asset.content,
+          version: payload.data.asset.version,
+          createdAt: payload.data.asset.createdAt,
+        })
       }
 
       const normalizedPlatform = normalizePlatformData(platform, regeneratedPlatform)

@@ -1,9 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Check, ChevronDown, Copy } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useSessionContext } from '@/lib/context/SessionContext'
 
 interface DistributionSequenceItem {
   day: 1 | 2 | 3
@@ -50,7 +51,16 @@ function buildScheduleText(distribution: DistributionResult): string {
   return `${dayBlocks.join('\n\n')}\n\nPlatform Instructions\n${platformLines.join('\n')}`
 }
 
+function buildAssetsSummary(
+  assets: Array<{ assetType: string; content: Record<string, unknown> }>,
+): string {
+  return assets
+    .map((asset) => `${asset.assetType}: ${JSON.stringify(asset.content)}`)
+    .join('\n\n')
+}
+
 export function DistributionPanel() {
+  const { sessionId, assets, upsertAsset } = useSessionContext()
   const [assetsInput, setAssetsInput] = useState('')
   const [distribution, setDistribution] = useState<DistributionResult | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -58,6 +68,10 @@ export function DistributionPanel() {
   const [copied, setCopied] = useState(false)
   const [expandedDays, setExpandedDays] = useState(buildInitialExpandedState)
   const [expandedInstructions, setExpandedInstructions] = useState<Record<string, boolean>>({})
+
+  useEffect(() => {
+    setAssetsInput(buildAssetsSummary(assets))
+  }, [assets])
 
   const groupedByDay = useMemo(() => {
     if (!distribution) {
@@ -79,7 +93,7 @@ export function DistributionPanel() {
       const response = await fetch('/api/distribute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assets: assetsInput.trim() }),
+        body: JSON.stringify({ sessionId, assets: assetsInput.trim() }),
       })
 
       const payload = await response.json()
@@ -93,6 +107,15 @@ export function DistributionPanel() {
       }
 
       setDistribution(result)
+      if (payload?.data?.asset) {
+        upsertAsset({
+          id: payload.data.asset.id,
+          assetType: payload.data.asset.assetType,
+          content: payload.data.asset.content,
+          version: payload.data.asset.version,
+          createdAt: payload.data.asset.createdAt,
+        })
+      }
       setExpandedDays(buildInitialExpandedState())
       setExpandedInstructions({})
     } catch (requestError) {

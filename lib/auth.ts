@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js'
 import { NextRequest } from 'next/server'
+import { createSupabaseRequestClient } from '@/lib/session-assets'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
@@ -37,22 +38,42 @@ export function createSupabaseUserClient(token: string): SupabaseClient {
   })
 }
 
-export async function requireAuth(request: NextRequest): Promise<{ user: User; token: string }> {
-  const token = getBearerToken(request.headers.get('authorization'))
+export async function requireAuth(
+  request: NextRequest,
+): Promise<{ user: User; token: string; supabase: SupabaseClient }> {
+  const bearerToken = getBearerToken(request.headers.get('authorization'))
 
-  if (!token) {
-    throw new Error('Authentication required')
+  if (bearerToken) {
+    const bearerSupabase = createSupabaseUserClient(bearerToken)
+    const {
+      data: { user },
+      error,
+    } = await bearerSupabase.auth.getUser(bearerToken)
+
+    if (error || !user) {
+      throw new Error('Authentication required')
+    }
+
+    return { user, token: bearerToken, supabase: bearerSupabase }
   }
 
-  const supabase = createSupabaseUserClient(token)
+  const cookieSupabase = createSupabaseRequestClient(request)
   const {
     data: { user },
     error,
-  } = await supabase.auth.getUser(token)
+  } = await cookieSupabase.auth.getUser()
 
   if (error || !user) {
     throw new Error('Authentication required')
   }
 
-  return { user, token }
+  const {
+    data: { session },
+  } = await cookieSupabase.auth.getSession()
+
+  if (!session?.access_token) {
+    throw new Error('Authentication required')
+  }
+
+  return { user, token: session.access_token, supabase: createSupabaseUserClient(session.access_token) }
 }

@@ -1,9 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useSessionContext } from '@/lib/context/SessionContext'
+import { getLatestAssetByType } from '@/lib/session-assets'
 
 interface TrafficPrediction {
   demand: number
@@ -45,11 +47,24 @@ function parseSeo(seoRaw: string): Record<string, unknown> {
 }
 
 export function TrafficPanel() {
+  const { sessionId, inputData, assets, upsertAsset } = useSessionContext()
+  const latestSeoAsset = useMemo(() => getLatestAssetByType(assets, 'seo'), [assets])
   const [topic, setTopic] = useState('')
   const [seoRaw, setSeoRaw] = useState(DEFAULT_SEO)
   const [traffic, setTraffic] = useState<TrafficPrediction | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const nextTopic = inputData && 'topic' in inputData ? inputData.topic : ''
+    setTopic(nextTopic)
+  }, [inputData])
+
+  useEffect(() => {
+    if (latestSeoAsset) {
+      setSeoRaw(JSON.stringify(latestSeoAsset.content, null, 2))
+    }
+  }, [latestSeoAsset])
 
   const handleGenerate = async () => {
     setError(null)
@@ -61,7 +76,7 @@ export function TrafficPanel() {
       const response = await fetch('/api/traffic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: topic.trim(), seo }),
+        body: JSON.stringify({ sessionId, topic: topic.trim(), seo }),
       })
 
       const payload = await response.json()
@@ -75,6 +90,15 @@ export function TrafficPanel() {
       }
 
       setTraffic(result)
+      if (payload?.data?.asset) {
+        upsertAsset({
+          id: payload.data.asset.id,
+          assetType: payload.data.asset.assetType,
+          content: payload.data.asset.content,
+          version: payload.data.asset.version,
+          createdAt: payload.data.asset.createdAt,
+        })
+      }
     } catch (requestError) {
       setError(
         requestError instanceof Error

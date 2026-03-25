@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { googleSearch } from '@/lib/google-search'
 import { getResearchPrompt } from '@/lib/prompts/research'
 import { claude } from '@/lib/claude'
-import { createSupabaseUserClient, requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
+import { resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput } from '@/lib/sanitize'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
@@ -30,8 +31,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { user, token } = auth
-    const supabase = createSupabaseUserClient(token)
+    const { user, supabase } = auth
 
     // Parse request body
     let body
@@ -68,38 +68,24 @@ export async function POST(request: NextRequest) {
     const sanitizedAudience = sanitizeInput(audience)
     const sanitizedGeography = sanitizeInput(geography)
 
-    // Get or create session
-    const { data: sessionData, error: sessionError } = await supabase
-      .from('sessions')
-      .select('id')
-      .eq('user_id', user.id)
-      .single()
-
     let sessionId: string
-    if (sessionError || !sessionData) {
-      const { data: newSession, error: createSessionError } = await supabase
-        .from('sessions')
-        .insert({
-          user_id: user.id,
-          input_type: 'topic',
-          input_data: {
-            topic: sanitizedTopic,
-            audience: sanitizedAudience,
-            geography: sanitizedGeography,
-          },
-        })
-        .select('id')
-        .single()
-
-      if (createSessionError || !newSession) {
-        return NextResponse.json(
-          { error: 'Failed to create session' },
-          { status: 500 }
-        )
-      }
-      sessionId = newSession.id
-    } else {
-      sessionId = sessionData.id
+    try {
+      sessionId = await resolveSessionId({
+        supabase,
+        userId: user.id,
+        providedSessionId: body.sessionId,
+        fallbackInputType: 'topic',
+        fallbackInputData: {
+          topic: sanitizedTopic,
+          audience: sanitizedAudience,
+          geography: sanitizedGeography,
+        },
+      })
+    } catch (sessionError) {
+      return NextResponse.json(
+        { error: { code: 'storage_error', message: sessionError instanceof Error ? sessionError.message : 'Failed to resolve session' } },
+        { status: 500 },
+      )
     }
 
     // Parallelize Google Search calls

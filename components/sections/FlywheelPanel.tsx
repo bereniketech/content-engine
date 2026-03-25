@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,13 +13,20 @@ interface FlywheelIdea {
 }
 
 export function FlywheelPanel() {
-  const { prefillTopicForm } = useSessionContext()
+  const { prefillTopicForm, inputData, sessionId, upsertAsset } = useSessionContext()
   const [topic, setTopic] = useState('')
   const [keywordsRaw, setKeywordsRaw] = useState('')
   const [ideas, setIdeas] = useState<FlywheelIdea[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectionMessage, setSelectionMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (inputData && 'topic' in inputData) {
+      setTopic(inputData.topic)
+      setKeywordsRaw(inputData.keywords ?? '')
+    }
+  }, [inputData])
 
   const handleGenerate = async () => {
     setError(null)
@@ -34,7 +41,7 @@ export function FlywheelPanel() {
       const response = await fetch('/api/flywheel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ topic: topic.trim(), keywords }),
+        body: JSON.stringify({ sessionId, topic: topic.trim(), keywords }),
       })
 
       const payload = await response.json()
@@ -48,6 +55,15 @@ export function FlywheelPanel() {
       }
 
       setIdeas(result)
+      if (payload?.data?.asset) {
+        upsertAsset({
+          id: payload.data.asset.id,
+          assetType: payload.data.asset.assetType,
+          content: payload.data.asset.content,
+          version: payload.data.asset.version,
+          createdAt: payload.data.asset.createdAt,
+        })
+      }
     } catch (requestError) {
       setError(requestError instanceof Error ? requestError.message : 'Failed to generate flywheel ideas')
     } finally {

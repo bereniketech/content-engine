@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { claude } from '@/lib/claude'
-import { createSupabaseUserClient, requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
+import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
 import {
   getSocialPrompt,
@@ -16,6 +17,7 @@ type SocialRequestBody = {
   blog?: unknown
   seo?: unknown
   platforms?: unknown
+  sessionId?: unknown
 }
 
 const SOCIAL_OUTPUT_KEYS = [
@@ -145,8 +147,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { user, token } = auth
-    const supabase = createSupabaseUserClient(token)
+    const { user, supabase } = auth
 
     let body: SocialRequestBody
     try {
@@ -182,33 +183,20 @@ export async function POST(request: NextRequest) {
 
     const sanitizedBlog = sanitizeInput(blog)
 
-    const { data: latestSession } = await supabase
-      .from('sessions')
-      .select('id')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    let sessionId = latestSession?.id
-    if (!sessionId) {
-      const { data: createdSession, error: createSessionError } = await supabase
-        .from('sessions')
-        .insert({
-          user_id: user.id,
-          input_type: 'upload',
-          input_data: { article: sanitizedBlog },
-        })
-        .select('id')
-        .single()
-
-      if (createSessionError || !createdSession) {
-        return NextResponse.json(
-          { error: { code: 'storage_error', message: 'Failed to create session' } },
-          { status: 500 }
-        )
-      }
-      sessionId = createdSession.id
+    let sessionId: string
+    try {
+      sessionId = await resolveSessionId({
+        supabase,
+        userId: user.id,
+        providedSessionId: body.sessionId,
+        fallbackInputType: 'upload',
+        fallbackInputData: { article: sanitizedBlog },
+      })
+    } catch (sessionError) {
+      return NextResponse.json(
+        { error: { code: 'storage_error', message: sessionError instanceof Error ? sessionError.message : 'Failed to resolve session' } },
+        { status: 500 },
+      )
     }
 
     const prompt = getSocialPrompt(sanitizedBlog, seo, platforms)
@@ -236,7 +224,10 @@ export async function POST(request: NextRequest) {
       },
     }))
 
-    const { error: saveError } = await supabase.from('content_assets').insert(assetsToSave)
+    const { data: savedAssets, error: saveError } = await supabase
+      .from('content_assets')
+      .insert(assetsToSave)
+      .select('*')
     if (saveError) {
       return NextResponse.json(
         { error: { code: 'storage_error', message: 'Failed to save social assets' } },
@@ -250,6 +241,7 @@ export async function POST(request: NextRequest) {
           sessionId,
           platforms,
           social,
+          assets: (savedAssets ?? []).map(mapAssetRowToContentAsset),
         },
       },
       { status: 201 }

@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { claude } from '@/lib/claude'
 import { getDistributePrompt, type DistributionOutput } from '@/lib/prompts/distribute'
-import { createSupabaseUserClient, requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
+import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeUnknown } from '@/lib/sanitize'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
 type DistributeRequestBody = {
   assets?: unknown
+  sessionId?: unknown
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -80,8 +82,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { user, token } = auth
-    const supabase = createSupabaseUserClient(token)
+    const { user, supabase } = auth
 
     let body: DistributeRequestBody
     try {
@@ -109,34 +110,20 @@ export async function POST(request: NextRequest) {
 
     const sanitizedAssets = sanitizeUnknown(assets)
 
-    const { data: latestSession } = await supabase
-      .from('sessions')
-      .select('id')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-
-    let sessionId = latestSession?.id
-    if (!sessionId) {
-      const { data: createdSession, error: createSessionError } = await supabase
-        .from('sessions')
-        .insert({
-          user_id: user.id,
-          input_type: 'upload',
-          input_data: { assets: sanitizedAssets },
-        })
-        .select('id')
-        .single()
-
-      if (createSessionError || !createdSession) {
-        return NextResponse.json(
-          { error: { code: 'storage_error', message: 'Failed to create session' } },
-          { status: 500 }
-        )
-      }
-
-      sessionId = createdSession.id
+    let sessionId: string
+    try {
+      sessionId = await resolveSessionId({
+        supabase,
+        userId: user.id,
+        providedSessionId: body.sessionId,
+        fallbackInputType: 'upload',
+        fallbackInputData: { assets: sanitizedAssets },
+      })
+    } catch (sessionError) {
+      return NextResponse.json(
+        { error: { code: 'storage_error', message: sessionError instanceof Error ? sessionError.message : 'Failed to resolve session' } },
+        { status: 500 },
+      )
     }
 
     const prompt = getDistributePrompt(sanitizedAssets)
@@ -150,11 +137,13 @@ export async function POST(request: NextRequest) {
     const responseText = message.content[0]?.type === 'text' ? message.content[0].text : '{}'
     const distribution = normalizeDistributionOutput(extractJsonPayload(responseText))
 
-    const { error: saveError } = await supabase.from('content_assets').insert({
+    const { data: savedAsset, error: saveError } = await supabase.from('content_assets').insert({
       session_id: sessionId,
       asset_type: 'distribution',
       content: distribution,
     })
+      .select('*')
+      .single()
 
     if (saveError) {
       return NextResponse.json(
@@ -168,6 +157,7 @@ export async function POST(request: NextRequest) {
         data: {
           sessionId,
           distribution,
+          asset: savedAsset ? mapAssetRowToContentAsset(savedAsset) : null,
         },
       },
       { status: 201 }

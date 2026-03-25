@@ -4,17 +4,23 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  FlaskConical,
   FileText,
   BookOpen,
+  Search,
   Mail,
   MessageSquare,
   Twitter,
   Linkedin,
   Instagram,
+  Image,
   Pin,
   Quote,
   HelpCircle,
   PlusCircle,
+  Send,
+  TrendingUp,
+  Repeat,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +37,27 @@ interface AssetCatalogEntry {
   color: string;
 }
 
+function findLatestAsset(assets: ContentAsset[], assetType: string): ContentAsset | undefined {
+  return [...assets].reverse().find((asset) => asset.assetType === assetType);
+}
+
 const ASSET_CATALOG: AssetCatalogEntry[] = [
+  {
+    assetType: "research",
+    label: "Research Brief",
+    defaultCount: 1,
+    href: "/dashboard/research",
+    icon: FlaskConical,
+    color: "text-cyan-600",
+  },
+  {
+    assetType: "seo",
+    label: "SEO Strategy",
+    defaultCount: 1,
+    href: "/dashboard/seo",
+    icon: Search,
+    color: "text-emerald-600",
+  },
   {
     assetType: "blog",
     label: "Blog Article",
@@ -39,6 +65,14 @@ const ASSET_CATALOG: AssetCatalogEntry[] = [
     href: "/dashboard/blog",
     icon: FileText,
     color: "text-blue-500",
+  },
+  {
+    assetType: "images",
+    label: "Image Prompt Pack",
+    defaultCount: 1,
+    href: "/dashboard/images",
+    icon: Image,
+    color: "text-fuchsia-600",
   },
   {
     assetType: "social_medium",
@@ -96,6 +130,30 @@ const ASSET_CATALOG: AssetCatalogEntry[] = [
     icon: Pin,
     color: "text-red-600",
   },
+  {
+    assetType: "distribution",
+    label: "Distribution Plan",
+    defaultCount: 1,
+    href: "/dashboard/distribute",
+    icon: Send,
+    color: "text-violet-600",
+  },
+  {
+    assetType: "traffic",
+    label: "Traffic Forecast",
+    defaultCount: 1,
+    href: "/dashboard/traffic",
+    icon: TrendingUp,
+    color: "text-amber-600",
+  },
+  {
+    assetType: "flywheel",
+    label: "Flywheel Ideas",
+    defaultCount: 1,
+    href: "/dashboard/flywheel",
+    icon: Repeat,
+    color: "text-indigo-600",
+  },
 ];
 
 function getActualCount(entry: AssetCatalogEntry, asset: ContentAsset): number {
@@ -136,7 +194,7 @@ function getExtrasData(assets: ContentAsset[]): {
   quotes: string[];
   questions: string[];
 } {
-  const extrasAsset = assets.find((a) => a.assetType === "social_extras");
+  const extrasAsset = findLatestAsset(assets, "social_extras");
   if (!extrasAsset) return { quotes: [], questions: [] };
 
   const quotes = Array.isArray(extrasAsset.content.quotes)
@@ -188,7 +246,7 @@ export function SummaryPanel() {
   );
 
   const totalCount = presentEntries.reduce((sum, entry) => {
-    const asset = assets.find((a) => a.assetType === entry.assetType)!;
+    const asset = findLatestAsset(assets, entry.assetType)!;
     return sum + getActualCount(entry, asset);
   }, 0);
 
@@ -244,7 +302,7 @@ export function SummaryPanel() {
       {/* Asset type cards */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {presentEntries.map((entry) => {
-          const asset = assets.find((a) => a.assetType === entry.assetType)!;
+          const asset = findLatestAsset(assets, entry.assetType)!;
           const count = getActualCount(entry, asset);
           const Icon = entry.icon;
 

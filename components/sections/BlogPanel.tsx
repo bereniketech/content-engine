@@ -6,6 +6,7 @@ import ReactMarkdown from 'react-markdown'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { useSessionContext } from '@/lib/context/SessionContext'
 import type { SeoResult } from '@/app/api/seo/route'
 import type { TopicTone } from '@/types'
 
@@ -33,6 +34,13 @@ interface StreamEvent {
   error?: string
   markdown?: string
   wordCount?: number
+  asset?: {
+    id: string
+    assetType: string
+    content: Record<string, unknown>
+    version: number
+    createdAt: string
+  }
 }
 
 const TONE_OPTIONS: Array<{ label: string; value: TopicTone }> = [
@@ -98,6 +106,7 @@ function getTextFromNode(node: React.ReactNode): string {
 }
 
 export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone = 'authority' }) => {
+  const { sessionId, upsertAsset } = useSessionContext()
   const [markdown, setMarkdown] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -125,6 +134,7 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          sessionId,
           topic,
           seo,
           research,
@@ -171,6 +181,22 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone
               const finalWordCount = data.wordCount ?? accumulatedMarkdown.trim().split(/\s+/).filter(Boolean).length
               setWordCount(finalWordCount)
               setStreamComplete(true)
+              if (data.asset && typeof data.asset === 'object') {
+                const asset = data.asset as {
+                  id: string
+                  assetType: string
+                  content: Record<string, unknown>
+                  version: number
+                  createdAt: string
+                }
+                upsertAsset({
+                  id: asset.id,
+                  assetType: asset.assetType,
+                  content: asset.content,
+                  version: asset.version,
+                  createdAt: asset.createdAt,
+                })
+              }
             }
           }
         }

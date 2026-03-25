@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
+import { useMemo, useState, FormEvent } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { SEOPanel } from '@/components/sections/SEOPanel'
 import { useSessionContext } from '@/lib/context/SessionContext'
+import { getLatestAssetByType } from '@/lib/session-assets'
 import type { SeoResult } from '@/app/api/seo/route'
 
 interface SeoData {
@@ -17,14 +18,20 @@ interface SeoData {
 }
 
 export default function SEOPage() {
-  const { sessionId } = useSessionContext()
+  const { sessionId, assets, upsertAsset } = useSessionContext()
   const [keywords, setKeywords] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [seoData, setSeoData] = useState<SeoData | null>(null)
 
   // Get research data from sessionStorage or state
-  const [researchData, setResearchData] = useState<{
+  const researchData = useMemo(() => {
+    const researchAsset = getLatestAssetByType(assets, 'research')
+    if (!researchAsset) {
+      return null
+    }
+
+    return researchAsset.content as {
     topic: string
     intent: string
     demand: string
@@ -33,24 +40,8 @@ export default function SEOPage() {
     faqs: Array<{ question: string; answer: string }>
     competitors: Array<{ name: string; url: string; strength: string }>
     gaps: string[]
-  } | null>(null)
-
-  const handleResearchImport = async () => {
-    try {
-      // Try to load from sessionStorage
-      const stored = sessionStorage.getItem('lastResearch')
-      if (stored) {
-        const research = JSON.parse(stored)
-        setResearchData(research)
-        return
-      }
-
-      // If no stored research, prompt user
-      setError('Please run research analysis first to generate SEO insights')
-    } catch (err) {
-      setError('Failed to load research data')
     }
-  }
+  }, [assets])
 
   const handleGenerateSeo = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -75,6 +66,7 @@ export default function SEOPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          sessionId,
           topic: researchData.topic,
           research: researchData,
           keywords: keywordArray,
@@ -88,6 +80,13 @@ export default function SEOPage() {
 
       const result = await response.json()
       setSeoData(result.data)
+      upsertAsset({
+        id: result.data.id,
+        assetType: result.data.assetType,
+        content: result.data.content,
+        version: result.data.version,
+        createdAt: result.data.createdAt,
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
     } finally {
@@ -117,14 +116,9 @@ export default function SEOPage() {
               <div className="space-y-3">
                 <label className="block text-sm font-medium">Research Data</label>
                 {!researchData ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={handleResearchImport}
-                    className="w-full"
-                  >
-                    Load Research Data
-                  </Button>
+                  <div className="rounded border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
+                    Run the research engine first to generate SEO insights for the active session.
+                  </div>
                 ) : (
                   <div className="bg-green-50 border border-green-200 rounded p-3 text-sm">
                     <p className="font-medium text-green-900">✓ Research loaded</p>

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getBlogPrompt } from '@/lib/prompts/blog'
 import { claude } from '@/lib/claude'
-import { createSupabaseUserClient, requireAuth } from '@/lib/auth'
+import { requireAuth } from '@/lib/auth'
+import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
 import type { SeoResult } from '@/app/api/seo/route'
 import type { TopicTone } from '@/types'
@@ -40,8 +41,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { user, token } = auth
-    const supabase = createSupabaseUserClient(token)
+    const { user, supabase } = auth
 
     // Parse request body
     let body
@@ -78,35 +78,20 @@ export async function POST(request: NextRequest) {
 
     const topic = sanitizeInput(rawTopic)
 
-    // Get or create session
-    const { data: sessionData, error: sessionError } = await supabase
-      .from('sessions')
-      .select('id')
-      .eq('user_id', user.id)
-      .single()
-
     let sessionId: string
-    if (sessionError || !sessionData) {
-      const { data: newSession, error: createSessionError } = await supabase
-        .from('sessions')
-        .insert({
-          user_id: user.id,
-          input_type: 'topic',
-          input_data: { topic, tone },
-        })
-        .select('id')
-        .single()
-
-      if (createSessionError || !newSession) {
-        return NextResponse.json(
-          { error: { code: 'storage_error', message: 'Failed to create session' } },
-          { status: 500 }
-        )
-      }
-
-      sessionId = newSession.id
-    } else {
-      sessionId = sessionData.id
+    try {
+      sessionId = await resolveSessionId({
+        supabase,
+        userId: user.id,
+        providedSessionId: body.sessionId,
+        fallbackInputType: 'topic',
+        fallbackInputData: { topic, tone },
+      })
+    } catch (sessionError) {
+      return NextResponse.json(
+        { error: { code: 'storage_error', message: sessionError instanceof Error ? sessionError.message : 'Failed to resolve session' } },
+        { status: 500 },
+      )
     }
 
     // Get blog prompt
@@ -140,7 +125,7 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          const { error: assetError } = await supabase.from('content_assets').insert({
+          const { data: savedAsset, error: assetError } = await supabase.from('content_assets').insert({
             session_id: sessionId,
             asset_type: 'blog',
             content: {
@@ -150,6 +135,8 @@ export async function POST(request: NextRequest) {
               wordCount: fullMarkdown.trim().split(/\s+/).filter(Boolean).length,
             },
           })
+            .select('*')
+            .single()
 
           if (assetError) {
             console.error('Error saving blog to database:', assetError)
@@ -162,7 +149,11 @@ export async function POST(request: NextRequest) {
 
           controller.enqueue(
             encoder.encode(
-              `data: ${JSON.stringify({ done: true, wordCount: fullMarkdown.trim().split(/\s+/).filter(Boolean).length })}\n\n`
+              `data: ${JSON.stringify({
+                done: true,
+                wordCount: fullMarkdown.trim().split(/\s+/).filter(Boolean).length,
+                asset: savedAsset ? mapAssetRowToContentAsset(savedAsset) : undefined,
+              })}\n\n`
             )
           )
           controller.close()
