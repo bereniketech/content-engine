@@ -1,8 +1,11 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 import { googleSearch } from '@/lib/google-search'
 import { getResearchPrompt } from '@/lib/prompts/research'
 import { claude } from '@/lib/claude'
+import { createSupabaseUserClient, requireAuth } from '@/lib/auth'
+import { sanitizeInput } from '@/lib/sanitize'
+
+// OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
 interface ResearchResult {
   intent: 'informational' | 'commercial' | 'transactional'
@@ -17,42 +20,18 @@ interface ResearchResult {
 
 export async function POST(request: NextRequest) {
   try {
-    // Get Supabase client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      return NextResponse.json(
-        { error: { code: 'server_error', message: 'Missing server configuration' } },
-        { status: 500 }
-      )
-    }
-
-    // Create server client with service key for RLS bypass
-    const supabase = createServerClient(supabaseUrl, supabaseServiceKey, {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          // No-op for server client, cookies already managed by middleware
-        },
-      },
-    })
-
-    // Get user from Supabase auth via middleware
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    let auth
+    try {
+      auth = await requireAuth(request)
+    } catch {
       return NextResponse.json(
         { error: { code: 'unauthorized', message: 'Authentication required' } },
         { status: 401 }
       )
     }
+
+    const { user, token } = auth
+    const supabase = createSupabaseUserClient(token)
 
     // Parse request body
     let body
@@ -65,23 +44,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { topic, audience, geography } = body
+    const topic = typeof body.topic === 'string' ? body.topic.trim() : ''
+    const audience = typeof body.audience === 'string' ? body.audience.trim() : ''
+    const geography = typeof body.geography === 'string' ? body.geography.trim() : ''
 
-    if (!topic?.trim() || !audience?.trim()) {
+    if (!topic || !audience) {
       return NextResponse.json(
         {
           error: {
             code: 'validation_error',
             message: 'Validation failed',
             details: [
-              ...((!topic?.trim()) ? [{ field: 'topic', message: 'Topic is required' }] : []),
-              ...((!audience?.trim()) ? [{ field: 'audience', message: 'Audience is required' }] : []),
+              ...((!topic) ? [{ field: 'topic', message: 'Topic is required' }] : []),
+              ...((!audience) ? [{ field: 'audience', message: 'Audience is required' }] : []),
             ],
           },
         },
         { status: 400 }
       )
     }
+
+    const sanitizedTopic = sanitizeInput(topic)
+    const sanitizedAudience = sanitizeInput(audience)
+    const sanitizedGeography = sanitizeInput(geography)
 
     // Get or create session
     const { data: sessionData, error: sessionError } = await supabase
@@ -97,7 +82,11 @@ export async function POST(request: NextRequest) {
         .insert({
           user_id: user.id,
           input_type: 'topic',
-          input_data: { topic, audience, geography },
+          input_data: {
+            topic: sanitizedTopic,
+            audience: sanitizedAudience,
+            geography: sanitizedGeography,
+          },
         })
         .select('id')
         .single()
@@ -115,14 +104,14 @@ export async function POST(request: NextRequest) {
 
     // Parallelize Google Search calls
     const [mainResults, tipsResults] = await Promise.all([
-      googleSearch(topic),
-      googleSearch(`${topic} tips`),
+      googleSearch(sanitizedTopic),
+      googleSearch(`${sanitizedTopic} tips`),
     ])
 
     const allResults = [...mainResults, ...tipsResults]
 
     // Call Claude with research prompt
-    const prompt = getResearchPrompt(topic, allResults)
+    const prompt = getResearchPrompt(sanitizedTopic, allResults)
 
     const message = await claude.messages.create({
       model: 'claude-sonnet-4-6',
@@ -155,7 +144,7 @@ export async function POST(request: NextRequest) {
     if (researchResult.demand === 'low') {
       if (!researchResult.alternatives || researchResult.alternatives.length === 0) {
         // Call Claude again to get alternatives
-        const altPrompt = `Given the topic "${topic}", suggest 3 high-demand alternative topics that would perform better. Return only a JSON array with 3 strings: ["topic1", "topic2", "topic3"]`
+        const altPrompt = `Given the topic "${sanitizedTopic}", suggest 3 high-demand alternative topics that would perform better. Return only a JSON array with 3 strings: ["topic1", "topic2", "topic3"]`
         
         const altMessage = await claude.messages.create({
           model: 'claude-sonnet-4-6',
@@ -186,9 +175,9 @@ export async function POST(request: NextRequest) {
         session_id: sessionId,
         asset_type: 'research',
         content: {
-          topic,
-          audience,
-          geography,
+          topic: sanitizedTopic,
+          audience: sanitizedAudience,
+          geography: sanitizedGeography,
           ...researchResult,
         },
       })

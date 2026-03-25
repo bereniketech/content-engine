@@ -1,8 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { claude } from '@/lib/claude'
+import { requireAuth } from '@/lib/auth'
+import { sanitizeInput } from '@/lib/sanitize'
+
+// OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
 export async function POST(request: NextRequest) {
   try {
+    try {
+      await requireAuth(request)
+    } catch {
+      return NextResponse.json(
+        { error: { code: 'unauthorized', message: 'Authentication required' } },
+        { status: 401 }
+      )
+    }
+
     // Parse request body
     let body
     try {
@@ -14,19 +27,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { sectionTitle, context, topic } = body
+    const sectionTitle = typeof body.sectionTitle === 'string' ? body.sectionTitle.trim() : ''
+    const context = typeof body.context === 'string' ? body.context.trim() : ''
+    const topic = typeof body.topic === 'string' ? body.topic.trim() : ''
 
-    if (!sectionTitle?.trim() || !context?.trim()) {
+    if (!sectionTitle || !context) {
       return NextResponse.json(
         {
           error: {
             code: 'validation_error',
             message: 'Validation failed',
             details: [
-              ...((!sectionTitle?.trim())
+              ...((!sectionTitle)
                 ? [{ field: 'sectionTitle', message: 'Section title is required' }]
                 : []),
-              ...((!context?.trim()) ? [{ field: 'context', message: 'Context is required' }] : []),
+              ...((!context) ? [{ field: 'context', message: 'Context is required' }] : []),
             ],
           },
         },
@@ -34,15 +49,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const safeSectionTitle = sanitizeInput(sectionTitle)
+    const safeContext = sanitizeInput(context)
+    const safeTopic = sanitizeInput(topic)
+
     // Create the expand prompt
-    const expandPrompt = `You are a blog content expert. Regenerate ONLY the "${sectionTitle}" section for an article about "${topic || 'this topic'}".
+    const expandPrompt = `You are a blog content expert. Regenerate ONLY the "${safeSectionTitle}" section for an article about "${safeTopic || 'this topic'}".
 
 Context (for reference):
-${context}
+  ${safeContext}
 
 Requirements:
 - Write 300-500 words for this section
-- Start with ## ${sectionTitle} (H2 heading)
+- Start with ## ${safeSectionTitle} (H2 heading)
 - Include 2-3 practical examples or tips
 - Use bullet points or numbered lists where appropriate
 - End with a transitional sentence or call-to-action

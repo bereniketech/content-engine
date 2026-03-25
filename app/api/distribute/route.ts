@@ -1,7 +1,10 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 import { claude } from '@/lib/claude'
 import { getDistributePrompt, type DistributionOutput } from '@/lib/prompts/distribute'
+import { createSupabaseUserClient, requireAuth } from '@/lib/auth'
+import { sanitizeUnknown } from '@/lib/sanitize'
+
+// OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
 type DistributeRequestBody = {
   assets?: unknown
@@ -67,38 +70,18 @@ function normalizeDistributionOutput(payload: unknown): DistributionOutput {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      return NextResponse.json(
-        { error: { code: 'server_error', message: 'Missing server configuration' } },
-        { status: 500 }
-      )
-    }
-
-    const supabase = createServerClient(supabaseUrl, supabaseServiceKey, {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll() {
-          // No-op in route handlers.
-        },
-      },
-    })
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    let auth
+    try {
+      auth = await requireAuth(request)
+    } catch {
       return NextResponse.json(
         { error: { code: 'unauthorized', message: 'Authentication required' } },
         { status: 401 }
       )
     }
+
+    const { user, token } = auth
+    const supabase = createSupabaseUserClient(token)
 
     let body: DistributeRequestBody
     try {
@@ -124,6 +107,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const sanitizedAssets = sanitizeUnknown(assets)
+
     const { data: latestSession } = await supabase
       .from('sessions')
       .select('id')
@@ -139,7 +124,7 @@ export async function POST(request: NextRequest) {
         .insert({
           user_id: user.id,
           input_type: 'upload',
-          input_data: { assets },
+          input_data: { assets: sanitizedAssets },
         })
         .select('id')
         .single()
@@ -154,7 +139,7 @@ export async function POST(request: NextRequest) {
       sessionId = createdSession.id
     }
 
-    const prompt = getDistributePrompt(assets)
+    const prompt = getDistributePrompt(sanitizedAssets)
 
     const message = await claude.messages.create({
       model: 'claude-sonnet-4-6',

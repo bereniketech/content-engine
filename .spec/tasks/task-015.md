@@ -33,7 +33,32 @@ Harden all API routes with Supabase JWT validation, add Vercel Edge rate limitin
 ## Key Patterns
 [greenfield — no existing files to reference]
 
-## Handoff
-- Completed: [ ]
-- Next task: task-016.md
-- Notes: ___
+## Handoff — What Was Done
+- Added centralized JWT auth helpers in lib/auth.ts and enforced requireAuth(request) across all 12 API routes.
+- Added edge middleware rate limiting at 10 requests/minute per user-per-route with 429 and Retry-After headers for /api paths.
+- Added prompt-input sanitization utilities and applied sanitization to user-provided prompt-bound values across route handlers, plus OWASP checklist header comments on each API route.
+
+## Handoff — Patterns Learned
+- Use user-scoped Supabase clients with anon key plus Bearer token headers to preserve RLS, instead of service-role route clients.
+- Route-level prompt hardening is safer when sanitization is centralized (sanitizeInput/sanitizeUnknown) and applied before prompt construction.
+- Middleware-based API throttling can coexist with existing dashboard auth redirects when matcher includes both /api and dashboard/auth paths.
+
+## Handoff — Files Changed
+- app/api/blog/route.ts
+- app/api/blog/expand/route.ts
+- app/api/distribute/route.ts
+- app/api/flywheel/route.ts
+- app/api/images/route.ts
+- app/api/images/generate/route.ts
+- app/api/improve/route.ts
+- app/api/research/route.ts
+- app/api/seo/route.ts
+- app/api/social/route.ts
+- app/api/social/regenerate/route.ts
+- app/api/traffic/route.ts
+- middleware.ts
+- lib/auth.ts
+- lib/sanitize.ts
+
+## Status
+COMPLETE

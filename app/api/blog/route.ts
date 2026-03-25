@@ -1,9 +1,12 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 import { getBlogPrompt } from '@/lib/prompts/blog'
 import { claude } from '@/lib/claude'
+import { createSupabaseUserClient, requireAuth } from '@/lib/auth'
+import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
 import type { SeoResult } from '@/app/api/seo/route'
 import type { TopicTone } from '@/types'
+
+// OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
 interface ResearchOutput {
   intent: 'informational' | 'commercial' | 'transactional'
@@ -27,41 +30,18 @@ function normalizeTone(value: unknown): TopicTone {
 
 export async function POST(request: NextRequest) {
   try {
-    // Get Supabase client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      return NextResponse.json(
-        { error: { code: 'server_error', message: 'Missing server configuration' } },
-        { status: 500 }
-      )
-    }
-
-    // Create server client with service key for RLS bypass
-    const supabase = createServerClient(supabaseUrl, supabaseServiceKey, {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          // No-op for server client, cookies already managed by middleware
-        },
-      },
-    })
-
-    // Get user from Supabase auth via middleware
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    let auth
+    try {
+      auth = await requireAuth(request)
+    } catch {
       return NextResponse.json(
         { error: { code: 'unauthorized', message: 'Authentication required' } },
         { status: 401 }
       )
     }
+
+    const { user, token } = auth
+    const supabase = createSupabaseUserClient(token)
 
     // Parse request body
     let body
@@ -74,17 +54,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { topic, seo, research } = body
+    const rawTopic = typeof body.topic === 'string' ? body.topic.trim() : ''
+    const seo = sanitizeUnknown(body.seo)
+    const research = sanitizeUnknown(body.research)
     const tone = normalizeTone(body.tone)
 
-    if (!topic?.trim() || !seo || !research) {
+    if (!rawTopic || !seo || !research) {
       return NextResponse.json(
         {
           error: {
             code: 'validation_error',
             message: 'Validation failed',
             details: [
-              ...((!topic?.trim()) ? [{ field: 'topic', message: 'Topic is required' }] : []),
+              ...(!rawTopic ? [{ field: 'topic', message: 'Topic is required' }] : []),
               ...(!seo ? [{ field: 'seo', message: 'SEO data is required' }] : []),
               ...(!research ? [{ field: 'research', message: 'Research data is required' }] : []),
             ],
@@ -93,6 +75,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    const topic = sanitizeInput(rawTopic)
 
     // Get or create session
     const { data: sessionData, error: sessionError } = await supabase

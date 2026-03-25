@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import * as fal from '@fal-ai/serverless-client'
 import type { ImageStyle } from '@/lib/prompts/images'
+import { requireAuth } from '@/lib/auth'
+import { sanitizeInput } from '@/lib/sanitize'
+
+// OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -8,6 +12,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export async function POST(request: NextRequest) {
   try {
+    try {
+      await requireAuth(request)
+    } catch {
+      return NextResponse.json(
+        { error: { code: 'unauthorized', message: 'Authentication required' } },
+        { status: 401 }
+      )
+    }
+
     const fal_key = process.env.FAL_KEY
 
     if (!fal_key) {
@@ -32,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : ''
-    const style = typeof body.style === 'string' ? body.style : 'realistic'
+    const style = typeof body.style === 'string' ? sanitizeInput(body.style) : 'realistic'
 
     if (!prompt) {
       return NextResponse.json(
@@ -48,7 +61,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Enhance prompt with style context
-    const enhancedPrompt = `${prompt}. Style: ${style}`
+    const enhancedPrompt = `${sanitizeInput(prompt)}. Style: ${style}`
 
     // Call fal.ai Flux model for image generation
     const result = await fal.subscribe('fal-ai/flux/dev', {

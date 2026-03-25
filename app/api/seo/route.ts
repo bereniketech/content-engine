@@ -1,7 +1,10 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 import { getSeoPrompt, type ResearchOutput } from '@/lib/prompts/seo'
 import { claude } from '@/lib/claude'
+import { createSupabaseUserClient, requireAuth } from '@/lib/auth'
+import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
+
+// OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
 export interface SeoResult {
   title: string
@@ -29,41 +32,18 @@ export interface SeoResult {
 
 export async function POST(request: NextRequest) {
   try {
-    // Get Supabase client
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      return NextResponse.json(
-        { error: { code: 'server_error', message: 'Missing server configuration' } },
-        { status: 500 }
-      )
-    }
-
-    // Create server client with service key for RLS bypass
-    const supabase = createServerClient(supabaseUrl, supabaseServiceKey, {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          // No-op for server client, cookies already managed by middleware
-        },
-      },
-    })
-
-    // Get user from Supabase auth via middleware
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    let auth
+    try {
+      auth = await requireAuth(request)
+    } catch {
       return NextResponse.json(
         { error: { code: 'unauthorized', message: 'Authentication required' } },
         { status: 401 }
       )
     }
+
+    const { user, token } = auth
+    const supabase = createSupabaseUserClient(token)
 
     // Parse request body
     let body
@@ -76,16 +56,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { topic, research, keywords } = body
+    const topic = typeof body.topic === 'string' ? body.topic.trim() : ''
+    const research = sanitizeUnknown(body.research)
+    const keywords = Array.isArray(body.keywords)
+      ? body.keywords
+          .filter((item: unknown): item is string => typeof item === 'string')
+          .map((item: string) => sanitizeInput(item))
+      : []
 
-    if (!topic?.trim() || !research) {
+    if (!topic || !research) {
       return NextResponse.json(
         {
           error: {
             code: 'validation_error',
             message: 'Validation failed',
             details: [
-              ...((!topic?.trim()) ? [{ field: 'topic', message: 'Topic is required' }] : []),
+              ...((!topic) ? [{ field: 'topic', message: 'Topic is required' }] : []),
               ...(!research ? [{ field: 'research', message: 'Research output is required' }] : []),
             ],
           },
@@ -93,6 +79,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+
+    const sanitizedTopic = sanitizeInput(topic)
 
     // Get or create session
     const { data: sessionData, error: sessionError } = await supabase
@@ -108,7 +96,7 @@ export async function POST(request: NextRequest) {
         .insert({
           user_id: user.id,
           input_type: 'topic',
-          input_data: { topic, keywords },
+          input_data: { topic: sanitizedTopic, keywords },
         })
         .select('id')
         .single()
@@ -125,7 +113,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Call Claude with SEO prompt
-    const prompt = getSeoPrompt(topic, research as ResearchOutput, keywords)
+    const prompt = getSeoPrompt(sanitizedTopic, research as ResearchOutput, keywords)
 
     const message = await claude.messages.create({
       model: 'claude-sonnet-4-6',
@@ -161,7 +149,7 @@ export async function POST(request: NextRequest) {
         session_id: sessionId,
         asset_type: 'seo',
         content: {
-          topic,
+          topic: sanitizedTopic,
           keywords,
           ...seoResult,
         },

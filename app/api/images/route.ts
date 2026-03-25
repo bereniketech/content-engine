@@ -1,12 +1,15 @@
-import { createServerClient } from '@supabase/ssr'
 import { NextRequest, NextResponse } from 'next/server'
 import { claude } from '@/lib/claude'
+import { createSupabaseUserClient, requireAuth } from '@/lib/auth'
+import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
 import {
   getImagesPrompt,
   IMAGE_STYLES,
   type ImagePromptsOutput,
   type ImageStyle,
 } from '@/lib/prompts/images'
+
+// OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -66,38 +69,18 @@ function buildBlogSummary(blog: unknown): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-
-    if (!supabaseUrl || !supabaseServiceKey) {
-      return NextResponse.json(
-        { error: { code: 'server_error', message: 'Missing server configuration' } },
-        { status: 500 }
-      )
-    }
-
-    const supabase = createServerClient(supabaseUrl, supabaseServiceKey, {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll() {
-          // No-op in route handlers.
-        },
-      },
-    })
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser()
-
-    if (authError || !user) {
+    let auth
+    try {
+      auth = await requireAuth(request)
+    } catch {
       return NextResponse.json(
         { error: { code: 'unauthorized', message: 'Authentication required' } },
         { status: 401 }
       )
     }
+
+    const { user, token } = auth
+    const supabase = createSupabaseUserClient(token)
 
     let body: Record<string, unknown>
     try {
@@ -129,8 +112,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const blogSummary = buildBlogSummary(blog)
-    const prompt = getImagesPrompt(topic, blogSummary, style)
+    const sanitizedTopic = sanitizeInput(topic)
+    const sanitizedBlog = sanitizeUnknown(blog)
+    const blogSummary = sanitizeInput(buildBlogSummary(sanitizedBlog))
+    const prompt = getImagesPrompt(sanitizedTopic, blogSummary, style)
 
     const claudeResponse = await claude.messages.create({
       model: 'claude-sonnet-4-6',
