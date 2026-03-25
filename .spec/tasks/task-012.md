@@ -39,6 +39,7 @@ Build the weekly content calendar view auto-generated from the current session's
 - Built a new `CalendarPanel` with five weekday slots (Monday-Friday) mapped to Blog, LinkedIn, Reddit, X Thread, and Newsletter.
 - Added clickable slot navigation to platform pages and plain-text clipboard export using `Monday: ...` schedule lines.
 - Implemented graceful missing-state behavior for each slot with `Not generated` and a visible `Generate` affordance.
+- Ran `/verify`: build and type-check pass; lint reports pre-existing warnings; test phase is blocked because no `test` script exists in package scripts.
 
 ## Handoff — Patterns Learned
 - Session assets are keyed by `assetType` (for social outputs: `social_linkedin`, `social_reddit`, `social_x`, `social_newsletter`), so panel extraction should normalize by latest matching asset type.
