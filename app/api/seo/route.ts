@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSeoPrompt, type ResearchOutput } from '@/lib/prompts/seo'
-import { claude } from '@/lib/claude'
+import { createMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
 import { resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
@@ -101,19 +101,10 @@ export async function POST(request: NextRequest) {
     // Call Claude with SEO prompt
     const prompt = getSeoPrompt(sanitizedTopic, research as ResearchOutput, keywords)
 
-    const message = await claude.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
+    const responseText = await createMessage({
+      maxTokens: 2000,
+      messages: [{ role: 'user', content: prompt }],
     })
-
-    // Extract JSON from response
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : ''
 
     let seoResult: SeoResult
     try {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { claude } from '@/lib/claude'
+import { createMessage } from '@/lib/ai'
 import { getTrafficPrompt, type TrafficPrediction } from '@/lib/prompts/traffic'
 import { requireAuth } from '@/lib/auth'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
@@ -135,13 +135,10 @@ export async function POST(request: NextRequest) {
 
     const prompt = getTrafficPrompt(sanitizedTopic, seo)
 
-    const message = await claude.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 900,
+    const responseText = await createMessage({
+      maxTokens: 900,
       messages: [{ role: 'user', content: prompt }],
-    })
-
-    const responseText = message.content[0]?.type === 'text' ? message.content[0].text : '{}'
+    }) || '{}'
     const traffic = normalizeTrafficPrediction(extractJsonPayload(responseText))
 
     const { data: savedAsset, error: saveError } = await supabase.from('content_assets').insert({

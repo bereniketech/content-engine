@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { googleSearch } from '@/lib/google-search'
 import { getResearchPrompt } from '@/lib/prompts/research'
-import { claude } from '@/lib/claude'
+import { createMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
 import { resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput } from '@/lib/sanitize'
@@ -99,19 +99,10 @@ export async function POST(request: NextRequest) {
     // Call Claude with research prompt
     const prompt = getResearchPrompt(sanitizedTopic, allResults)
 
-    const message = await claude.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
+    const responseText = await createMessage({
+      maxTokens: 2000,
+      messages: [{ role: 'user', content: prompt }],
     })
-
-    // Extract JSON from response
-    const responseText = message.content[0].type === 'text' ? message.content[0].text : ''
     
     let researchResult: ResearchResult
     try {
@@ -132,18 +123,10 @@ export async function POST(request: NextRequest) {
         // Call Claude again to get alternatives
         const altPrompt = `Given the topic "${sanitizedTopic}", suggest 3 high-demand alternative topics that would perform better. Return only a JSON array with 3 strings: ["topic1", "topic2", "topic3"]`
         
-        const altMessage = await claude.messages.create({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 200,
-          messages: [
-            {
-              role: 'user',
-              content: altPrompt,
-            },
-          ],
+        const altText = await createMessage({
+          maxTokens: 200,
+          messages: [{ role: 'user', content: altPrompt }],
         })
-
-        const altText = altMessage.content[0].type === 'text' ? altMessage.content[0].text : ''
         try {
           const alternatives = JSON.parse(altText)
           researchResult.alternatives = alternatives

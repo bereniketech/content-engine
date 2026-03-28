@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getBlogPrompt } from '@/lib/prompts/blog'
-import { claude } from '@/lib/claude'
+import { streamMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
@@ -105,24 +105,13 @@ export async function POST(request: NextRequest) {
         try {
           let fullMarkdown = ''
 
-          // Call Claude with streaming
-          const stream = claude.messages.stream({
-            model: 'claude-sonnet-4-6',
-            max_tokens: 4000,
-            messages: [
-              {
-                role: 'user',
-                content: prompt,
-              },
-            ],
-          })
-
-          for await (const event of stream) {
-            if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-              const chunk = event.delta.text
-              fullMarkdown += chunk
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`))
-            }
+          // Stream AI response
+          for await (const chunk of streamMessage({
+            maxTokens: 4000,
+            messages: [{ role: 'user', content: prompt }],
+          })) {
+            fullMarkdown += chunk
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`))
           }
 
           const { data: savedAsset, error: assetError } = await supabase.from('content_assets').insert({

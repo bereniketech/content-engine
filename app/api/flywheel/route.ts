@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { claude } from '@/lib/claude'
+import { createMessage } from '@/lib/ai'
 import { getFlywheelPrompt, type FlywheelIdea } from '@/lib/prompts/flywheel'
 import { requireAuth } from '@/lib/auth'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
@@ -134,13 +134,10 @@ export async function POST(request: NextRequest) {
 
     const prompt = getFlywheelPrompt(sanitizedTopic, sanitizedKeywords)
 
-    const message = await claude.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1800,
+    const responseText = await createMessage({
+      maxTokens: 1800,
       messages: [{ role: 'user', content: prompt }],
-    })
-
-    const responseText = message.content[0]?.type === 'text' ? message.content[0].text : '{}'
+    }) || '{}'
     const flywheelIdeas = normalizeFlywheelIdeas(
       extractJsonPayload(responseText),
       sanitizedTopic,

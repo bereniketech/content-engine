@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { claude } from '@/lib/claude'
+import { createMessage } from '@/lib/ai'
 import { getImprovePrompt } from '@/lib/prompts/improve'
 import { requireAuth } from '@/lib/auth'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
@@ -115,18 +115,10 @@ export async function POST(request: NextRequest) {
 
     const prompt = getImprovePrompt(sanitizedArticle)
 
-    const message = await claude.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 2200,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
+    const responseText = await createMessage({
+      maxTokens: 2200,
+      messages: [{ role: 'user', content: prompt }],
     })
-
-    const responseText = message.content[0]?.type === 'text' ? message.content[0].text : ''
     const normalized = normalizeImproveResponse(extractJsonPayload(responseText))
 
     const { data: savedAsset, error: saveError } = await supabase.from('content_assets').insert({

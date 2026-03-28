@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { claude } from '@/lib/claude'
+import { createMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
@@ -117,14 +117,10 @@ export async function POST(request: NextRequest) {
     const blogSummary = sanitizeInput(buildBlogSummary(sanitizedBlog))
     const prompt = getImagesPrompt(sanitizedTopic, blogSummary, style)
 
-    const claudeResponse = await claude.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1200,
+    const rawText = await createMessage({
+      maxTokens: 1200,
       messages: [{ role: 'user', content: prompt }],
     })
-
-    const rawText =
-      claudeResponse.content[0].type === 'text' ? claudeResponse.content[0].text : ''
 
     let images: ImagePromptsOutput
     try {

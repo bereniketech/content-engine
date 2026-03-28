@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { claude } from '@/lib/claude'
+import { createMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
@@ -181,18 +181,10 @@ export async function POST(request: NextRequest) {
 
     const prompt = getSocialRegeneratePrompt(platform, sanitizedBlog, seo)
 
-    const message = await claude.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1400,
-      messages: [
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-    })
-
-    const responseText = message.content[0]?.type === 'text' ? message.content[0].text : '{}'
+    const responseText = await createMessage({
+      maxTokens: 1400,
+      messages: [{ role: 'user', content: prompt }],
+    }) || '{}'
     const rawPayload = parseJsonPayload(responseText)
     const payloadObject = isRecord(rawPayload) ? rawPayload : {}
     const platformSource = isRecord(payloadObject[platform]) ? payloadObject[platform] : payloadObject

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { claude } from '@/lib/claude'
+import { streamMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
 import { sanitizeInput } from '@/lib/sanitize'
 
@@ -79,24 +79,13 @@ Return ONLY the markdown section. No explanations, no code blocks, no additional
         try {
           let fullMarkdown = ''
 
-          // Call Claude with streaming
-          const stream = claude.messages.stream({
-            model: 'claude-sonnet-4-6',
-            max_tokens: 1000,
-            messages: [
-              {
-                role: 'user',
-                content: expandPrompt,
-              },
-            ],
-          })
-
-          for await (const event of stream) {
-            if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-              const chunk = event.delta.text
-              fullMarkdown += chunk
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`))
-            }
+          // Stream AI response
+          for await (const chunk of streamMessage({
+            maxTokens: 1000,
+            messages: [{ role: 'user', content: expandPrompt }],
+          })) {
+            fullMarkdown += chunk
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`))
           }
 
           controller.enqueue(

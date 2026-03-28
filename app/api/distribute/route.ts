@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { claude } from '@/lib/claude'
+import { createMessage } from '@/lib/ai'
 import { getDistributePrompt, type DistributionOutput } from '@/lib/prompts/distribute'
 import { requireAuth } from '@/lib/auth'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
@@ -128,13 +128,10 @@ export async function POST(request: NextRequest) {
 
     const prompt = getDistributePrompt(sanitizedAssets)
 
-    const message = await claude.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1800,
+    const responseText = await createMessage({
+      maxTokens: 1800,
       messages: [{ role: 'user', content: prompt }],
-    })
-
-    const responseText = message.content[0]?.type === 'text' ? message.content[0].text : '{}'
+    }) || '{}'
     const distribution = normalizeDistributionOutput(extractJsonPayload(responseText))
 
     const { data: savedAsset, error: saveError } = await supabase.from('content_assets').insert({
