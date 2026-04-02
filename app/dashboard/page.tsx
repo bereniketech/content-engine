@@ -187,7 +187,7 @@ export default function DashboardPage() {
         "sourceFileName" in session.inputData && typeof session.inputData.sourceFileName === "string"
           ? session.inputData.sourceFileName.trim()
           : "";
-      return sourceFileName || "Data-driven source";
+      return sourceFileName || "Data source";
     }
 
     const topic =
@@ -195,6 +195,28 @@ export default function DashboardPage() {
         ? session.inputData.topic
         : "";
     return topic.trim() || "Untitled topic";
+  }
+
+  function getDataDrivenSourceBadgeLabel(session: SessionListItem): "Data" | "Topic" | null {
+    if (session.inputType !== "data-driven") {
+      return null;
+    }
+
+    const hasSourceText =
+      "sourceText" in session.inputData
+      && typeof session.inputData.sourceText === "string"
+      && session.inputData.sourceText.trim().length > 0;
+
+    const hasSourceFileName =
+      "sourceFileName" in session.inputData
+      && typeof session.inputData.sourceFileName === "string"
+      && session.inputData.sourceFileName.trim().length > 0;
+
+    if (hasSourceText || hasSourceFileName) {
+      return "Data";
+    }
+
+    return "Topic";
   }
 
   if (assets.length >= SUMMARY_THRESHOLD) {
@@ -270,6 +292,7 @@ export default function DashboardPage() {
             !historyError &&
             history.map((session) => {
               const isRestoring = restoringSessionId === session.id;
+              const dataDrivenSourceBadge = getDataDrivenSourceBadgeLabel(session);
 
               return (
                 <button
@@ -287,6 +310,11 @@ export default function DashboardPage() {
                           ? "Data-Driven"
                           : "Upload"}
                     </Badge>
+                    {dataDrivenSourceBadge && (
+                      <Badge variant="outline" className="text-[11px] leading-none">
+                        {dataDrivenSourceBadge}
+                      </Badge>
+                    )}
                     <span className="text-sm text-muted-foreground">
                       {new Date(session.createdAt).toLocaleString()}
                     </span>

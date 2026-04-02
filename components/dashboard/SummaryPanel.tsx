@@ -59,6 +59,70 @@ const ASSET_CATALOG: AssetCatalogEntry[] = [
     color: "text-emerald-600",
   },
   {
+    assetType: "dd_research",
+    label: "Deep Research",
+    defaultCount: 1,
+    href: "/dashboard/data-driven",
+    icon: FlaskConical,
+    color: "text-cyan-600",
+  },
+  {
+    assetType: "dd_article",
+    label: "Article Draft",
+    defaultCount: 1,
+    href: "/dashboard/data-driven",
+    icon: FileText,
+    color: "text-blue-500",
+  },
+  {
+    assetType: "dd_seo_geo",
+    label: "SEO + GEO",
+    defaultCount: 1,
+    href: "/dashboard/data-driven",
+    icon: Search,
+    color: "text-emerald-600",
+  },
+  {
+    assetType: "dd_blog",
+    label: "DD Blog",
+    defaultCount: 1,
+    href: "/dashboard/data-driven/blog",
+    icon: FileText,
+    color: "text-blue-500",
+  },
+  {
+    assetType: "dd_linkedin",
+    label: "DD LinkedIn",
+    defaultCount: 1,
+    href: "/dashboard/data-driven/linkedin",
+    icon: Linkedin,
+    color: "text-blue-700",
+  },
+  {
+    assetType: "dd_medium",
+    label: "DD Medium",
+    defaultCount: 1,
+    href: "/dashboard/data-driven/medium",
+    icon: BookOpen,
+    color: "text-green-600",
+  },
+  {
+    assetType: "dd_newsletter",
+    label: "DD Newsletter",
+    defaultCount: 1,
+    href: "/dashboard/data-driven/newsletter",
+    icon: Mail,
+    color: "text-orange-500",
+  },
+  {
+    assetType: "dd_x_campaign",
+    label: "X Campaign",
+    defaultCount: 1,
+    href: "/dashboard/data-driven/x-campaign",
+    icon: Twitter,
+    color: "text-sky-500",
+  },
+  {
     assetType: "blog",
     label: "Blog Article",
     defaultCount: 1,
@@ -183,6 +247,12 @@ function getActualCount(entry: AssetCatalogEntry, asset: ContentAsset): number {
       const pins = content.pins;
       return Array.isArray(pins) && pins.length > 0
         ? pins.length
+        : entry.defaultCount;
+    }
+    case "dd_x_campaign": {
+      const posts = content.posts;
+      return Array.isArray(posts) && posts.length > 0
+        ? posts.length
         : entry.defaultCount;
     }
     default:

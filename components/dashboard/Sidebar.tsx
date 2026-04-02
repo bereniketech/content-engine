@@ -19,6 +19,7 @@ import {
   BarChart2,
   History,
   Repeat,
+  Zap,
   Menu,
   X,
 } from "lucide-react";
@@ -44,31 +45,54 @@ const NAV_ITEMS = [
   { label: "Flywheel",   href: "/dashboard/flywheel",               icon: Repeat },
 ] as const;
 
+const DATA_PIPELINE_ITEMS = [
+  { label: "Data Pipeline", href: "/dashboard/data-driven", icon: Zap },
+  { label: "Blog", href: "/dashboard/data-driven/blog", icon: FileText },
+  { label: "LinkedIn", href: "/dashboard/data-driven/linkedin", icon: Linkedin },
+  { label: "Medium", href: "/dashboard/data-driven/medium", icon: BookOpen },
+  { label: "Newsletter", href: "/dashboard/data-driven/newsletter", icon: Mail },
+  { label: "X Campaign", href: "/dashboard/data-driven/x-campaign", icon: Twitter },
+] as const;
+
+function renderNavLink(
+  item: { label: string; href: string; icon: React.ElementType },
+  pathname: string,
+  closeMobile: () => void,
+) {
+  const { label, href, icon: Icon } = item;
+  const active = pathname === href || pathname.startsWith(href + "/");
+
+  return (
+    <Link
+      key={href}
+      href={href}
+      onClick={closeMobile}
+      className={cn(
+        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+        active
+          ? "bg-sidebar-active text-primary-foreground"
+          : "text-sidebar-fg hover:bg-white/10 hover:text-white"
+      )}
+    >
+      <Icon className="h-4 w-4 shrink-0" />
+      {label}
+    </Link>
+  );
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const navLinks = (
     <nav className="flex flex-col gap-1 px-2 py-4">
-      {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
-        const active = pathname === href || pathname.startsWith(href + "/");
-        return (
-          <Link
-            key={href}
-            href={href}
-            onClick={() => setMobileOpen(false)}
-            className={cn(
-              "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-              active
-                ? "bg-sidebar-active text-primary-foreground"
-                : "text-sidebar-fg hover:bg-white/10 hover:text-white"
-            )}
-          >
-            <Icon className="h-4 w-4 shrink-0" />
-            {label}
-          </Link>
-        );
-      })}
+      {NAV_ITEMS.map((item) => renderNavLink(item, pathname, () => setMobileOpen(false)))}
+
+      <hr className="my-2 border-white/10" />
+      <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/70">
+        Data Pipeline
+      </p>
+      {DATA_PIPELINE_ITEMS.map((item) => renderNavLink(item, pathname, () => setMobileOpen(false)))}
     </nav>
   );
 
