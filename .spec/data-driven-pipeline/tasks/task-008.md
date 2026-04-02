@@ -70,10 +70,10 @@ export interface XCampaignOutput {
 ## Handoff from Previous Task
 > Populated by /task-handoff after prior task completes. Empty for task-008.
 
-**Files changed by previous task:** _(none yet)_
-**Decisions made:** _(none yet)_
-**Context for this task:** _(none yet)_
-**Open questions left:** _(none yet)_
+**Files changed by previous task:** `lib/prompts/multi-format.ts`, `lib/prompts/multi-format.test.ts`, `app/api/data-driven/multi-format/route.ts`, `app/api/data-driven/multi-format/route.test.ts`
+**Decisions made:** Multi-format now enforces strict `seoGeo` `{ seo, geo }` validation, requires object JSON request bodies, returns persisted assets keyed by `blog`, `linkedin`, `medium`, and `newsletter`, and includes `sessionId` in the success payload.
+**Context for this task:** Follow the same non-streaming data-driven route pattern as SEO+GEO and multi-format: require auth, validate `article`/`seoGeo`/`tone`/`sessionId`, sanitize inputs, normalize strict JSON output, and persist the asset with route-level tests for auth, validation, and success paths.
+**Open questions left:** Global repo lint still has unrelated workspace noise, so task-local lint should be validated with targeted eslint in parallel with the standard verify tasks.
 
 ---
 

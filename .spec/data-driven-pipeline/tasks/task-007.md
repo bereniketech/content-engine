@@ -1,7 +1,7 @@
 ---
 task: 007
 feature: data-driven-pipeline
-status: pending
+status: completed
 depends_on: [1]
 ---
 
@@ -114,23 +114,23 @@ _Skills: /code-writing-software-development — API route, /api-design — REST 
 ---
 
 ## Acceptance Criteria
-- [ ] `lib/prompts/multi-format.ts` exports prompt builder function
-- [ ] `app/api/data-driven/multi-format/route.ts` handles POST requests
-- [ ] Route requires `article`, `seoGeo`, `tone`, and `sessionId`
-- [ ] Response contains all 4 format outputs (blog, linkedin, medium, newsletter)
-- [ ] 4 separate assets saved: `dd_blog`, `dd_linkedin`, `dd_medium`, `dd_newsletter`
-- [ ] User's tone paragraph shapes all 4 outputs
-- [ ] Newsletter includes subject line, preview text, body, and plain-text fallback
-- [ ] Auth required (401 without token)
-- [ ] All existing tests pass
-- [ ] `/verify` passes
+- [x] `lib/prompts/multi-format.ts` exports prompt builder function
+- [x] `app/api/data-driven/multi-format/route.ts` handles POST requests
+- [x] Route requires `article`, `seoGeo`, `tone`, and `sessionId`
+- [x] Response contains all 4 format outputs (blog, linkedin, medium, newsletter)
+- [x] 4 separate assets saved: `dd_blog`, `dd_linkedin`, `dd_medium`, `dd_newsletter`
+- [x] User's tone paragraph shapes all 4 outputs
+- [x] Newsletter includes subject line, preview text, body, and plain-text fallback
+- [x] Auth required (401 without token)
+- [x] All existing tests pass
+- [ ] `/verify` passes (global lint task still reports unrelated workspace noise)
 
 ---
 
 ## Handoff to Next Task
 > Fill via `/task-handoff` after completing this task.
 
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:** `lib/prompts/multi-format.ts`, `lib/prompts/multi-format.test.ts`, `app/api/data-driven/multi-format/route.ts`, `app/api/data-driven/multi-format/route.test.ts`
+**Decisions made:** Enforced strict `seoGeo` validation (`{ seo, geo }` required), required object JSON body shape, added sessionId in success payload, and stored 4 separate assets via a single insert batch.
+**Context for next task:** Multi-format route now returns persisted asset objects keyed by blog/linkedin/medium/newsletter and has route-level tests for auth/validation/success flows.
+**Open questions:** Global lint task still emits unrelated repo-level warnings; changed files lint clean with targeted eslint.
