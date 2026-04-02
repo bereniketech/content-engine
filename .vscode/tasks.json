@@ -67,6 +67,16 @@
 				"--collectCoverageFrom=lib/pdf-parse.ts"
 			],
 			"isBackground": false
+		},
+		{
+			"label": "review-git-diff-temp",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"git --no-pager diff --staged && git --no-pager diff"
+			],
+			"isBackground": false
 		}
 	]
 }
