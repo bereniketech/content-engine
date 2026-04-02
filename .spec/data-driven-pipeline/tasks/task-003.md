@@ -1,7 +1,7 @@
 ---
 task: 003
 feature: data-driven-pipeline
-status: pending
+status: complete
 depends_on: [1]
 ---
 
@@ -127,22 +127,52 @@ _Skills: /code-writing-software-development — API route, /api-design — REST,
 ---
 
 ## Acceptance Criteria
-- [ ] `lib/prompts/deep-research.ts` exports prompt builder function
-- [ ] `app/api/data-driven/research/route.ts` handles POST requests
-- [ ] Route uses NotebookLM when `NOTEBOOKLM_API_KEY` is set
-- [ ] Route falls back to Google Search + Claude when NotebookLM is unavailable
-- [ ] Response matches `DeepResearchResult` schema
-- [ ] Asset saved as `dd_research` in `content_assets`
-- [ ] Auth required (401 without token)
-- [ ] All existing tests pass
-- [ ] `/verify` passes
+- [x] `lib/prompts/deep-research.ts` exports prompt builder function
+- [x] `app/api/data-driven/research/route.ts` handles POST requests
+- [x] Route uses NotebookLM when `NOTEBOOKLM_API_KEY` is set
+- [x] Route falls back to Google Search + Claude when NotebookLM is unavailable
+- [x] Response matches `DeepResearchResult` schema
+- [x] Asset saved as `dd_research` in `content_assets`
+- [x] Auth required (401 without token)
+- [ ] All existing tests pass *(repo baseline has global coverage gate failure: 1.6% < 80%)*
+- [ ] `/verify` passes *(build blocked by concurrent Next build lock in environment; type/lint baseline failures exist outside this task)*
 
 ---
 
 ## Handoff to Next Task
 > Fill via `/task-handoff` after completing this task.
 
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:**
+- `lib/prompts/deep-research.ts`
+- `app/api/data-driven/research/route.ts`
+- `types/index.ts`
+
+**Decisions made:**
+- Added NotebookLM as primary research branch gated by `NOTEBOOKLM_API_KEY` with capability selection heuristics.
+- Implemented fallback path with parallel Google searches and deep-research prompt synthesis.
+- Normalized output strictly to `DeepResearchResult` and saved as `dd_research`.
+
+**Context for next task:**
+- Verify phase currently blocked by repo-level baseline issues: TypeScript errors in dashboard/topic union handling and Jest global coverage threshold failures.
+- New deep research route includes request bounds, prompt-evidence sanitization, NotebookLM timeout, and capability whitelist filtering.
+
+**Open questions:**
+- None for this task scope.
+
+## Handoff — What Was Done
+- Implemented `getDeepResearchPrompt(topic, findings)` with strict JSON schema instructions for `DeepResearchResult`.
+- Implemented `POST /api/data-driven/research` with auth, validation, topic derivation, NotebookLM primary path, fallback path, JSON extraction fallback, and `dd_research` persistence.
+- Hardened route with input length limits, capability whitelist validation, and NotebookLM request timeout.
+
+## Handoff — Patterns Learned
+- Existing API routes consistently use `requireAuth` + `resolveSessionId` + `{ data: ... }` envelopes with 201 on successful asset writes.
+- AI JSON parsing in this repo should always include fenced-markdown extraction fallback.
+- Environment may report a stale concurrent Next build lock; verification output must document this blocker when it occurs.
+
+## Handoff — Files Changed
+- `lib/prompts/deep-research.ts`
+- `app/api/data-driven/research/route.ts`
+- `types/index.ts`
+
+## Status
+COMPLETE

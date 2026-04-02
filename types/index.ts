@@ -22,7 +22,16 @@ export interface DataDrivenInputData {
 }
 
 export interface DeepResearchResult {
-	[key: string]: unknown;
+	summary: string;
+	keyFindings: string[];
+	statistics: string[];
+	expertInsights: string[];
+	caseStudies: string[];
+	controversies: string[];
+	trends: string[];
+	gaps: string[];
+	sourceUrls: string[];
+	capabilitiesUsed: string[];
 }
 
 export interface AssessmentResult {

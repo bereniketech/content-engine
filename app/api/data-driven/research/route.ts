@@ -1,0 +1,427 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createMessage } from '@/lib/ai'
+import { requireAuth } from '@/lib/auth'
+import { googleSearch } from '@/lib/google-search'
+import { getDeepResearchPrompt } from '@/lib/prompts/deep-research'
+import { sanitizeInput } from '@/lib/sanitize'
+import { resolveSessionId } from '@/lib/session-assets'
+import type { DeepResearchResult } from '@/types'
+
+type DataDrivenResearchRequestBody = {
+  topic?: unknown
+  sourceText?: unknown
+  sessionId?: unknown
+}
+
+type NotebookCapability =
+  | 'deep_research'
+  | 'competitive_intel'
+  | 'market_synthesis'
+  | 'due_diligence'
+  | 'literature_review'
+  | 'trend_spotting'
+
+const NOTEBOOK_CAPABILITY_SET = new Set<NotebookCapability>([
+  'deep_research',
+  'competitive_intel',
+  'market_synthesis',
+  'due_diligence',
+  'literature_review',
+  'trend_spotting',
+])
+
+const DEFAULT_NOTEBOOK_CAPABILITIES: NotebookCapability[] = ['deep_research', 'literature_review']
+const MAX_TOPIC_LENGTH = 200
+const MAX_SOURCE_TEXT_LENGTH = 16000
+const NOTEBOOK_TIMEOUT_MS = 15000
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value
+    .filter((item): item is string => typeof item === 'string')
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0)
+}
+
+function extractJsonPayload(raw: string): unknown {
+  const trimmed = raw.trim()
+
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    const fencedJsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
+    if (fencedJsonMatch) {
+      return JSON.parse(fencedJsonMatch[1])
+    }
+    throw new Error('AI response did not contain valid JSON')
+  }
+}
+
+function selectNotebookCapabilities(topic: string): NotebookCapability[] {
+  const normalized = topic.toLowerCase()
+  const selected = new Set<NotebookCapability>(DEFAULT_NOTEBOOK_CAPABILITIES)
+
+  if (/(compare|comparison|competitor|vs\b|alternative)/i.test(normalized)) {
+    selected.add('competitive_intel')
+    selected.add('due_diligence')
+  }
+
+  if (/(market|industry|sizing|segment|tam|sam|som|growth|demand)/i.test(normalized)) {
+    selected.add('market_synthesis')
+    selected.add('trend_spotting')
+  }
+
+  if (/(forecast|trend|future|outlook|prediction)/i.test(normalized)) {
+    selected.add('trend_spotting')
+  }
+
+  if (/(risk|verify|audit|claim|compliance|regulation)/i.test(normalized)) {
+    selected.add('due_diligence')
+  }
+
+  return Array.from(selected)
+}
+
+function normalizeDeepResearchResult(
+  payload: unknown,
+  capabilitiesUsed: NotebookCapability[]
+): DeepResearchResult {
+  if (!isRecord(payload)) {
+    throw new Error('Deep research output must be a JSON object')
+  }
+
+  const summary = typeof payload.summary === 'string' ? payload.summary.trim() : ''
+  const sourceUrls = asStringArray(payload.sourceUrls).filter((url) => {
+    try {
+      const parsed = new URL(url)
+      return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+    } catch {
+      return false
+    }
+  })
+
+  const resultCapabilities = asNotebookCapabilities(payload.capabilitiesUsed)
+
+  return {
+    summary,
+    keyFindings: asStringArray(payload.keyFindings),
+    statistics: asStringArray(payload.statistics),
+    expertInsights: asStringArray(payload.expertInsights),
+    caseStudies: asStringArray(payload.caseStudies),
+    controversies: asStringArray(payload.controversies),
+    trends: asStringArray(payload.trends),
+    gaps: asStringArray(payload.gaps),
+    sourceUrls,
+    capabilitiesUsed: resultCapabilities.length > 0 ? resultCapabilities : capabilitiesUsed,
+  }
+}
+
+async function deriveTopicFromSourceText(sourceText: string): Promise<string> {
+  const fallbackTopic = sourceText
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .slice(0, 8)
+    .join(' ')
+
+  if (!fallbackTopic) {
+    return ''
+  }
+
+  const responseText = await createMessage({
+    maxTokens: 80,
+    messages: [
+      {
+        role: 'user',
+        content:
+          'Derive a concise research topic (max 8 words) from the following text. Return only plain text topic.\n\n' +
+          sanitizePromptData(sourceText),
+      },
+    ],
+  })
+
+  const cleaned = sanitizeInput(responseText).replace(/["`]/g, '').trim()
+  return cleaned.length > 0 ? cleaned : fallbackTopic
+}
+
+async function runNotebookLmResearch(options: {
+  topic: string
+  sourceText: string
+  capabilities: NotebookCapability[]
+}): Promise<DeepResearchResult> {
+  const apiKey = process.env.NOTEBOOKLM_API_KEY
+
+  if (!apiKey) {
+    throw new Error('NOTEBOOKLM_API_KEY is not configured')
+  }
+
+  const endpoint = process.env.NOTEBOOKLM_API_URL ?? 'https://api.notebooklm.google/v1/research'
+
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    signal: AbortSignal.timeout(NOTEBOOK_TIMEOUT_MS),
+    body: JSON.stringify({
+      topic: options.topic,
+      sourceText: options.sourceText,
+      capabilities: options.capabilities,
+    }),
+  })
+
+  if (!response.ok) {
+    throw new Error(`NotebookLM research request failed (${response.status})`)
+  }
+
+  const payload = (await response.json()) as unknown
+  const resultPayload = isRecord(payload) && 'data' in payload ? payload.data : payload
+  return normalizeDeepResearchResult(resultPayload, options.capabilities)
+}
+
+async function runFallbackResearch(options: {
+  topic: string
+  sourceText: string
+  capabilities: NotebookCapability[]
+}): Promise<DeepResearchResult> {
+  const [mainResults, insightsResults, statsResults] = await Promise.all([
+    googleSearch(options.topic),
+    googleSearch(`${options.topic} insights`),
+    googleSearch(`${options.topic} statistics`),
+  ])
+
+  const allResults = [...mainResults, ...insightsResults, ...statsResults]
+  const findings = [
+    `Source text context: ${sanitizePromptData(options.sourceText)}`,
+    ...allResults.map(
+      (result, index) =>
+        `${index + 1}. ${sanitizePromptData(result.title)}\n${sanitizePromptData(result.snippet)}\n${sanitizePromptData(result.link)}`
+    ),
+  ].join('\n\n')
+
+  const prompt = getDeepResearchPrompt(options.topic, findings)
+  const responseText =
+    (await createMessage({
+      maxTokens: 2400,
+      messages: [{ role: 'user', content: prompt }],
+    })) || '{}'
+
+  return normalizeDeepResearchResult(extractJsonPayload(responseText), options.capabilities)
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    let auth
+    try {
+      auth = await requireAuth(request)
+    } catch {
+      return NextResponse.json(
+        { error: { code: 'unauthorized', message: 'Authentication required' } },
+        { status: 401 }
+      )
+    }
+
+    const { user, supabase } = auth
+
+    let body: DataDrivenResearchRequestBody
+    try {
+      body = await request.json()
+    } catch {
+      return NextResponse.json(
+        { error: { code: 'invalid_json', message: 'Invalid JSON in request body' } },
+        { status: 400 }
+      )
+    }
+
+    const rawTopic = typeof body.topic === 'string' ? body.topic.trim() : ''
+    const rawSourceText = typeof body.sourceText === 'string' ? body.sourceText.trim() : ''
+
+    if (!rawTopic && !rawSourceText) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'validation_error',
+            message: 'Validation failed',
+            details: [
+              {
+                field: 'topic',
+                message: 'Provide topic or sourceText',
+              },
+            ],
+          },
+        },
+        { status: 400 }
+      )
+    }
+
+    if (rawTopic.length > MAX_TOPIC_LENGTH || rawSourceText.length > MAX_SOURCE_TEXT_LENGTH) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'validation_error',
+            message: 'Validation failed',
+            details: [
+              ...(rawTopic.length > MAX_TOPIC_LENGTH
+                ? [
+                    {
+                      field: 'topic',
+                      message: `Topic must be ${MAX_TOPIC_LENGTH} characters or fewer`,
+                    },
+                  ]
+                : []),
+              ...(rawSourceText.length > MAX_SOURCE_TEXT_LENGTH
+                ? [
+                    {
+                      field: 'sourceText',
+                      message: `Source text must be ${MAX_SOURCE_TEXT_LENGTH} characters or fewer`,
+                    },
+                  ]
+                : []),
+            ],
+          },
+        },
+        { status: 400 }
+      )
+    }
+
+    const sanitizedSourceText = sanitizeInput(rawSourceText)
+    const initialTopic = sanitizeInput(rawTopic)
+    let resolvedTopic = initialTopic
+
+    if (!resolvedTopic && sanitizedSourceText) {
+      try {
+        resolvedTopic = await deriveTopicFromSourceText(sanitizedSourceText)
+      } catch {
+        return NextResponse.json(
+          { error: { code: 'research_error', message: 'Failed to derive research topic' } },
+          { status: 500 }
+        )
+      }
+    }
+
+    if (!resolvedTopic) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'validation_error',
+            message: 'Validation failed',
+            details: [{ field: 'sourceText', message: 'Could not derive topic from sourceText' }],
+          },
+        },
+        { status: 400 }
+      )
+    }
+
+    let sessionId: string
+    try {
+      sessionId = await resolveSessionId({
+        supabase,
+        userId: user.id,
+        providedSessionId: body.sessionId,
+        fallbackInputType: 'data-driven',
+        fallbackInputData: {
+          topic: resolvedTopic,
+          sourceText: sanitizedSourceText,
+          tone: 'neutral',
+        },
+      })
+    } catch (sessionError) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'storage_error',
+            message:
+              sessionError instanceof Error ? sessionError.message : 'Failed to resolve session',
+          },
+        },
+        { status: 500 }
+      )
+    }
+
+    const capabilities = selectNotebookCapabilities(resolvedTopic)
+
+    let researchResult: DeepResearchResult
+    try {
+      if (process.env.NOTEBOOKLM_API_KEY) {
+        try {
+          researchResult = await runNotebookLmResearch({
+            topic: resolvedTopic,
+            sourceText: sanitizedSourceText,
+            capabilities,
+          })
+        } catch {
+          researchResult = await runFallbackResearch({
+            topic: resolvedTopic,
+            sourceText: sanitizedSourceText,
+            capabilities,
+          })
+        }
+      } else {
+        researchResult = await runFallbackResearch({
+          topic: resolvedTopic,
+          sourceText: sanitizedSourceText,
+          capabilities,
+        })
+      }
+    } catch {
+      return NextResponse.json(
+        { error: { code: 'research_error', message: 'Failed to generate deep research' } },
+        { status: 500 }
+      )
+    }
+
+    const { data: savedAsset, error: saveError } = await supabase
+      .from('content_assets')
+      .insert({
+        session_id: sessionId,
+        asset_type: 'dd_research',
+        content: researchResult,
+      })
+      .select('*')
+      .single()
+
+    if (saveError || !savedAsset) {
+      return NextResponse.json(
+        { error: { code: 'storage_error', message: 'Failed to save deep research asset' } },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json(
+      {
+        data: {
+          id: savedAsset.id,
+          sessionId: savedAsset.session_id,
+          assetType: savedAsset.asset_type,
+          content: savedAsset.content,
+          version: savedAsset.version,
+          createdAt: savedAsset.created_at,
+        },
+      },
+      { status: 201 }
+    )
+  } catch {
+    return NextResponse.json(
+      { error: { code: 'internal_error', message: 'Internal server error' } },
+      { status: 500 }
+    )
+  }
+}
+
+function sanitizePromptData(text: string): string {
+  return sanitizeInput(text).replace(/\s+/g, ' ').trim()
+}
+
+function asNotebookCapabilities(value: unknown): NotebookCapability[] {
+  return asStringArray(value).filter(
+    (item): item is NotebookCapability => NOTEBOOK_CAPABILITY_SET.has(item as NotebookCapability)
+  )
+}
