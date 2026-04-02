@@ -60,8 +60,35 @@ export interface AssessmentResult {
 }
 
 export interface SeoGeoResult {
-	seo: Record<string, unknown>;
-	geo: Record<string, unknown>;
+	seo: {
+		title: string;
+		metaDescription: string;
+		slug: string;
+		primaryKeyword: string;
+		secondaryKeywords: string[];
+		headingStructure: {
+			h2: string[];
+			h3: string[];
+		};
+		faqSchema: Array<{
+			question: string;
+			answer: string;
+		}>;
+		seoScore: number;
+	};
+	geo: {
+		citationOptimization: string[];
+		entityMarking: Array<{
+			entity: string;
+			description: string;
+		}>;
+		conciseAnswers: Array<{
+			question: string;
+			answer: string;
+		}>;
+		structuredClaims: string[];
+		sourceAttribution: string;
+	};
 }
 
 export interface XCampaignPost {
