@@ -1,7 +1,7 @@
 ---
 task: 008
 feature: data-driven-pipeline
-status: pending
+status: complete
 depends_on: [1]
 ---
 
@@ -98,6 +98,27 @@ export interface XCampaignOutput {
 
 _Requirements: 8_
 _Skills: /code-writing-software-development — API route, /x-api — X platform patterns_
+
+---
+
+## Handoff — What Was Done
+- Created `lib/prompts/x-campaign.ts` exporting `getXCampaignPrompt(article, seoGeo, tone)` with embedded `XCampaignOutput` JSON contract, phase distribution rules (mystery/reveal_slow/reveal_full), and 280-char content limit enforcement in the prompt instructions.
+- Created `app/api/data-driven/x-campaign/route.ts` following the standard non-streaming data-driven route pattern: requireAuth → parse+validate body → sanitize → createMessage (maxTokens=4000) → normalize output → save single `dd_x_campaign` asset → return 201 with `{ id, sessionId, assetType, content, version, createdAt }`.
+- seoGeo validation mirrors multi-format: accepts either a string (parsed+validated) or an object, both requiring `{ seo: object, geo: object }` shape.
+
+## Handoff — Patterns Learned
+- Single-asset save routes return a flat asset object directly; multi-asset routes return a keyed object by asset type.
+- Route-local TypeScript interfaces (XCampaignOutputLocal) are preferred over importing from types/index.ts when the types/index.ts versions are loosely typed (index signature variants).
+- Global coverage threshold failures when running scoped tests are a known repo artifact — validate with task-local `--testPathPatterns` pass/fail count, not global coverage numbers.
+
+## Handoff — Files Changed
+- `lib/prompts/x-campaign.ts` — created
+- `lib/prompts/x-campaign.test.ts` — created
+- `app/api/data-driven/x-campaign/route.ts` — created
+- `app/api/data-driven/x-campaign/route.test.ts` — created
+
+## Status
+COMPLETE
 
 ---
 
