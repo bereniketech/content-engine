@@ -1,4 +1,4 @@
-import pdfParse from 'pdf-parse'
+import { PDFParse } from 'pdf-parse'
 
 export interface ParsedPdfResult {
   text: string
@@ -7,8 +7,6 @@ export interface ParsedPdfResult {
 }
 
 const MAX_TEXT_LENGTH = 80000
-type PdfParseCallable = (buffer: Buffer) => Promise<{ text?: string; numpages?: number }>
-const parseWithPdfLib = pdfParse as unknown as PdfParseCallable
 
 /**
  * Parses a PDF buffer and extracts text content.
@@ -22,12 +20,15 @@ export async function parsePdf(buffer: Buffer): Promise<ParsedPdfResult> {
     throw new Error('Invalid PDF: buffer is empty')
   }
 
-  let data: { text?: string; numpages?: number }
+  const parser = new PDFParse({ data: buffer })
+  let data: { text?: string; total?: number }
 
   try {
-    data = await parseWithPdfLib(buffer)
+    data = await parser.getText()
   } catch (error) {
     throw new Error(`Failed to parse PDF: ${error instanceof Error ? error.message : String(error)}`)
+  } finally {
+    await parser.destroy().catch(() => undefined)
   }
 
   const text = (data.text ?? '').trim()
@@ -41,7 +42,7 @@ export async function parsePdf(buffer: Buffer): Promise<ParsedPdfResult> {
 
   return {
     text: finalText,
-    pageCount: data.numpages || 1,
+    pageCount: data.total || 1,
     wasTruncated,
   }
 }
