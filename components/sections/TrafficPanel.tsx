@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useSessionContext } from '@/lib/context/SessionContext'
 import { getLatestAssetByType } from '@/lib/session-assets'
+import { isTopicInputData } from '@/types'
 
 interface TrafficPrediction {
   demand: number
@@ -56,7 +57,7 @@ export function TrafficPanel() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const nextTopic = inputData && 'topic' in inputData ? inputData.topic : ''
+    const nextTopic = isTopicInputData(inputData) ? inputData.topic : ''
     setTopic(nextTopic)
   }, [inputData])
 

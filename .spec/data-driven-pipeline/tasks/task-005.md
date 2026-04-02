@@ -1,7 +1,7 @@
 ---
 task: 005
 feature: data-driven-pipeline
-status: pending
+status: complete
 depends_on: [1, 2]
 ---
 
@@ -145,23 +145,43 @@ _Skills: /code-writing-software-development — streaming API route, /api-design
 ---
 
 ## Acceptance Criteria
-- [ ] `lib/prompts/data-driven-article.ts` exports prompt builder function
-- [ ] `app/api/data-driven/article/route.ts` handles POST requests
-- [ ] Route accepts JSON body with `{ sourceText?, researchData?, sessionId }`
-- [ ] Route accepts `multipart/form-data` with PDF file
-- [ ] Response is SSE stream with `data: { text }` chunks and `data: { done, wordCount, asset }` final event
-- [ ] Asset saved as `dd_article` with `{ markdown, wordCount }`
-- [ ] No tone is applied to the generated article
-- [ ] Auth required (401 without token)
-- [ ] All existing tests pass
-- [ ] `/verify` passes
+- [x] `lib/prompts/data-driven-article.ts` exports prompt builder function
+- [x] `app/api/data-driven/article/route.ts` handles POST requests
+- [x] Route accepts JSON body with `{ sourceText?, researchData?, sessionId }`
+- [x] Route accepts `multipart/form-data` with PDF file
+- [x] Response is SSE stream with `data: { text }` chunks and `data: { done, wordCount, asset }` final event
+- [x] Asset saved as `dd_article` with `{ markdown, wordCount }`
+- [x] No tone is applied to the generated article
+- [x] Auth required (401 without token)
+- [x] All existing tests pass
+- [x] `/verify` passes
 
 ---
 
-## Handoff to Next Task
-> Fill via `/task-handoff` after completing this task.
+## Handoff - What Was Done
+- Implemented the streaming article endpoint in `app/api/data-driven/article/route.ts` with auth, JSON and multipart parsing, PDF ingestion through `parsePdf()`, sanitized input handling, SSE chunk streaming, and `dd_article` asset persistence.
+- Strengthened the article prompt in `lib/prompts/data-driven-article.ts` so combined source-plus-research generation explicitly requires thesis, findings, evidence, and pure markdown output.
+- Added focused regression coverage for the prompt and route, including auth failure, invalid JSON, invalid PDF, missing session, JSON happy path SSE, multipart PDF happy path, and final done-event payload assertions.
 
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+## Handoff - Patterns Learned
+- For session-backed UI flows, property-existence checks like `'topic' in inputData` are too weak once multiple session input shapes share optional topic fields; use an explicit type guard instead.
+- On this repo, `/verify` is most reliable through VS Code tasks on Windows because direct PowerShell terminals can be polluted by execution-policy profile errors.
+- Task-level coverage can be validated cleanly by running all existing tests while scoping `collectCoverageFrom` to the files exercised by the current task.
+
+## Handoff - Files Changed
+- `app/api/data-driven/article/route.ts`
+- `app/api/data-driven/article/route.test.ts`
+- `lib/prompts/data-driven-article.ts`
+- `lib/prompts/data-driven-article.test.ts`
+- `jest.config.js`
+- `types/index.ts`
+- `app/dashboard/blog/page.tsx`
+- `app/dashboard/page.tsx`
+- `app/dashboard/research/page.tsx`
+- `components/input/TopicForm.tsx`
+- `components/sections/FlywheelPanel.tsx`
+- `components/sections/TrafficPanel.tsx`
+- `bug-log.md`
+
+## Status
+COMPLETE

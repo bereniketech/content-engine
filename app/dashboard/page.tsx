@@ -165,7 +165,10 @@ export default function DashboardPage() {
       return snippet || "Uploaded article";
     }
 
-    const topic = "topic" in session.inputData ? session.inputData.topic : "";
+    const topic =
+      "topic" in session.inputData && typeof session.inputData.topic === "string"
+        ? session.inputData.topic
+        : "";
     return topic.trim() || "Untitled topic";
   }
 

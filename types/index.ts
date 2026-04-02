@@ -2,6 +2,8 @@ export type SessionInputType = "topic" | "upload" | "data-driven";
 
 export type TopicTone = "authority" | "casual" | "storytelling";
 
+const TOPIC_TONES: TopicTone[] = ["authority", "casual", "storytelling"];
+
 export interface TopicInputData {
 	topic: string;
 	audience: string;
@@ -19,6 +21,25 @@ export interface DataDrivenInputData {
 	sourceFileName?: string;
 	topic?: string;
 	tone: string;
+}
+
+export function isTopicInputData(value: unknown): value is TopicInputData {
+	if (!value || typeof value !== "object") {
+		return false;
+	}
+
+	const candidate = value as {
+		topic?: unknown;
+		audience?: unknown;
+		tone?: unknown;
+	};
+
+	return (
+		typeof candidate.topic === "string"
+		&& typeof candidate.audience === "string"
+		&& typeof candidate.tone === "string"
+		&& TOPIC_TONES.includes(candidate.tone as TopicTone)
+	);
 }
 
 export interface DeepResearchResult {

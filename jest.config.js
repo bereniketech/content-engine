@@ -3,6 +3,9 @@ module.exports = {
   testEnvironment: 'node',
   roots: ['<rootDir>/lib', '<rootDir>/app'],
   testMatch: ['**/__tests__/**/*.test.ts', '**/*.test.ts'],
+  moduleNameMapper: {
+    '^@/(.*)$': '<rootDir>/$1',
+  },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   collectCoverageFrom: ['lib/**/*.ts', 'app/**/*.ts', '!**/__tests__/**'],
   coverageThreshold: {

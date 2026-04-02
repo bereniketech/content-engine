@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ResearchPanel } from '@/components/sections/ResearchPanel'
 import { useSessionContext } from '@/lib/context/SessionContext'
+import { isTopicInputData } from '@/types'
 
 interface ResearchData {
   id: string
@@ -39,7 +40,7 @@ export default function ResearchPage() {
   const [researchData, setResearchData] = useState<ResearchData | null>(null)
 
   useEffect(() => {
-    if (inputType === 'topic' && inputData && 'topic' in inputData) {
+    if (inputType === 'topic' && isTopicInputData(inputData)) {
       setFormData((current) => ({
         ...current,
         topic: inputData.topic,

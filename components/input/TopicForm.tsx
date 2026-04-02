@@ -4,7 +4,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSessionContext } from "@/lib/context/SessionContext";
-import type { TopicInputData, TopicTone } from "@/types";
+import { isTopicInputData, type TopicInputData, type TopicTone } from "@/types";
 
 const TOPIC_MIN_LENGTH = 6;
 
@@ -17,7 +17,7 @@ const toneOptions: Array<{ label: string; value: TopicTone }> = [
 export function TopicForm() {
 	const { createSession, isSubmitting, error: sessionError, sessionId, inputType, inputData } = useSessionContext();
 	const prefilledTopicData =
-		inputType === "topic" && inputData && "topic" in inputData ? inputData : null;
+		inputType === "topic" && isTopicInputData(inputData) ? inputData : null;
 
 	const [formData, setFormData] = useState<TopicInputData>({
 		topic: prefilledTopicData?.topic ?? "",

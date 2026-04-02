@@ -6,6 +6,7 @@ import { useSessionContext } from '@/lib/context/SessionContext'
 import { Button } from '@/components/ui/button'
 import { getLatestAssetByType } from '@/lib/session-assets'
 import type { SeoResult } from '@/app/api/seo/route'
+import { isTopicInputData } from '@/types'
 
 interface ResearchOutput {
   intent: 'informational' | 'commercial' | 'transactional'
@@ -33,12 +34,18 @@ export default function BlogPage() {
     const researchAsset = getLatestAssetByType(assets, 'research')
     const seoAsset = getLatestAssetByType(assets, 'seo')
 
-    if (!researchAsset || !seoAsset || inputType !== 'topic' || !inputData || !('topic' in inputData)) {
+    if (
+      !researchAsset
+      || !seoAsset
+      || inputType !== 'topic'
+      || !isTopicInputData(inputData)
+      || inputData.topic.trim().length === 0
+    ) {
       return null
     }
 
     return {
-      topic: inputData.topic,
+      topic: inputData.topic.trim(),
       seo: seoAsset.content as unknown as SeoResult,
       research: researchAsset.content as unknown as ResearchOutput,
       tone: inputData.tone,
