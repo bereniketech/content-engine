@@ -1,7 +1,7 @@
 ---
 task: 010
 feature: data-driven-pipeline
-status: pending
+status: complete
 depends_on: [3, 4, 5, 6, 7, 8, 9]
 ---
 
@@ -135,7 +135,42 @@ _Skills: /build-website-web-app — React page, /code-writing-software-developme
 ## Handoff to Next Task
 > Fill via `/task-handoff` after completing this task.
 
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:**
+- app/dashboard/data-driven/page.tsx
+- components/sections/DataDrivenStepper.tsx
+- lib/data-driven-pipeline.ts
+- lib/data-driven-pipeline.test.ts
+
+**Decisions made:**
+- Implemented pipeline orchestration as a client-side state machine with immutable step runtime updates and automatic progression to the next pending step.
+- Restored step completion from saved `dd_*` assets and used latest `dd_article` + `dd_seo_geo` assets to rebuild content previews after reload.
+- Implemented regenerate as downstream reset plus in-memory downstream asset clearing to avoid stale completion on reload.
+- Added SSE tail-buffer processing so final article stream chunks/events are not dropped when the stream closes without a trailing delimiter.
+
+**Context for next task:**
+- Topic mode runs steps: Research -> Article -> SEO+GEO -> Multi-format + X Campaign.
+- Data mode runs Assess first, then conditionally injects/removes Research based on `sufficient` result.
+- Final distribution step executes multi-format and X-campaign in parallel via `Promise.all`.
+- Helper utilities and tests for step ordering/restoration/regenerate asset mapping are in `lib/data-driven-pipeline.ts` and `lib/data-driven-pipeline.test.ts`.
+
+**Open questions:**
+- Regenerate currently clears downstream assets in SessionContext memory; if persistent deletion in Supabase is required, add a delete endpoint and invoke it from regenerate.
+
+## Handoff — What Was Done
+- Built reusable `DataDrivenStepper` with status icons, collapsible step cards, and regenerate controls.
+- Replaced `/dashboard/data-driven` placeholder with full orchestration: dynamic step derivation, restore from assets, sequential auto-advance, SSE article preview, and parallel distribution generation.
+- Added pipeline helper module plus tests for step derivation, restoration, next-step selection, regenerate state reset, and downstream asset-clearing maps.
+
+## Handoff — Patterns Learned
+- Keep pipeline execution deterministic by deriving a step key list from mode + assessment outcome, then always running the first pending step.
+- For SSE readers, flush any remaining buffer after `reader.read()` completes to avoid losing the final event payload.
+- Regenerate must reset both step runtime state and downstream asset memory to keep reload restoration accurate.
+
+## Handoff — Files Changed
+- app/dashboard/data-driven/page.tsx
+- components/sections/DataDrivenStepper.tsx
+- lib/data-driven-pipeline.ts
+- lib/data-driven-pipeline.test.ts
+
+## Status
+COMPLETE
