@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { ArticleUpload } from "@/components/input/ArticleUpload";
+import { DataDrivenForm } from "@/components/input/DataDrivenForm";
 import { TopicForm } from "@/components/input/TopicForm";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import { useSessionContext } from "@/lib/context/SessionContext";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import type { ContentAsset, SessionInputData, SessionInputType } from "@/types";
 
-type InputTab = "topic" | "upload";
+type InputTab = "topic" | "upload" | "data-driven";
 
 interface SessionListItem {
   id: string;
@@ -150,7 +151,7 @@ export default function DashboardPage() {
         assets: mappedAssets,
       });
 
-      router.push("/dashboard");
+      router.push(session.inputType === "data-driven" ? "/dashboard/data-driven" : "/dashboard");
     } catch (error) {
       setHistoryError(error instanceof Error ? error.message : "Failed to restore session.");
     } finally {
@@ -163,6 +164,30 @@ export default function DashboardPage() {
       const article = "article" in session.inputData ? session.inputData.article : "";
       const snippet = article.trim().slice(0, 80);
       return snippet || "Uploaded article";
+    }
+
+    if (session.inputType === "data-driven") {
+      const topic =
+        "topic" in session.inputData && typeof session.inputData.topic === "string"
+          ? session.inputData.topic.trim()
+          : "";
+      if (topic) {
+        return topic;
+      }
+
+      const sourceText =
+        "sourceText" in session.inputData && typeof session.inputData.sourceText === "string"
+          ? session.inputData.sourceText.trim()
+          : "";
+      if (sourceText) {
+        return sourceText.slice(0, 80);
+      }
+
+      const sourceFileName =
+        "sourceFileName" in session.inputData && typeof session.inputData.sourceFileName === "string"
+          ? session.inputData.sourceFileName.trim()
+          : "";
+      return sourceFileName || "Data-driven source";
     }
 
     const topic =
@@ -181,7 +206,7 @@ export default function DashboardPage() {
       <div>
         <h2 className="text-2xl font-semibold text-foreground">Create New Session</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Start with a topic brief or upload an article to initialize your workflow.
+          Start with a topic brief, source material, or an uploaded article to initialize your workflow.
         </p>
       </div>
 
@@ -200,9 +225,22 @@ export default function DashboardPage() {
         >
           Upload Article
         </Button>
+        <Button
+          type="button"
+          variant={activeTab === "data-driven" ? "default" : "ghost"}
+          onClick={() => setActiveTab("data-driven")}
+        >
+          Data-Driven
+        </Button>
       </div>
 
-      {activeTab === "topic" ? <TopicForm /> : <ArticleUpload />}
+      {activeTab === "topic" ? (
+        <TopicForm />
+      ) : activeTab === "upload" ? (
+        <ArticleUpload />
+      ) : (
+        <DataDrivenForm />
+      )}
 
       <Card>
         <CardHeader>
@@ -243,7 +281,11 @@ export default function DashboardPage() {
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant={session.inputType === "topic" ? "default" : "secondary"}>
-                      {session.inputType === "topic" ? "Topic" : "Upload"}
+                      {session.inputType === "topic"
+                        ? "Topic"
+                        : session.inputType === "data-driven"
+                          ? "Data-Driven"
+                          : "Upload"}
                     </Badge>
                     <span className="text-sm text-muted-foreground">
                       {new Date(session.createdAt).toLocaleString()}

@@ -23,6 +23,26 @@ export interface DataDrivenInputData {
 	tone: string;
 }
 
+export function isDataDrivenInputData(value: unknown): value is DataDrivenInputData {
+	if (!value || typeof value !== "object") {
+		return false;
+	}
+
+	const candidate = value as {
+		sourceText?: unknown;
+		sourceFileName?: unknown;
+		topic?: unknown;
+		tone?: unknown;
+	};
+
+	return (
+		typeof candidate.tone === "string"
+		&& (candidate.sourceText === undefined || typeof candidate.sourceText === "string")
+		&& (candidate.sourceFileName === undefined || typeof candidate.sourceFileName === "string")
+		&& (candidate.topic === undefined || typeof candidate.topic === "string")
+	);
+}
+
 export function isTopicInputData(value: unknown): value is TopicInputData {
 	if (!value || typeof value !== "object") {
 		return false;

@@ -26,6 +26,7 @@ interface SessionContextValue {
   inputData: SessionInputData | null;
   improvedArticle: string | null;
   assets: ContentAsset[];
+  pendingDataDrivenFile: File | null;
   isSubmitting: boolean;
   error: string | null;
   createSession: (
@@ -36,11 +37,13 @@ interface SessionContextValue {
   prefillTopicForm: (topic: string, keywords?: string[]) => void;
   setAssets: (assets: ContentAsset[]) => void;
   upsertAsset: (asset: ContentAsset) => void;
+  setPendingDataDrivenFile: (file: File | null) => void;
   loadSession: (session: {
     sessionId: string;
     inputType: SessionInputType;
     inputData: SessionInputData;
     assets: ContentAsset[];
+    preservePendingDataDrivenFile?: boolean;
   }) => void;
   clearSession: () => void;
 }
@@ -53,6 +56,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [inputData, setInputData] = useState<SessionInputData | null>(null);
   const [improvedArticle, setImprovedArticle] = useState<string | null>(null);
   const [assets, setAssets] = useState<ContentAsset[]>([]);
+  const [pendingDataDrivenFile, setPendingDataDrivenFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -63,6 +67,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     ): Promise<CreateSessionResult> => {
       setInputType(nextInputType);
       setInputData(nextInputData);
+      if (nextInputType !== "data-driven") {
+        setPendingDataDrivenFile(null);
+      }
       setImprovedArticle(null);
       setAssets([]);
       setError(null);
@@ -123,6 +130,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setImprovedArticle(sanitizedArticle);
     setInputType("upload");
     setInputData({ article: sanitizedArticle });
+    setPendingDataDrivenFile(null);
   }, []);
 
   const clearSession = useCallback(() => {
@@ -131,6 +139,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setInputData(null);
     setImprovedArticle(null);
     setAssets([]);
+    setPendingDataDrivenFile(null);
     setError(null);
   }, []);
 
@@ -149,6 +158,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       keywords: keywords.length > 0 ? keywords.join(", ") : undefined,
       geography: undefined,
     });
+    setPendingDataDrivenFile(null);
   }, []);
 
   const loadSession = useCallback(
@@ -157,12 +167,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       inputType: SessionInputType;
       inputData: SessionInputData;
       assets: ContentAsset[];
+      preservePendingDataDrivenFile?: boolean;
     }) => {
       setSessionId(session.sessionId);
       setInputType(session.inputType);
       setInputData(session.inputData);
       setImprovedArticle(null);
       setAssets(session.assets);
+      if (!session.preservePendingDataDrivenFile) {
+        setPendingDataDrivenFile(null);
+      }
       setError(null);
     },
     [],
@@ -195,6 +209,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       inputData,
       improvedArticle,
       assets,
+      pendingDataDrivenFile,
       isSubmitting,
       error,
       createSession,
@@ -202,6 +217,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       prefillTopicForm,
       setAssets,
       upsertAsset,
+      setPendingDataDrivenFile,
       loadSession,
       clearSession,
     }),
@@ -211,12 +227,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       inputData,
       improvedArticle,
       assets,
+      pendingDataDrivenFile,
       isSubmitting,
       error,
       createSession,
       applyImprovedArticle,
       prefillTopicForm,
       upsertAsset,
+      setPendingDataDrivenFile,
       loadSession,
       clearSession,
     ],

@@ -1,7 +1,7 @@
 ---
 task: 009
 feature: data-driven-pipeline
-status: pending
+status: complete
 depends_on: [1]
 ---
 
@@ -100,23 +100,25 @@ _Skills: /build-website-web-app — React component, /code-writing-software-deve
 ---
 
 ## Acceptance Criteria
-- [ ] Component renders with data/topic mode toggle
-- [ ] Data mode shows textarea and file upload (accepts .txt, .md, .pdf)
-- [ ] Topic mode shows text input
-- [ ] Tone textarea present with placeholder examples
-- [ ] Validation blocks empty submissions (no data/topic, no tone)
-- [ ] Submit creates session with `input_type: 'data-driven'`
-- [ ] After submit, navigates to `/dashboard/data-driven`
-- [ ] Component uses existing UI patterns (Button, Card, Tailwind classes)
-- [ ] All existing tests pass
+- [x] Component renders with data/topic mode toggle
+- [x] Data mode shows textarea and file upload (accepts .txt, .md, .pdf)
+- [x] Topic mode shows text input
+- [x] Tone textarea present with placeholder examples
+- [x] Validation blocks empty submissions (no data/topic, no tone)
+- [x] Submit creates session with `input_type: 'data-driven'`
+- [x] After submit, navigates to `/dashboard/data-driven`
+- [x] Component uses existing UI patterns (Button, Card, Tailwind classes)
+- [x] All existing tests pass
 - [ ] `/verify` passes
+
+Verify note: build passed, type-check passed, targeted ESLint on changed files passed, and all 51 existing tests passed. Full `/verify` remains blocked by repo-wide lint noise outside the changed files and the existing global Jest coverage threshold (24.47% lines / 25.51% functions) rather than task-009 regressions.
 
 ---
 
 ## Handoff to Next Task
 > Fill via `/task-handoff` after completing this task.
 
-**Files changed:** _(fill via /task-handoff)_
-**Decisions made:** _(fill via /task-handoff)_
-**Context for next task:** _(fill via /task-handoff)_
-**Open questions:** _(fill via /task-handoff)_
+**Files changed:** `components/input/DataDrivenForm.tsx`, `lib/data-driven-form.ts`, `lib/data-driven-form.test.ts`, `lib/context/SessionContext.tsx`, `types/index.ts`, `app/dashboard/page.tsx`, `app/dashboard/data-driven/page.tsx`
+**Decisions made:** Reused `SessionContext.createSession()` instead of introducing a second session-creation path; added `pendingDataDrivenFile` to preserve a selected PDF across the `/dashboard` to `/dashboard/data-driven` transition; exposed `DataDrivenForm` in the dashboard launcher now so task-009 is user-reachable instead of leaving the component orphaned.
+**Context for next task:** `/dashboard/data-driven` now exists as a lightweight landing page that confirms session state and shows staged PDF metadata. Task-010 should replace this placeholder with the real stepper/orchestration flow while reusing the staged PDF from `SessionContext` when the input mode is file-based.
+**Open questions:** Full repo `/verify` is still blocked by global lint noise and the existing global Jest coverage threshold; no task-009-local lint or type issues remain.
