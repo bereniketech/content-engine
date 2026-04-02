@@ -14,6 +14,9 @@
 - claude-developer-platform → skills/ai-platform/claude-developer-platform
 - api-design → skills/development/api-design
 - x-api → skills/integrations/x-api
+- notebooklm → skills/ai-platform/notebooklm
+- wrapup → skills/core/wrapup
+- database-migrations → skills/data-backend/database-migrations
 
 ## Rules Active
 - common
