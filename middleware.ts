@@ -124,25 +124,17 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
-  const isAuthPage = request.nextUrl.pathname === "/signup";
 
   if (!user && isDashboardRoute) {
-    const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/signup";
-    loginUrl.searchParams.set("next", request.nextUrl.pathname);
-    return NextResponse.redirect(loginUrl);
-  }
-
-  if (user && isAuthPage) {
-    const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = "/dashboard";
-    dashboardUrl.search = "";
-    return NextResponse.redirect(dashboardUrl);
+    const homeUrl = request.nextUrl.clone();
+    homeUrl.pathname = "/";
+    homeUrl.search = "";
+    return NextResponse.redirect(homeUrl);
   }
 
   return response;
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/signup", "/api/:path*"],
+  matcher: ["/dashboard/:path*", "/api/:path*"],
 };
