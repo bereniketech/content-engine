@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
@@ -25,7 +24,7 @@ export default function SignupPage() {
 			email,
 			password,
 			options: {
-				emailRedirectTo: `${getPublicSiteUrl()}/login`,
+				emailRedirectTo: `${getPublicSiteUrl()}/signup`,
 			},
 		});
 
@@ -95,10 +94,7 @@ export default function SignupPage() {
 				</form>
 
 				<p className="mt-4 text-sm text-zinc-600">
-					Already have an account?{" "}
-					<Link className="font-medium text-emerald-700 hover:underline" href="/login">
-						Log in
-					</Link>
+					Create an account to access the dashboard.
 				</p>
 			</div>
 		</main>

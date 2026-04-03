@@ -124,12 +124,11 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
-  const isAuthPage =
-    request.nextUrl.pathname === "/login" || request.nextUrl.pathname === "/signup";
+  const isAuthPage = request.nextUrl.pathname === "/signup";
 
   if (!user && isDashboardRoute) {
     const loginUrl = request.nextUrl.clone();
-    loginUrl.pathname = "/login";
+    loginUrl.pathname = "/signup";
     loginUrl.searchParams.set("next", request.nextUrl.pathname);
     return NextResponse.redirect(loginUrl);
   }
@@ -145,5 +144,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/signup", "/api/:path*"],
+  matcher: ["/dashboard/:path*", "/signup", "/api/:path*"],
 };
