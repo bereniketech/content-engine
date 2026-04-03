@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
-import { googleSearch } from '@/lib/google-search'
 import { getDeepResearchPrompt } from '@/lib/prompts/deep-research'
 import { sanitizeInput } from '@/lib/sanitize'
 import { resolveSessionId } from '@/lib/session-assets'
+import { runNotebookLmCliResearch } from '@/lib/notebooklm-cli'
 import type { DeepResearchResult } from '@/types'
+
+export const maxDuration = 300
 
 type DataDrivenResearchRequestBody = {
   topic?: unknown
@@ -33,7 +35,6 @@ const NOTEBOOK_CAPABILITY_SET = new Set<NotebookCapability>([
 const DEFAULT_NOTEBOOK_CAPABILITIES: NotebookCapability[] = ['deep_research', 'literature_review']
 const MAX_TOPIC_LENGTH = 200
 const MAX_SOURCE_TEXT_LENGTH = 16000
-const NOTEBOOK_TIMEOUT_MS = 15000
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null
@@ -123,6 +124,37 @@ function normalizeDeepResearchResult(
   }
 }
 
+function classifyResearchError(error: unknown): {
+  status: number
+  code: string
+  message: string
+} {
+  const rawMessage = error instanceof Error ? error.message : 'Unknown research error'
+  const message = rawMessage.toLowerCase()
+
+  if (message.includes('enoent') || message.includes('notebooklm')) {
+    return {
+      status: 503,
+      code: 'notebooklm_unavailable',
+      message: 'NotebookLM is unavailable. Verify local NotebookLM CLI setup and authentication.',
+    }
+  }
+
+  if (message.includes('timed out') || message.includes('timeout')) {
+    return {
+      status: 504,
+      code: 'research_timeout',
+      message: 'Research request timed out while waiting for NotebookLM.',
+    }
+  }
+
+  return {
+    status: 500,
+    code: 'research_error',
+    message: 'Failed to generate deep research',
+  }
+}
+
 async function deriveTopicFromSourceText(sourceText: string): Promise<string> {
   const fallbackTopic = sourceText
     .replace(/\s+/g, ' ')
@@ -156,64 +188,13 @@ async function runNotebookLmResearch(options: {
   sourceText: string
   capabilities: NotebookCapability[]
 }): Promise<DeepResearchResult> {
-  const apiKey = process.env.NOTEBOOKLM_API_KEY
-
-  if (!apiKey) {
-    throw new Error('NOTEBOOKLM_API_KEY is not configured')
-  }
-
-  const endpoint = process.env.NOTEBOOKLM_API_URL ?? 'https://api.notebooklm.google/v1/research'
-
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${apiKey}`,
-    },
-    signal: AbortSignal.timeout(NOTEBOOK_TIMEOUT_MS),
-    body: JSON.stringify({
-      topic: options.topic,
-      sourceText: options.sourceText,
-      capabilities: options.capabilities,
-    }),
-  })
-
-  if (!response.ok) {
-    throw new Error(`NotebookLM research request failed (${response.status})`)
-  }
-
-  const payload = (await response.json()) as unknown
-  const resultPayload = isRecord(payload) && 'data' in payload ? payload.data : payload
-  return normalizeDeepResearchResult(resultPayload, options.capabilities)
-}
-
-async function runFallbackResearch(options: {
-  topic: string
-  sourceText: string
-  capabilities: NotebookCapability[]
-}): Promise<DeepResearchResult> {
-  const [mainResults, insightsResults, statsResults] = await Promise.all([
-    googleSearch(options.topic),
-    googleSearch(`${options.topic} insights`),
-    googleSearch(`${options.topic} statistics`),
-  ])
-
-  const allResults = [...mainResults, ...insightsResults, ...statsResults]
-  const findings = [
-    `Source text context: ${sanitizePromptData(options.sourceText)}`,
-    ...allResults.map(
-      (result, index) =>
-        `${index + 1}. ${sanitizePromptData(result.title)}\n${sanitizePromptData(result.snippet)}\n${sanitizePromptData(result.link)}`
-    ),
-  ].join('\n\n')
-
-  const prompt = getDeepResearchPrompt(options.topic, findings)
+  const rawAnswer = await runNotebookLmCliResearch(options.topic, options.sourceText || undefined)
+  const prompt = getDeepResearchPrompt(options.topic, rawAnswer)
   const responseText =
     (await createMessage({
       maxTokens: 2400,
       messages: [{ role: 'user', content: prompt }],
     })) || '{}'
-
   return normalizeDeepResearchResult(extractJsonPayload(responseText), options.capabilities)
 }
 
@@ -350,31 +331,22 @@ export async function POST(request: NextRequest) {
 
     let researchResult: DeepResearchResult
     try {
-      if (process.env.NOTEBOOKLM_API_KEY) {
-        try {
-          researchResult = await runNotebookLmResearch({
-            topic: resolvedTopic,
-            sourceText: sanitizedSourceText,
-            capabilities,
-          })
-        } catch {
-          researchResult = await runFallbackResearch({
-            topic: resolvedTopic,
-            sourceText: sanitizedSourceText,
-            capabilities,
-          })
-        }
-      } else {
-        researchResult = await runFallbackResearch({
-          topic: resolvedTopic,
-          sourceText: sanitizedSourceText,
-          capabilities,
-        })
-      }
-    } catch {
+      researchResult = await runNotebookLmResearch({
+        topic: resolvedTopic,
+        sourceText: sanitizedSourceText,
+        capabilities,
+      })
+    } catch (error) {
+      const classifiedError = classifyResearchError(error)
+      console.error('Deep research generation failed:', error)
       return NextResponse.json(
-        { error: { code: 'research_error', message: 'Failed to generate deep research' } },
-        { status: 500 }
+        {
+          error: {
+            code: classifiedError.code,
+            message: classifiedError.message,
+          },
+        },
+        { status: classifiedError.status }
       )
     }
 

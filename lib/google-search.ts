@@ -4,48 +4,28 @@ interface SearchResult {
   snippet: string
 }
 
-interface GoogleSearchResponse {
-  items?: Array<{
-    title: string
-    link: string
-    snippet: string
-  }>
-}
+import { runNotebookLmCliResearch } from '@/lib/notebooklm-cli'
+
+const NOTEBOOKLM_SOURCE_LINK = 'https://notebooklm.google.com/'
 
 export async function googleSearch(query: string): Promise<SearchResult[]> {
-  const apiKey = process.env.GOOGLE_SEARCH_API_KEY
-  const searchEngineId = process.env.GOOGLE_SEARCH_ENGINE_ID
-
-  if (!apiKey || !searchEngineId) {
-    throw new Error('Missing Google Search API credentials')
-  }
-
-  const url = new URL('https://www.googleapis.com/customsearch/v1')
-  url.searchParams.set('q', query)
-  url.searchParams.set('key', apiKey)
-  url.searchParams.set('cx', searchEngineId)
-  url.searchParams.set('num', '10')
-
   try {
-    const response = await fetch(url.toString())
-    
-    if (!response.ok) {
-      throw new Error(`Google Search API error: ${response.statusText}`)
-    }
+    const synthesized = await runNotebookLmCliResearch(query)
+    const snippet = synthesized.replace(/\s+/g, ' ').trim()
 
-    const data: GoogleSearchResponse = await response.json()
-    
-    if (!data.items) {
+    if (!snippet) {
       return []
     }
 
-    return data.items.map(item => ({
-      title: item.title,
-      link: item.link,
-      snippet: item.snippet,
-    }))
+    return [
+      {
+        title: `${query} (NotebookLM synthesis)`,
+        link: NOTEBOOKLM_SOURCE_LINK,
+        snippet,
+      },
+    ]
   } catch (error) {
-    console.error('Google Search error:', error)
+    console.error('NotebookLM search synthesis error:', error)
     throw error
   }
 }

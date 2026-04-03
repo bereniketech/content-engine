@@ -1,11 +1,11 @@
-export function getDeepResearchPrompt(topic: string, findings: string): string {
+export function getDeepResearchPrompt(topic: string, researchContent: string): string {
   return `You are an expert research synthesis engine.
 
 Topic:
 ${topic}
 
-Research Findings:
-${findings}
+Research Content:
+${researchContent}
 
 Synthesize the findings into structured deep research output.
 
