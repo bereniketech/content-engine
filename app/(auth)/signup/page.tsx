@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { getPublicSiteUrl } from "@/lib/utils";
 
 export default function SignupPage() {
 	const router = useRouter();
@@ -23,6 +24,9 @@ export default function SignupPage() {
 		const { data, error: signUpError } = await supabase.auth.signUp({
 			email,
 			password,
+			options: {
+				emailRedirectTo: `${getPublicSiteUrl()}/login`,
+			},
 		});
 
 		if (signUpError) {
