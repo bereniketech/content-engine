@@ -26,6 +26,7 @@ const PIPELINE_ASSET_TYPES = {
   seoGeo: 'dd_seo_geo',
   blog: 'dd_blog',
   xCampaign: 'dd_x_campaign',
+  threadsCampaign: 'dd_threads_campaign',
 } as const
 
 function hasAsset(assets: ContentAsset[], assetType: string): boolean {
@@ -39,6 +40,7 @@ function hasAnyDownstreamAsset(assets: ContentAsset[]): boolean {
     PIPELINE_ASSET_TYPES.seoGeo,
     PIPELINE_ASSET_TYPES.blog,
     PIPELINE_ASSET_TYPES.xCampaign,
+    PIPELINE_ASSET_TYPES.threadsCampaign,
   ].some((assetType) => hasAsset(assets, assetType))
 }
 
@@ -88,10 +90,11 @@ export function buildRestoredPipelineState(options: {
     stepStates.seoGeo = { status: 'complete', content: { restored: true } }
   }
 
-  if (
+  const hasLegacyDistributionAssets =
     hasAsset(assets, PIPELINE_ASSET_TYPES.blog)
     && hasAsset(assets, PIPELINE_ASSET_TYPES.xCampaign)
-  ) {
+
+  if (hasLegacyDistributionAssets) {
     stepStates.distribution = { status: 'complete', content: { restored: true } }
   }
 
@@ -137,16 +140,16 @@ export function resetForRegenerate(
 
 export function getDownstreamAssetTypesForRegenerate(targetStepKey: StepKey): string[] {
   if (targetStepKey === 'assess' || targetStepKey === 'research') {
-    return ['dd_research', 'dd_article', 'dd_seo_geo', 'dd_blog', 'dd_linkedin', 'dd_medium', 'dd_newsletter', 'dd_x_campaign']
+    return ['dd_research', 'dd_article', 'dd_seo_geo', 'dd_blog', 'dd_linkedin', 'dd_medium', 'dd_newsletter', 'dd_x_campaign', 'dd_threads_campaign']
   }
 
   if (targetStepKey === 'article') {
-    return ['dd_article', 'dd_seo_geo', 'dd_blog', 'dd_linkedin', 'dd_medium', 'dd_newsletter', 'dd_x_campaign']
+    return ['dd_article', 'dd_seo_geo', 'dd_blog', 'dd_linkedin', 'dd_medium', 'dd_newsletter', 'dd_x_campaign', 'dd_threads_campaign']
   }
 
   if (targetStepKey === 'seoGeo') {
-    return ['dd_seo_geo', 'dd_blog', 'dd_linkedin', 'dd_medium', 'dd_newsletter', 'dd_x_campaign']
+    return ['dd_seo_geo', 'dd_blog', 'dd_linkedin', 'dd_medium', 'dd_newsletter', 'dd_x_campaign', 'dd_threads_campaign']
   }
 
-  return ['dd_blog', 'dd_linkedin', 'dd_medium', 'dd_newsletter', 'dd_x_campaign']
+  return ['dd_blog', 'dd_linkedin', 'dd_medium', 'dd_newsletter', 'dd_x_campaign', 'dd_threads_campaign']
 }

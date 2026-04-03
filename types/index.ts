@@ -119,6 +119,14 @@ export interface XCampaignOutput {
 	posts: XCampaignPost[];
 }
 
+export interface ThreadsCampaignPost {
+	[key: string]: unknown;
+}
+
+export interface ThreadsCampaignOutput {
+	posts: ThreadsCampaignPost[];
+}
+
 export interface MultiFormatOutput {
 	[key: string]: unknown;
 }

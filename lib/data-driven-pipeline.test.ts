@@ -50,19 +50,25 @@ describe('data-driven-pipeline helpers', () => {
     ])
   })
 
-  it('restores final distribution only when both blog and x campaign exist', () => {
+  it('restores final distribution for legacy and new campaign bundles', () => {
     const withOnlyBlog = buildRestoredPipelineState({
       mode: 'topic',
       assets: [createAsset('dd_blog')],
     })
 
-    const withBoth = buildRestoredPipelineState({
+    const withLegacyBundle = buildRestoredPipelineState({
       mode: 'topic',
       assets: [createAsset('dd_blog'), createAsset('dd_x_campaign')],
     })
 
+    const withAll = buildRestoredPipelineState({
+      mode: 'topic',
+      assets: [createAsset('dd_blog'), createAsset('dd_x_campaign'), createAsset('dd_threads_campaign')],
+    })
+
     expect(withOnlyBlog.stepStates.distribution.status).toBe('pending')
-    expect(withBoth.stepStates.distribution.status).toBe('complete')
+    expect(withLegacyBundle.stepStates.distribution.status).toBe('complete')
+    expect(withAll.stepStates.distribution.status).toBe('complete')
   })
 
   it('restores assess as complete in data mode if downstream assets exist', () => {
@@ -118,6 +124,7 @@ describe('data-driven-pipeline helpers', () => {
       'dd_medium',
       'dd_newsletter',
       'dd_x_campaign',
+      'dd_threads_campaign',
     ])
 
     expect(getDownstreamAssetTypesForRegenerate('research')).toEqual([
@@ -129,6 +136,7 @@ describe('data-driven-pipeline helpers', () => {
       'dd_medium',
       'dd_newsletter',
       'dd_x_campaign',
+      'dd_threads_campaign',
     ])
   })
 
@@ -141,6 +149,7 @@ describe('data-driven-pipeline helpers', () => {
       'dd_medium',
       'dd_newsletter',
       'dd_x_campaign',
+      'dd_threads_campaign',
     ])
 
     expect(getDownstreamAssetTypesForRegenerate('seoGeo')).toEqual([
@@ -150,6 +159,7 @@ describe('data-driven-pipeline helpers', () => {
       'dd_medium',
       'dd_newsletter',
       'dd_x_campaign',
+      'dd_threads_campaign',
     ])
 
     expect(getDownstreamAssetTypesForRegenerate('distribution')).toEqual([
@@ -158,6 +168,7 @@ describe('data-driven-pipeline helpers', () => {
       'dd_medium',
       'dd_newsletter',
       'dd_x_campaign',
+      'dd_threads_campaign',
     ])
   })
 })

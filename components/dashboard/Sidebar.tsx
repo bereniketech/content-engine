@@ -52,6 +52,7 @@ const DATA_PIPELINE_ITEMS = [
   { label: "Medium", href: "/dashboard/data-driven/medium", icon: BookOpen },
   { label: "Newsletter", href: "/dashboard/data-driven/newsletter", icon: Mail },
   { label: "X Campaign", href: "/dashboard/data-driven/x-campaign", icon: Twitter },
+  { label: "Threads Campaign", href: "/dashboard/data-driven/threads-campaign", icon: MessageSquare },
 ] as const;
 
 function renderNavLink(

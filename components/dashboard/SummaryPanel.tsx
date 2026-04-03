@@ -123,6 +123,14 @@ const ASSET_CATALOG: AssetCatalogEntry[] = [
     color: "text-sky-500",
   },
   {
+    assetType: "dd_threads_campaign",
+    label: "Threads Campaign",
+    defaultCount: 1,
+    href: "/dashboard/data-driven/threads-campaign",
+    icon: MessageSquare,
+    color: "text-cyan-600",
+  },
+  {
     assetType: "blog",
     label: "Blog Article",
     defaultCount: 1,
@@ -250,6 +258,12 @@ function getActualCount(entry: AssetCatalogEntry, asset: ContentAsset): number {
         : entry.defaultCount;
     }
     case "dd_x_campaign": {
+      const posts = content.posts;
+      return Array.isArray(posts) && posts.length > 0
+        ? posts.length
+        : entry.defaultCount;
+    }
+    case "dd_threads_campaign": {
       const posts = content.posts;
       return Array.isArray(posts) && posts.length > 0
         ? posts.length

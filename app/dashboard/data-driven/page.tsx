@@ -53,6 +53,7 @@ interface SeoGeoStateData {
 interface DistributionStateData {
 	blogReady: boolean;
 	xCampaignReady: boolean;
+	threadsCampaignReady: boolean;
 	generatedAssets: string[];
 }
 
@@ -76,7 +77,7 @@ const STEP_LABELS: Record<StepKey, string> = {
 	research: "Deep Research",
 	article: "Draft Article",
 	seoGeo: "SEO + GEO Optimization",
-	distribution: "Multi-format + X Campaign",
+	distribution: "Multi-format + Campaigns",
 };
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -111,6 +112,7 @@ function isDistributionStateData(value: unknown): value is DistributionStateData
 	return (
 		typeof value.blogReady === "boolean"
 		&& typeof value.xCampaignReady === "boolean"
+		&& typeof value.threadsCampaignReady === "boolean"
 		&& Array.isArray(value.generatedAssets)
 	);
 }
@@ -450,7 +452,7 @@ export default function DataDrivenDashboardPage() {
 			throw new Error("Distribution requires SEO + GEO output");
 		}
 
-		const [multiFormatResponse, xCampaignResponse] = await Promise.all([
+		const [multiFormatResponse, xCampaignResponse, threadsCampaignResponse] = await Promise.all([
 			postJson<
 				StepResponse<{
 					blog: ContentAsset;
@@ -470,9 +472,15 @@ export default function DataDrivenDashboardPage() {
 				tone: dataInput.tone,
 				sessionId,
 			}),
+			postJson<StepResponse<ContentAsset>>("/api/data-driven/threads-campaign", {
+				article,
+				seoGeo: seoGeoPayload,
+				tone: dataInput.tone,
+				sessionId,
+			}),
 		]);
 
-		if (!multiFormatResponse.data || !xCampaignResponse.data) {
+		if (!multiFormatResponse.data || !xCampaignResponse.data || !threadsCampaignResponse.data) {
 			throw new Error("Distribution step did not return all expected assets");
 		}
 
@@ -481,13 +489,15 @@ export default function DataDrivenDashboardPage() {
 		upsertAsset(multiFormatResponse.data.medium);
 		upsertAsset(multiFormatResponse.data.newsletter);
 		upsertAsset(xCampaignResponse.data);
+		upsertAsset(threadsCampaignResponse.data);
 
 		setStepRuntimeState("distribution", {
 			status: "complete",
 			content: {
 				blogReady: true,
 				xCampaignReady: true,
-				generatedAssets: ["Blog", "LinkedIn", "Medium", "Newsletter", "X Campaign"],
+				threadsCampaignReady: true,
+				generatedAssets: ["Blog", "LinkedIn", "Medium", "Newsletter", "X Campaign", "Threads Campaign"],
 			} satisfies DistributionStateData,
 		});
 	}, [dataInput, sessionId, setStepRuntimeState, stepState.article.content, stepState.seoGeo.content, upsertAsset]);
@@ -665,6 +675,7 @@ export default function DataDrivenDashboardPage() {
 						<div className="space-y-2 text-sm text-muted-foreground">
 							<p>Blog: {content.blogReady ? "Ready" : "Pending"}</p>
 							<p>X Campaign: {content.xCampaignReady ? "Ready" : "Pending"}</p>
+							<p>Threads Campaign: {content.threadsCampaignReady ? "Ready" : "Pending"}</p>
 							{content.generatedAssets.length > 0 ? (
 								<p>Assets: {content.generatedAssets.join(", ")}</p>
 							) : null}
