@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { FormEvent, useMemo, useState, Suspense } from 'react'
 import { getSupabaseBrowserClient } from '@/lib/supabase'
 
+type AuthAction = 'password' | 'guest'
+
 function LoginForm() {
 	const router = useRouter()
 	const searchParams = useSearchParams()
@@ -23,11 +25,20 @@ function LoginForm() {
 	const [email, setEmail] = useState('')
 	const [password, setPassword] = useState('')
 	const [error, setError] = useState<string | null>(null)
-	const [loading, setLoading] = useState(false)
+	const [loadingAction, setLoadingAction] = useState<AuthAction | null>(null)
+
+	const completeAuth = () => {
+		router.replace(nextPath)
+		router.refresh()
+	}
 
 	const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
-		setLoading(true)
+		if (loadingAction !== null) {
+			return
+		}
+
+		setLoadingAction('password')
 		setError(null)
 
 		const supabase = getSupabaseBrowserClient()
@@ -38,12 +49,31 @@ function LoginForm() {
 
 		if (signInError) {
 			setError(signInError.message)
-			setLoading(false)
+			setLoadingAction(null)
 			return
 		}
 
-		router.replace(nextPath)
-		router.refresh()
+		completeAuth()
+	}
+
+	const handleGuestLogin = async () => {
+		if (loadingAction !== null) {
+			return
+		}
+
+		setLoadingAction('guest')
+		setError(null)
+
+		const supabase = getSupabaseBrowserClient()
+		const { error: guestSignInError } = await supabase.auth.signInAnonymously()
+
+		if (guestSignInError) {
+			setError(guestSignInError.message)
+			setLoadingAction(null)
+			return
+		}
+
+		completeAuth()
 	}
 
 	return (
@@ -88,10 +118,19 @@ function LoginForm() {
 
 					<button
 						type="submit"
-						disabled={loading}
+						disabled={loadingAction !== null}
 						className="w-full rounded-lg bg-emerald-600 px-4 py-2 font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-70"
 					>
-						{loading ? 'Logging in...' : 'Log in'}
+						{loadingAction === 'password' ? 'Logging in...' : 'Log in'}
+					</button>
+
+					<button
+						type="button"
+						onClick={handleGuestLogin}
+						disabled={loadingAction !== null}
+						className="w-full rounded-lg border border-zinc-300 bg-white px-4 py-2 font-medium text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-70"
+					>
+						{loadingAction === 'guest' ? 'Starting guest session...' : 'Continue as guest'}
 					</button>
 				</form>
 
