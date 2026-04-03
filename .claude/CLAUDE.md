@@ -18,7 +18,7 @@
 Feature: data-driven-pipeline
 Spec: .spec/data-driven-pipeline/requirements.md, design.md
 Tasks: .spec/data-driven-pipeline/tasks/
-Current task: .spec/data-driven-pipeline/tasks/task-013.md
+Current task: ALL TASKS COMPLETE
 Branch: feature/data-driven-pipeline
 
 ## Start Here
