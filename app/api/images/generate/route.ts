@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import * as fal from '@fal-ai/serverless-client'
+import { GoogleGenAI } from '@google/genai'
 import { requireAuth } from '@/lib/auth'
 import { sanitizeInput } from '@/lib/sanitize'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,18 +16,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const fal_key = process.env.FAL_KEY
+    const geminiKey = process.env.GEMINI_API_KEY
 
-    if (!fal_key) {
+    if (!geminiKey) {
       return NextResponse.json(
-        { error: { code: 'server_error', message: 'FAL_KEY not configured' } },
+        { error: { code: 'server_error', message: 'GEMINI_API_KEY not configured' } },
         { status: 500 }
       )
     }
-
-    fal.config({
-      credentials: fal_key,
-    })
 
     let body: Record<string, unknown>
     try {
@@ -62,37 +54,38 @@ export async function POST(request: NextRequest) {
     // Enhance prompt with style context
     const enhancedPrompt = `${sanitizeInput(prompt)}. Style: ${style}`
 
-    // Call fal.ai Flux model for image generation
-    const result = await fal.subscribe('fal-ai/flux/dev', {
-      input: {
-        prompt: enhancedPrompt,
-        image_size: { width: 1024, height: 1024 },
-        num_inference_steps: 28,
-        guidance_scale: 3.5,
-        enable_safety_checker: true,
+    const ai = new GoogleGenAI({ apiKey: geminiKey })
+
+    // Nano Banana model — native Gemini image generation (gemini-2.5-flash-image)
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash-image',
+      contents: enhancedPrompt,
+      config: {
+        responseModalities: ['IMAGE', 'TEXT'],
       },
-      logs: true,
     })
 
-    if (!isRecord(result) || !isRecord(result.data)) {
+    const parts = response.candidates?.[0]?.content?.parts ?? []
+    const imagePart = parts.find(
+      (p): p is typeof p & { inlineData: { data: string; mimeType: string } } =>
+        p != null &&
+        typeof p === 'object' &&
+        'inlineData' in p &&
+        p.inlineData != null
+    )
+
+    if (!imagePart) {
       return NextResponse.json(
-        { error: { code: 'generation_error', message: 'Failed to generate image' } },
+        { error: { code: 'generation_error', message: 'Image generation returned no data' } },
         { status: 502 }
       )
     }
 
-    const images = Array.isArray(result.data.images) ? result.data.images : []
-    const firstImage = images[0]
-
-    if (!firstImage || !isRecord(firstImage) || typeof firstImage.url !== 'string') {
-      return NextResponse.json(
-        { error: { code: 'generation_error', message: 'image generation returned invalid format' } },
-        { status: 502 }
-      )
-    }
+    const { data: imageBytes, mimeType } = imagePart.inlineData
+    const imageUrl = `data:${mimeType};base64,${imageBytes}`
 
     return NextResponse.json(
-      { data: { imageUrl: firstImage.url } },
+      { data: { imageUrl } },
       { status: 200 }
     )
   } catch (err) {

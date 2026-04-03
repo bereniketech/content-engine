@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSessionContext } from '@/lib/context/SessionContext'
+import { isTopicInputData } from '@/types'
 
 interface FlywheelIdea {
   topic: string
@@ -22,7 +23,7 @@ export function FlywheelPanel() {
   const [selectionMessage, setSelectionMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    if (inputData && 'topic' in inputData) {
+    if (isTopicInputData(inputData)) {
       setTopic(inputData.topic)
       setKeywordsRaw(inputData.keywords ?? '')
     }

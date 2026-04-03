@@ -10,12 +10,16 @@
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/ai-platform/claude-developer-platform/SKILL.md
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/development/api-design/SKILL.md
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/integrations/x-api/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/ai-platform/notebooklm/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/core/wrapup/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/data-backend/database-migrations/SKILL.md
 
 ## Active Feature
-Feature: initial build
-Tasks: .spec/tasks/
+Feature: data-driven-pipeline
+Spec: .spec/data-driven-pipeline/requirements.md, design.md
+Tasks: .spec/data-driven-pipeline/tasks/
 Current task: ALL TASKS COMPLETE
-Branch: main
+Branch: feature/data-driven-pipeline
 
 ## Start Here
 1. Read `## Active Feature` above — note the current task path.

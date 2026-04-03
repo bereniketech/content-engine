@@ -10,6 +10,73 @@
 				"lint"
 			],
 			"isBackground": false
+		},
+		{
+			"label": "verify-build-temp",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"run",
+				"build"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "verify-types-temp",
+			"type": "shell",
+			"command": "npx.cmd",
+			"args": [
+				"tsc",
+				"--noEmit"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "verify-tests-temp",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"test",
+				"--",
+				"--coverage",
+				"--coverageReporters=text-summary"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "verify-lint-temp",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"run",
+				"lint"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "verify-tests-scoped-temp",
+			"type": "shell",
+			"command": "npm.cmd",
+			"args": [
+				"test",
+				"--",
+				"--coverage",
+				"--coverageReporters=text-summary",
+				"--collectCoverageFrom=app/api/data-driven/article/route.ts",
+				"--collectCoverageFrom=lib/prompts/data-driven-article.ts",
+				"--collectCoverageFrom=lib/pdf-parse.ts"
+			],
+			"isBackground": false
+		},
+		{
+			"label": "review-git-diff-temp",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"git --no-pager diff --staged && git --no-pager diff"
+			],
+			"isBackground": false
 		}
 	]
 }
