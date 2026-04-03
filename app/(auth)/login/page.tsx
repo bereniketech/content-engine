@@ -7,6 +7,22 @@ import { getSupabaseBrowserClient } from '@/lib/supabase'
 
 type AuthAction = 'password' | 'guest'
 
+function getErrorMessage(error: unknown): string {
+	if (error instanceof Error) {
+		return error.message
+	}
+
+	return 'Something went wrong. Please try again.'
+}
+
+function getGuestAuthErrorMessage(errorMessage: string): string {
+	if (errorMessage.toLowerCase().includes('anonymous sign-ins are disabled')) {
+		return 'Guest login is currently unavailable. Please sign in with email and password, or create an account.'
+	}
+
+	return errorMessage
+}
+
 function LoginForm() {
 	const router = useRouter()
 	const searchParams = useSearchParams()
@@ -41,19 +57,24 @@ function LoginForm() {
 		setLoadingAction('password')
 		setError(null)
 
-		const supabase = getSupabaseBrowserClient()
-		const { error: signInError } = await supabase.auth.signInWithPassword({
-			email,
-			password,
-		})
+		try {
+			const supabase = getSupabaseBrowserClient()
+			const { error: signInError } = await supabase.auth.signInWithPassword({
+				email,
+				password,
+			})
 
-		if (signInError) {
-			setError(signInError.message)
+			if (signInError) {
+				setError(signInError.message)
+				setLoadingAction(null)
+				return
+			}
+
+			completeAuth()
+		} catch (error: unknown) {
+			setError(getErrorMessage(error))
 			setLoadingAction(null)
-			return
 		}
-
-		completeAuth()
 	}
 
 	const handleGuestLogin = async () => {
@@ -64,16 +85,21 @@ function LoginForm() {
 		setLoadingAction('guest')
 		setError(null)
 
-		const supabase = getSupabaseBrowserClient()
-		const { error: guestSignInError } = await supabase.auth.signInAnonymously()
+		try {
+			const supabase = getSupabaseBrowserClient()
+			const { error: guestSignInError } = await supabase.auth.signInAnonymously()
 
-		if (guestSignInError) {
-			setError(guestSignInError.message)
+			if (guestSignInError) {
+				setError(getGuestAuthErrorMessage(guestSignInError.message))
+				setLoadingAction(null)
+				return
+			}
+
+			completeAuth()
+		} catch (error: unknown) {
+			setError(getErrorMessage(error))
 			setLoadingAction(null)
-			return
 		}
-
-		completeAuth()
 	}
 
 	return (
