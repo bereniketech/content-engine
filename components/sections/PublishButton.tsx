@@ -8,7 +8,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase'
 type PublishState = 'idle' | 'loading' | 'success' | 'error' | 'already_published'
 
 interface PublishButtonProps {
-  platform: 'x' | 'linkedin' | 'instagram' | 'reddit' | 'newsletter'
+  platform: 'x' | 'linkedin' | 'instagram' | 'reddit' | 'newsletter' | 'newsletter_mailchimp' | 'newsletter_sendgrid'
   sessionId: string
   payload: Record<string, unknown>
   label?: string
@@ -40,6 +40,8 @@ export function PublishButton({
     instagram: '/api/publish/instagram',
     reddit: '/api/publish/reddit',
     newsletter: '/api/publish/newsletter',
+    newsletter_mailchimp: '/api/publish/newsletter',
+    newsletter_sendgrid: '/api/publish/newsletter',
   }
 
   const handlePublish = async () => {

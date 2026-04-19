@@ -32,7 +32,7 @@ async function fetchFromGA4(): Promise<Omit<GA4Data, 'cachedAt' | 'fromCache'>> 
   const { ga4PropertyId } = getGoogleSecrets()
   const { analyticsData } = getAnalyticsClient()
 
-  const response = await analyticsData.properties.runReport({
+  const { data: reportData } = await analyticsData.properties.runReport({
     property: `properties/${ga4PropertyId}`,
     requestBody: {
       dateRanges: [{ startDate: '30daysAgo', endDate: 'today' }],
@@ -42,16 +42,16 @@ async function fetchFromGA4(): Promise<Omit<GA4Data, 'cachedAt' | 'fromCache'>> 
       ],
       dimensions: [{ name: 'pagePath' }],
       orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
-      limit: 5,
+      limit: '5',
     },
   })
 
-  const rows = response.data.rows ?? []
+  const rows = reportData.rows ?? []
   let totalSessions = 0
   let totalPageViews = 0
   const topPages: Array<{ path: string; views: number }> = []
 
-  const totalsRow = response.data.totals?.[0]
+  const totalsRow = reportData.totals?.[0]
   if (totalsRow?.metricValues) {
     totalSessions = parseInt(totalsRow.metricValues[0]?.value ?? '0', 10)
     totalPageViews = parseInt(totalsRow.metricValues[1]?.value ?? '0', 10)

@@ -199,7 +199,7 @@ export function AnalyticsDashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" unit="%" tick={{ fontSize: 10 }} />
                 <YAxis dataKey="name" type="category" width={90} tick={{ fontSize: 10 }} />
-                <Tooltip formatter={(v: number) => [`${v}%`, 'CTR']} />
+                <Tooltip formatter={(value) => [`${Number(value).toFixed(1)}%`, 'CTR']} />
                 <Bar dataKey="ctr" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
