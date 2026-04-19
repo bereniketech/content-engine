@@ -1,5 +1,6 @@
 # AI Content Engine
 
+## Core Skills
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/development/code-writing-software-development/SKILL.md
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/core/continuous-learning/SKILL.md
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/core/strategic-compact/SKILL.md
@@ -9,17 +10,43 @@
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/development/build-website-web-app/SKILL.md
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/ai-platform/claude-developer-platform/SKILL.md
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/development/api-design/SKILL.md
-@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/integrations/x-api/SKILL.md
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/ai-platform/notebooklm/SKILL.md
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/core/wrapup/SKILL.md
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/data-backend/database-migrations/SKILL.md
 
+## Distribution & Social Posting (High Priority Gap)
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/integrations/x-api/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/integrations/twitter-automation/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/integrations/linkedin-automation/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/integrations/instagram-automation/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/integrations/reddit-automation/SKILL.md
+
+## Email Delivery (High Priority Gap)
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/integrations/mailchimp-automation/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/integrations/sendgrid-automation/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/marketing-growth/email-marketing-automation/SKILL.md
+
+## Analytics & Performance Tracking (High Priority Gap)
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/integrations/google-analytics-automation/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/integrations/posthog-automation/SKILL.md
+
+## Content Strategy & Scheduling (Medium Priority Gap)
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/marketing-growth/content-strategy/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/marketing-growth/social-orchestrator/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/marketing-growth/social-media-management/SKILL.md
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/marketing-growth/competitor-intelligence/SKILL.md
+
 ## Active Feature
-Feature: data-driven-pipeline
-Spec: .spec/data-driven-pipeline/requirements.md, design.md
-Tasks: .spec/data-driven-pipeline/tasks/
-Current task: ALL TASKS COMPLETE
-Branch: feature/data-driven-pipeline
+Feature: distribution-and-analytics
+Previous feature: data-driven-pipeline (ALL TASKS COMPLETE)
+Branch: main
+
+## Build Order (Next Features)
+1. Social API integrations — X/Twitter + LinkedIn direct posting
+2. Email delivery — Mailchimp/SendGrid sending from generated newsletter drafts
+3. Content calendar scheduling — queue + publish logic behind existing UI
+4. GA4 + Search Console sync — real analytics data
+5. Feedback loop + content refresh — connect ranking drops → regeneration triggers
 
 ## Start Here
 1. Read `## Active Feature` above — note the current task path.
