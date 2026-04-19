@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/schedule-worker",
+      "schedule": "*/5 * * * *"
+    },
+    {
+      "path": "/api/cron/analytics-delta",
+      "schedule": "0 * * * *"
+    }
+  ]
+}

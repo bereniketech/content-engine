@@ -2,15 +2,17 @@
 
 import type { SocialOutput } from '@/lib/prompts/social'
 import { SocialEditableBlock } from '@/components/sections/SocialEditableBlock'
+import { PublishButton } from '@/components/sections/PublishButton'
 
 interface LinkedInPanelProps {
   data: SocialOutput['linkedin']
   onSaveBlock: (path: string, value: string) => void
   onRegenerateBlock: (path: string) => Promise<void>
   regeneratingPath?: string | null
+  sessionId?: string | null
 }
 
-export function LinkedInPanel({ data, onSaveBlock, onRegenerateBlock, regeneratingPath }: LinkedInPanelProps) {
+export function LinkedInPanel({ data, onSaveBlock, onRegenerateBlock, regeneratingPath, sessionId }: LinkedInPanelProps) {
   return (
     <div className="space-y-4">
       <SocialEditableBlock
@@ -39,6 +41,9 @@ export function LinkedInPanel({ data, onSaveBlock, onRegenerateBlock, regenerati
         isRegenerating={regeneratingPath === 'carousel'}
         rows={5}
       />
+      <div className="flex justify-end">
+        <PublishButton platform="linkedin" sessionId={sessionId ?? ''} payload={{ content: data.storytelling, contentType: 'post' }} />
+      </div>
     </div>
   )
 }
