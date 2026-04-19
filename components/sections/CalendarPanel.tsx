@@ -1,11 +1,13 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { Check, Copy } from 'lucide-react'
+import { useMemo, useState, useEffect, useCallback } from 'react'
+import { Check, Copy, Clock, CheckCircle2, XCircle } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { useSessionContext } from '@/lib/context/SessionContext'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ScheduleModal } from '@/components/sections/ScheduleModal'
+import { getSupabaseBrowserClient } from '@/lib/supabase'
 
 type CalendarSlot = {
   day: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday'
@@ -116,10 +118,72 @@ function getNewsletterSummary(content: Record<string, unknown> | null): string {
   return subject?.trim() ?? ''
 }
 
+type ScheduledPost = {
+  id: string
+  platform: string
+  status: 'queued' | 'published' | 'failed' | 'cancelled'
+  publishAt: string
+  assetType: string
+}
+
+type ModalState = {
+  platform: string
+  assetType: string
+  contentSnapshot: Record<string, unknown>
+} | null
+
 export function CalendarPanel() {
   const router = useRouter()
   const { assets } = useSessionContext()
   const [copied, setCopied] = useState(false)
+  const [scheduledPosts, setScheduledPosts] = useState<ScheduledPost[]>([])
+  const [modalState, setModalState] = useState<ModalState>(null)
+
+  const sessionId = (assets[0] as { sessionId?: string } | undefined)?.sessionId ?? null
+
+  const fetchScheduledPosts = useCallback(async () => {
+    if (!sessionId) return
+    const supabase = getSupabaseBrowserClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    if (!token) return
+
+    try {
+      const response = await fetch(`/api/schedule?sessionId=${sessionId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (response.ok) {
+        const json = await response.json()
+        setScheduledPosts((json.data ?? []).map((p: Record<string, unknown>) => ({
+          id: p.id,
+          platform: p.platform,
+          status: p.status,
+          publishAt: p.publish_at,
+          assetType: p.asset_type,
+        })))
+      }
+    } catch { /* silently ignore */ }
+  }, [sessionId])
+
+  useEffect(() => { fetchScheduledPosts() }, [fetchScheduledPosts])
+
+  function getScheduledPost(platform: string): ScheduledPost | undefined {
+    const platformKey = platform.toLowerCase().replace(' thread', '').replace(' ', '_')
+    return scheduledPosts.find(p => p.platform === platformKey || p.platform === `social_${platformKey}`)
+  }
+
+  const handleCancel = async (postId: string) => {
+    const supabase = getSupabaseBrowserClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    if (!token) return
+
+    await fetch(`/api/schedule/${postId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    await fetchScheduledPosts()
+  }
 
   const normalizedAssets = useMemo(
     () =>
@@ -193,6 +257,7 @@ export function CalendarPanel() {
   }
 
   return (
+    <>
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-4">
         <div>
@@ -233,10 +298,58 @@ export function CalendarPanel() {
                   <span className="font-medium text-primary underline underline-offset-2">Generate</span>
                 </p>
               )}
+
+              {(() => {
+                const sp = getScheduledPost(slot.platform)
+                if (!sp) return (
+                  <button
+                    type="button"
+                    className="mt-2 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setModalState({ platform: slot.platform.toLowerCase().replace(' ', '_'), assetType: `social_${slot.platform.toLowerCase().replace(' ', '_')}`, contentSnapshot: {} })
+                    }}
+                  >
+                    <Clock className="h-3 w-3" /> Schedule
+                  </button>
+                )
+                if (sp.status === 'queued') return (
+                  <div className="mt-2 flex items-center justify-between gap-1 text-xs text-amber-600">
+                    <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{new Date(sp.publishAt).toLocaleString()}</span>
+                    <button type="button" onClick={(e) => { e.stopPropagation(); handleCancel(sp.id) }} className="text-xs text-muted-foreground underline">Cancel</button>
+                  </div>
+                )
+                if (sp.status === 'published') return (
+                  <div className="mt-2 flex items-center gap-1 text-xs text-green-600">
+                    <CheckCircle2 className="h-3 w-3" /> Published
+                  </div>
+                )
+                if (sp.status === 'failed') return (
+                  <div className="mt-2 flex items-center gap-1 text-xs text-destructive">
+                    <XCircle className="h-3 w-3" /> Failed
+                  </div>
+                )
+                return null
+              })()}
             </button>
           ))}
         </div>
       </CardContent>
     </Card>
+
+    {modalState && sessionId && (
+      <ScheduleModal
+        platform={modalState.platform}
+        sessionId={sessionId}
+        assetType={modalState.assetType}
+        contentSnapshot={modalState.contentSnapshot}
+        onScheduled={() => {
+          setModalState(null)
+          fetchScheduledPosts()
+        }}
+        onClose={() => setModalState(null)}
+      />
+    )}
+    </>
   )
 }

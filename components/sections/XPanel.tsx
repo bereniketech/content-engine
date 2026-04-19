@@ -2,6 +2,8 @@
 
 import type { SocialOutput } from '@/lib/prompts/social'
 import { SocialEditableBlock } from '@/components/sections/SocialEditableBlock'
+import { PublishButton } from '@/components/sections/PublishButton'
+import { useSessionContext } from '@/lib/context/SessionContext'
 
 interface XPanelProps {
   data: SocialOutput['x']
@@ -11,6 +13,7 @@ interface XPanelProps {
 }
 
 export function XPanel({ data, onSaveBlock, onRegenerateBlock, regeneratingPath }: XPanelProps) {
+  const { sessionId } = useSessionContext()
   return (
     <div className="space-y-4">
       <SocialEditableBlock
@@ -57,6 +60,17 @@ export function XPanel({ data, onSaveBlock, onRegenerateBlock, regeneratingPath 
           rows={2}
         />
       ))}
+
+      <div className="mt-4 flex justify-end">
+        <PublishButton
+          platform="x"
+          sessionId={sessionId ?? ''}
+          payload={{
+            content: data.tweet,
+            contentType: 'tweet',
+          }}
+        />
+      </div>
     </div>
   )
 }
