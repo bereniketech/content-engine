@@ -12,10 +12,12 @@
 - Orchestrating multi-agent workflows
 - Complex coding tasks
 
-**Opus 4.5** (Deepest reasoning):
-- Complex architectural decisions
+**Opus 4.6** (Deepest reasoning — use as advisor, not executor):
+- Complex architectural decisions via advisor tool (`type: advisor_20260301`)
 - Maximum reasoning requirements
 - Research and analysis tasks
+
+See `rules/common/token-cost.md` for full cost-reduction and rate-limit instructions.
 
 ## Context Window Management
 

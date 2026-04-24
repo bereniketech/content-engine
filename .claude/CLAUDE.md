@@ -1,6 +1,7 @@
 # AI Content Engine
 
 ## Core Skills
+@C:/Users/Hp/Desktop/Experiment/claude_kit/skills/_studio/batch-tasks/SKILL.md
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/development/code-writing-software-development/SKILL.md
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/core/continuous-learning/SKILL.md
 @C:/Users/Hp/Desktop/Experiment/claude_kit/skills/core/strategic-compact/SKILL.md
