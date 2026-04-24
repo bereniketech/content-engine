@@ -167,8 +167,7 @@ JSON contract (must match exactly):
 		"quotes": ["string"],
 		"discussionQuestions": ["string"],
 		"miniPosts": ["string"]
-	}
-}`
+	}}`
 }
 
 export function getSocialRegeneratePrompt(
