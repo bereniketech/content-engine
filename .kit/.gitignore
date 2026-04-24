@@ -1,0 +1,6 @@
+# .kit/ contains symlinked/copied skills from claude_kit — don't commit them
+# The harness will populate .kit/ based on CLAUDE.md structure
+
+*
+!README.md
+!.gitignore
