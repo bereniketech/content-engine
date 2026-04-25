@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { useSessionContext } from '@/lib/context/SessionContext'
-import type { SeoResult } from '@/app/api/seo/route'
+import type { SeoResult } from '@/types'
 import type { TopicTone } from '@/types'
 
 interface ResearchOutput {

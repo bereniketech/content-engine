@@ -3,7 +3,9 @@ import { createMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
 import { getSeoGeoPrompt } from '@/lib/prompts/seo-geo'
 import { sanitizeInput } from '@/lib/sanitize'
-import { resolveSessionId } from '@/lib/session-assets'
+import { resolveSessionId, SESSION_ID_UUID_REGEX } from '@/lib/session-assets'
+import { extractJsonPayload } from '@/lib/extract-json'
+import { asStringArray } from '@/lib/type-guards'
 import type { SeoGeoResult } from '@/types'
 
 type SeoGeoRequestBody = {
@@ -15,63 +17,6 @@ const MAX_ARTICLE_LENGTH = 120000
 const MAX_SEO_GEO_TOKENS = 4000
 const REQUIRED_SECONDARY_KEYWORDS = 5
 const REQUIRED_FAQ_ITEMS = 3
-const SESSION_ID_UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-function asStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return []
-  }
-
-  return value
-    .filter((item): item is string => typeof item === 'string')
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0)
-}
-
-function extractJsonPayload(raw: string): unknown {
-  const trimmed = raw.trim()
-
-  try {
-    return JSON.parse(trimmed)
-  } catch {
-    const fencedJsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-    if (fencedJsonMatch) {
-      return JSON.parse(fencedJsonMatch[1])
-    }
-
-    const objectStart = trimmed.indexOf('{')
-    if (objectStart >= 0) {
-      let depth = 0
-      let inString = false
-      let isEscaped = false
-
-      for (let index = objectStart; index < trimmed.length; index += 1) {
-        const char = trimmed[index]
-
-        if (char === '"' && !isEscaped) {
-          inString = !inString
-        }
-
-        if (!inString && char === '{') {
-          depth += 1
-        }
-
-        if (!inString && char === '}') {
-          depth -= 1
-          if (depth === 0) {
-            return JSON.parse(trimmed.slice(objectStart, index + 1))
-          }
-        }
-
-        isEscaped = char === '\\' && !isEscaped
-      }
-    }
-
-    throw new Error('SEO+GEO response did not contain valid JSON')
-  }
-}
-
 function normalizeSeoGeoResult(payload: unknown): SeoGeoResult {
   if (typeof payload !== 'object' || payload === null) {
     throw new Error('SEO+GEO payload must be a JSON object')

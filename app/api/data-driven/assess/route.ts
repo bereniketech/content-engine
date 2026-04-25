@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
 import { sanitizeInput } from '@/lib/sanitize'
+import { extractJsonPayload } from '@/lib/extract-json'
+import { asStringArray } from '@/lib/type-guards'
+import { VALIDATION_CONSTANTS } from '@/lib/validation'
 import type { AssessmentResult } from '@/types'
 
 type AssessRequestBody = {
@@ -10,62 +13,7 @@ type AssessRequestBody = {
 }
 
 const MAX_ASSESS_TOKENS = 500
-const MIN_SOURCE_TEXT_LENGTH = 1
 const MAX_SOURCE_TEXT_LENGTH = 15000
-
-function asStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return []
-  }
-
-  return value
-    .filter((item): item is string => typeof item === 'string')
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0)
-}
-
-function extractJsonPayload(raw: string): unknown {
-  const trimmed = raw.trim()
-
-  try {
-    return JSON.parse(trimmed)
-  } catch {
-    const fencedJsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-    if (fencedJsonMatch) {
-      return JSON.parse(fencedJsonMatch[1])
-    }
-
-    const objectStart = trimmed.indexOf('{')
-    if (objectStart >= 0) {
-      let depth = 0
-      let inString = false
-      let isEscaped = false
-
-      for (let index = objectStart; index < trimmed.length; index += 1) {
-        const char = trimmed[index]
-
-        if (char === '"' && !isEscaped) {
-          inString = !inString
-        }
-
-        if (!inString && char === '{') {
-          depth += 1
-        }
-
-        if (!inString && char === '}') {
-          depth -= 1
-          if (depth === 0) {
-            return JSON.parse(trimmed.slice(objectStart, index + 1))
-          }
-        }
-
-        isEscaped = char === '\\' && !isEscaped
-      }
-    }
-
-    throw new Error('Assessment response did not contain valid JSON')
-  }
-}
 
 function normalizeAssessmentResult(payload: unknown): AssessmentResult {
   if (typeof payload !== 'object' || payload === null) {
@@ -137,7 +85,7 @@ export async function POST(request: NextRequest) {
 
     const sourceText = typeof body.sourceText === 'string' ? body.sourceText.trim() : ''
 
-    if (sourceText.length < MIN_SOURCE_TEXT_LENGTH) {
+    if (sourceText.length < VALIDATION_CONSTANTS.MIN_SOURCE_TEXT_LENGTH) {
       return NextResponse.json(
         {
           error: {

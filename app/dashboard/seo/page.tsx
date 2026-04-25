@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { SEOPanel } from '@/components/sections/SEOPanel'
 import { useSessionContext } from '@/lib/context/SessionContext'
 import { getLatestAssetByType } from '@/lib/session-assets'
-import type { SeoResult } from '@/app/api/seo/route'
+import type { SeoResult } from '@/types'
 
 interface SeoData {
   id: string

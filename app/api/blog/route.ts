@@ -4,7 +4,8 @@ import { streamMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
-import type { SeoResult } from '@/app/api/seo/route'
+import { getWordCount } from '@/lib/utils'
+import type { SeoResult } from '@/types'
 import type { TopicTone } from '@/types'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
@@ -121,7 +122,7 @@ export async function POST(request: NextRequest) {
               topic,
               tone,
               markdown: fullMarkdown,
-              wordCount: fullMarkdown.trim().split(/\s+/).filter(Boolean).length,
+              wordCount: getWordCount(fullMarkdown),
             },
           })
             .select('*')
@@ -140,7 +141,7 @@ export async function POST(request: NextRequest) {
             encoder.encode(
               `data: ${JSON.stringify({
                 done: true,
-                wordCount: fullMarkdown.trim().split(/\s+/).filter(Boolean).length,
+                wordCount: getWordCount(fullMarkdown),
                 asset: savedAsset ? mapAssetRowToContentAsset(savedAsset) : undefined,
               })}\n\n`
             )

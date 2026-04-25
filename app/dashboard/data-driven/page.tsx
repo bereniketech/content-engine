@@ -20,7 +20,11 @@ import {
 } from "@/lib/data-driven-pipeline";
 import { useSessionContext } from "@/lib/context/SessionContext";
 import { getLatestAssetByType } from "@/lib/session-assets";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
+import { isRecord } from "@/lib/type-guards";
 import { isDataDrivenInputData, type ContentAsset, type DataDrivenInputData } from "@/types";
+import { parseSseChunk } from "@/lib/sse-parser";
+import { postJson } from "@/lib/api-client";
 
 interface AssessData {
 	sufficient: boolean;
@@ -80,10 +84,6 @@ const STEP_LABELS: Record<StepKey, string> = {
 	distribution: "Multi-format + Campaigns",
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null;
-}
-
 function isAssessData(value: unknown): value is AssessData {
 	if (!isRecord(value)) {
 		return false;
@@ -140,42 +140,6 @@ async function parseErrorMessage(response: Response): Promise<string> {
 	return fallbackMessage;
 }
 
-function parseSseChunk(rawChunk: string): StreamEvent[] {
-	const events: StreamEvent[] = [];
-	const rawEvents = rawChunk.split("\n\n");
-
-	for (const rawEvent of rawEvents) {
-		const lines = rawEvent.split("\n").filter((line) => line.startsWith("data: "));
-		if (lines.length === 0) {
-			continue;
-		}
-
-		const payload = lines.map((line) => line.slice(6)).join("");
-		try {
-			events.push(JSON.parse(payload) as StreamEvent);
-		} catch {
-			// Ignore partial event chunks until complete payload arrives.
-		}
-	}
-
-	return events;
-}
-
-async function postJson<TResponse>(url: string, body: Record<string, unknown>): Promise<TResponse> {
-	const response = await fetch(url, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-		},
-		body: JSON.stringify(body),
-	});
-
-	if (!response.ok) {
-		throw new Error(await parseErrorMessage(response));
-	}
-
-	return (await response.json()) as TResponse;
-}
 
 function getArticleMarkdownFromAsset(assets: ContentAsset[]): string {
 	const articleAsset = getLatestAssetByType(assets, "dd_article");
@@ -255,6 +219,38 @@ export default function DataDrivenDashboardPage() {
 		});
 		setIsReady(true);
 	}, [assets, dataInput, isValidSession, mode]);
+
+	useEffect(() => {
+		if (!sessionId) return;
+
+		void (async () => {
+			const supabase = getSupabaseBrowserClient();
+			const { data: { session } } = await supabase.auth.getSession();
+			const token = session?.access_token;
+			if (!token) return;
+
+			void fetch(`/api/pipeline/state?sessionId=${sessionId}`, {
+				headers: { authorization: `Bearer ${token}` },
+			})
+				.then((res) => res.json())
+				.then((body: { steps?: Record<string, { status: string; assetId: string }> }) => {
+					if (!body.steps) return;
+					setStepState((current) => {
+						const updated = { ...current };
+						for (const [key, val] of Object.entries(body.steps ?? {})) {
+							if (val.status === "complete") {
+								updated[key as StepKey] = {
+									...current[key as StepKey],
+									status: "complete",
+								} as never;
+							}
+						}
+						return updated;
+					});
+				})
+				.catch(() => { /* ignore — fall back to client-derived state */ });
+		})();
+	}, [sessionId]);
 
 	const setStepRuntimeState = useCallback((stepKey: StepKey, nextState: StepRuntimeState) => {
 		setStepState((currentState) => ({
@@ -371,7 +367,7 @@ export default function DataDrivenDashboardPage() {
 				}
 
 				if (event.asset) {
-					upsertAsset(event.asset);
+					upsertAsset(event.asset as ContentAsset);
 				}
 
 				if (event.done) {

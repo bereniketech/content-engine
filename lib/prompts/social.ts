@@ -1,4 +1,4 @@
-import type { SeoResult } from '@/app/api/seo/route'
+import type { SeoResult } from '@/types'
 
 export const SOCIAL_PLATFORM_KEYS = [
 	'x',

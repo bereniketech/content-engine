@@ -4,6 +4,8 @@ import { getTrafficPrompt, type TrafficPrediction } from '@/lib/prompts/traffic'
 import { requireAuth } from '@/lib/auth'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
+import { extractJsonPayload } from '@/lib/extract-json'
+import { isRecord } from '@/lib/type-guards'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
@@ -11,23 +13,6 @@ type TrafficRequestBody = {
   topic?: unknown
   seo?: unknown
   sessionId?: unknown
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function extractJsonPayload(raw: string): unknown {
-  const trimmed = raw.trim()
-  try {
-    return JSON.parse(trimmed)
-  } catch {
-    const fencedJsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-    if (fencedJsonMatch) {
-      return JSON.parse(fencedJsonMatch[1])
-    }
-    throw new Error('Claude response did not contain valid JSON')
-  }
 }
 
 function clampScore(value: unknown): number {

@@ -9,31 +9,16 @@ import {
   type ImagePromptsOutput,
   type ImageStyle,
 } from '@/lib/prompts/images'
+import { extractJsonPayload } from '@/lib/extract-json'
+import { isRecord } from '@/lib/type-guards'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
 
 function normalizeStyle(value: unknown): ImageStyle {
   if (typeof value === 'string' && IMAGE_STYLES.includes(value as ImageStyle)) {
     return value as ImageStyle
   }
   return 'realistic'
-}
-
-function extractJsonPayload(raw: string): unknown {
-  const trimmed = raw.trim()
-  try {
-    return JSON.parse(trimmed)
-  } catch {
-    const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-    if (fencedMatch) {
-      return JSON.parse(fencedMatch[1])
-    }
-    throw new Error('Claude response did not contain valid JSON')
-  }
 }
 
 function normalizeImagePrompts(payload: unknown): ImagePromptsOutput {

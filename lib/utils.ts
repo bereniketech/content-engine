@@ -17,3 +17,7 @@ export function getPublicSiteUrl(): string {
 
   return "http://localhost:3000";
 }
+
+export function getWordCount(text: string): number {
+  return text.trim().split(/\s+/).filter(Boolean).length
+}

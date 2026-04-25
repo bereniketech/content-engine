@@ -3,6 +3,7 @@ import { createMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
+import { isRecord, asStringArray } from '@/lib/type-guards'
 import {
   getSocialRegeneratePrompt,
   SOCIAL_ASSET_TYPE_BY_KEY,
@@ -18,14 +19,6 @@ type RegenerateRequestBody = {
   blog?: unknown
   seo?: unknown
   sessionId?: unknown
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function asStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
 }
 
 function parseJsonPayload(raw: string): unknown {

@@ -3,6 +3,8 @@ import { createMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
+import { extractJsonPayload } from '@/lib/extract-json'
+import { isRecord, asStringArray } from '@/lib/type-guards'
 import {
   getSocialPrompt,
   SOCIAL_ASSET_TYPE_BY_KEY,
@@ -30,27 +32,6 @@ const SOCIAL_OUTPUT_KEYS = [
   'pinterest',
   'extras',
 ] as const
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function asStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
-}
-
-function extractJsonPayload(raw: string): unknown {
-  const trimmed = raw.trim()
-  try {
-    return JSON.parse(trimmed)
-  } catch {
-    const fencedJsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-    if (fencedJsonMatch) {
-      return JSON.parse(fencedJsonMatch[1])
-    }
-    throw new Error('Claude response did not contain valid JSON')
-  }
-}
 
 function normalizeSocialOutput(payload: unknown): SocialOutput {
   if (!isRecord(payload)) {

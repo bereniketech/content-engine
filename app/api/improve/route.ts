@@ -4,28 +4,14 @@ import { getImprovePrompt } from '@/lib/prompts/improve'
 import { requireAuth } from '@/lib/auth'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput } from '@/lib/sanitize'
+import { extractJsonPayload } from '@/lib/extract-json'
+import { VALIDATION_CONSTANTS } from '@/lib/validation'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
 interface ImproveResponse {
   improved: string
   changes: Array<{ type: string; description: string }>
-}
-
-const MIN_ARTICLE_LENGTH = 101
-
-function extractJsonPayload(raw: string): ImproveResponse {
-  const trimmed = raw.trim()
-
-  try {
-    return JSON.parse(trimmed) as ImproveResponse
-  } catch {
-    const fencedJsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-    if (fencedJsonMatch) {
-      return JSON.parse(fencedJsonMatch[1]) as ImproveResponse
-    }
-    throw new Error('Claude response did not contain valid JSON')
-  }
 }
 
 function normalizeImproveResponse(payload: ImproveResponse): ImproveResponse {
@@ -76,7 +62,7 @@ export async function POST(request: NextRequest) {
 
     const article = typeof body.article === 'string' ? body.article.trim() : ''
 
-    if (article.length < MIN_ARTICLE_LENGTH) {
+    if (article.length < VALIDATION_CONSTANTS.MIN_ARTICLE_IMPROVE_LENGTH) {
       return NextResponse.json(
         {
           error: {
@@ -119,7 +105,7 @@ export async function POST(request: NextRequest) {
       maxTokens: 2200,
       messages: [{ role: 'user', content: prompt }],
     })
-    const normalized = normalizeImproveResponse(extractJsonPayload(responseText))
+    const normalized = normalizeImproveResponse(extractJsonPayload(responseText) as ImproveResponse)
 
     const { data: savedAsset, error: saveError } = await supabase.from('content_assets').insert({
       session_id: sessionId,

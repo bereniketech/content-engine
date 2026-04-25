@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSessionContext } from '@/lib/context/SessionContext'
 import { getLatestAssetByType } from '@/lib/session-assets'
+import { isRecord } from '@/lib/type-guards'
 
 type CampaignPhase = 'mystery' | 'reveal_slow' | 'reveal_full'
 
@@ -24,10 +25,6 @@ interface XCampaignAssetContent {
   campaignName: string
   posts: CampaignPost[]
   threadVariant: string[]
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
 }
 
 function parsePost(value: unknown): CampaignPost | null {

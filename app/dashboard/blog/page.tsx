@@ -5,7 +5,7 @@ import { BlogPanel } from '@/components/sections/BlogPanel'
 import { useSessionContext } from '@/lib/context/SessionContext'
 import { Button } from '@/components/ui/button'
 import { getLatestAssetByType } from '@/lib/session-assets'
-import type { SeoResult } from '@/app/api/seo/route'
+import type { SeoResult } from '@/types'
 import { isTopicInputData } from '@/types'
 
 interface ResearchOutput {

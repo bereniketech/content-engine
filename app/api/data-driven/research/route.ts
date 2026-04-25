@@ -5,6 +5,8 @@ import { getDeepResearchPrompt } from '@/lib/prompts/deep-research'
 import { sanitizeInput } from '@/lib/sanitize'
 import { resolveSessionId } from '@/lib/session-assets'
 import { runNotebookLmCliResearch } from '@/lib/notebooklm-cli'
+import { extractJsonPayload } from '@/lib/extract-json'
+import { isRecord, asStringArray } from '@/lib/type-guards'
 import type { DeepResearchResult } from '@/types'
 
 export const maxDuration = 300
@@ -35,35 +37,6 @@ const NOTEBOOK_CAPABILITY_SET = new Set<NotebookCapability>([
 const DEFAULT_NOTEBOOK_CAPABILITIES: NotebookCapability[] = ['deep_research', 'literature_review']
 const MAX_TOPIC_LENGTH = 200
 const MAX_SOURCE_TEXT_LENGTH = 16000
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function asStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) {
-    return []
-  }
-
-  return value
-    .filter((item): item is string => typeof item === 'string')
-    .map((item) => item.trim())
-    .filter((item) => item.length > 0)
-}
-
-function extractJsonPayload(raw: string): unknown {
-  const trimmed = raw.trim()
-
-  try {
-    return JSON.parse(trimmed)
-  } catch {
-    const fencedJsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-    if (fencedJsonMatch) {
-      return JSON.parse(fencedJsonMatch[1])
-    }
-    throw new Error('AI response did not contain valid JSON')
-  }
-}
 
 function selectNotebookCapabilities(topic: string): NotebookCapability[] {
   const normalized = topic.toLowerCase()

@@ -5,6 +5,7 @@ import { parsePdf } from '@/lib/pdf-parse'
 import { getDataDrivenArticlePrompt } from '@/lib/prompts/data-driven-article'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
+import { getWordCount } from '@/lib/utils'
 
 interface ParsedArticleInput {
   sourceText?: string
@@ -26,10 +27,6 @@ const SSE_HEADERS = {
   'Cache-Control': 'no-cache',
   Connection: 'keep-alive',
 } as const
-
-function getWordCount(text: string): number {
-  return text.trim().split(/\s+/).filter(Boolean).length
-}
 
 function sanitizeOptionalText(value: unknown, maxLength: number): string | undefined {
   if (typeof value !== 'string') {

@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
 import { getThreadsCampaignPrompt } from '@/lib/prompts/threads-campaign'
-import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
+import { mapAssetRowToContentAsset, resolveSessionId, SESSION_ID_UUID_REGEX } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
+import { extractJsonPayload } from '@/lib/extract-json'
+import { isRecord } from '@/lib/type-guards'
 
 interface ThreadsCampaignPost {
   postNumber: number
@@ -41,13 +43,6 @@ const MAX_SEO_GEO_LENGTH = 60000
 const MAX_TONE_LENGTH = 4000
 const MAX_THREADS_CAMPAIGN_TOKENS = 4000
 const EXPECTED_POST_COUNT = 10
-const SESSION_ID_UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 function isValidSeoGeoShape(
   value: unknown
 ): value is { seo: Record<string, unknown>; geo: Record<string, unknown> } {
@@ -56,49 +51,6 @@ function isValidSeoGeoShape(
   }
 
   return isRecord(value.seo) && isRecord(value.geo)
-}
-
-function extractJsonPayload(raw: string): unknown {
-  const trimmed = raw.trim()
-
-  try {
-    return JSON.parse(trimmed)
-  } catch {
-    const fencedJsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-    if (fencedJsonMatch) {
-      return JSON.parse(fencedJsonMatch[1])
-    }
-
-    const objectStart = trimmed.indexOf('{')
-    if (objectStart >= 0) {
-      let depth = 0
-      let inString = false
-      let isEscaped = false
-
-      for (let index = objectStart; index < trimmed.length; index += 1) {
-        const char = trimmed[index]
-
-        if (char === '"' && !isEscaped) {
-          inString = !inString
-        }
-
-        if (!inString && char === '{') {
-          depth += 1
-        }
-
-        if (!inString && char === '}') {
-          depth -= 1
-          if (depth === 0) {
-            return JSON.parse(trimmed.slice(objectStart, index + 1))
-          }
-        }
-
-        isEscaped = char === '\\' && !isEscaped
-      }
-    }
-
-    throw new Error('Threads campaign response did not contain valid JSON')
-  }
 }
 
 function normalizeThreadsCampaignOutput(payload: unknown): ThreadsCampaignOutput {

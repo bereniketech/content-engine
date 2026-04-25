@@ -23,6 +23,9 @@ function getSupabaseConfig() {
   return { supabaseUrl, supabaseAnonKey }
 }
 
+export const SESSION_ID_UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 export function createSupabaseRequestClient(request: NextRequest): SupabaseClient {
   const { supabaseUrl, supabaseAnonKey } = getSupabaseConfig()
 

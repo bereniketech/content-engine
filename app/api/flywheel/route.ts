@@ -4,6 +4,8 @@ import { getFlywheelPrompt, type FlywheelIdea } from '@/lib/prompts/flywheel'
 import { requireAuth } from '@/lib/auth'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput } from '@/lib/sanitize'
+import { extractJsonPayload } from '@/lib/extract-json'
+import { isRecord, asStringArray } from '@/lib/type-guards'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
@@ -11,29 +13,6 @@ type FlywheelRequestBody = {
   topic?: unknown
   keywords?: unknown
   sessionId?: unknown
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function extractJsonPayload(raw: string): unknown {
-  const trimmed = raw.trim()
-  try {
-    return JSON.parse(trimmed)
-  } catch {
-    const fencedJsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-    if (fencedJsonMatch) {
-      return JSON.parse(fencedJsonMatch[1])
-    }
-    throw new Error('Claude response did not contain valid JSON')
-  }
-}
-
-function asStringArray(value: unknown): string[] {
-  return Array.isArray(value)
-    ? value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
-    : []
 }
 
 function buildFallbackIdeas(topic: string, keywords: string[], count: number): FlywheelIdea[] {

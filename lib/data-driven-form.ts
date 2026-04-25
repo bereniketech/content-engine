@@ -1,4 +1,5 @@
 import type { DataDrivenInputData } from "@/types";
+import { VALIDATION_CONSTANTS } from "@/lib/validation";
 
 export type DataDrivenFormMode = "data" | "topic";
 export type DataDrivenFileKind = "text" | "pdf" | "unsupported";
@@ -11,7 +12,9 @@ interface DataDrivenDraftInput {
 	tone: string;
 }
 
-const TEXT_FILE_EXTENSIONS = new Set(["txt", "md"]);
+const TEXT_FILE_EXTENSIONS = new Set(VALIDATION_CONSTANTS.ALLOWED_FILE_EXTENSIONS.filter(
+  (ext) => ext !== 'pdf'
+) as string[]);
 const PDF_FILE_EXTENSION = "pdf";
 
 export function getDataDrivenFileKind(fileName: string): DataDrivenFileKind {
@@ -45,9 +48,15 @@ export function getDataDrivenValidationError(input: DataDrivenDraftInput): strin
 		return topic ? null : "Enter a topic before creating the session.";
 	}
 
-	return sourceText || sourceFileName
-		? null
-		: "Add source text or select a file before creating the session.";
+	if (!sourceText && !sourceFileName) {
+		return "Add source text or select a file before creating the session.";
+	}
+
+	if (sourceText && sourceText.length < VALIDATION_CONSTANTS.MIN_SOURCE_TEXT_LENGTH) {
+		return `Source text must be at least ${VALIDATION_CONSTANTS.MIN_SOURCE_TEXT_LENGTH} characters.`;
+	}
+
+	return null;
 }
 
 export function buildDataDrivenInputData(input: DataDrivenDraftInput): DataDrivenInputData {

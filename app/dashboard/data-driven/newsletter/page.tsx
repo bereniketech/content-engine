@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSessionContext } from '@/lib/context/SessionContext'
 import { getLatestAssetByType } from '@/lib/session-assets'
+import { isRecord } from '@/lib/type-guards'
 
 interface NewsletterAssetContent {
   subjectLine: string
@@ -15,10 +16,6 @@ interface NewsletterAssetContent {
 }
 
 type NewsletterViewMode = 'markdown' | 'plain-text'
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
 
 function parseNewsletterAssetContent(value: unknown): NewsletterAssetContent | null {
   if (

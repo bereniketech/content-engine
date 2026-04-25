@@ -4,29 +4,14 @@ import { getDistributePrompt, type DistributionOutput } from '@/lib/prompts/dist
 import { requireAuth } from '@/lib/auth'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeUnknown } from '@/lib/sanitize'
+import { extractJsonPayload } from '@/lib/extract-json'
+import { isRecord } from '@/lib/type-guards'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
 type DistributeRequestBody = {
   assets?: unknown
   sessionId?: unknown
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
-}
-
-function extractJsonPayload(raw: string): unknown {
-  const trimmed = raw.trim()
-  try {
-    return JSON.parse(trimmed)
-  } catch {
-    const fencedMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-    if (fencedMatch) {
-      return JSON.parse(fencedMatch[1])
-    }
-    throw new Error('Claude response did not contain valid JSON')
-  }
 }
 
 function normalizePlatformInstructions(value: unknown): Record<string, string> {

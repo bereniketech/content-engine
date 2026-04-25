@@ -4,32 +4,9 @@ import { createMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
 import { resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
+import type { SeoResult } from '@/types'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
-
-export interface SeoResult {
-  title: string
-  metaDescription: string
-  slug: string
-  primaryKeyword: string
-  secondaryKeywords: string[]
-  snippetAnswer: string
-  headingStructure: {
-    h1: string
-    h2: string[]
-    h3: string[]
-  }
-  faqSchema: Array<{ question: string; answer: string }>
-  articleSchema: {
-    headline: string
-    description: string
-    author: string
-    datePublished: string
-  }
-  seoScore: number
-  keywordScore: number
-  rankingPotential: 'Low' | 'Medium' | 'High'
-}
 
 export async function POST(request: NextRequest) {
   try {

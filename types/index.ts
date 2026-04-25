@@ -140,3 +140,27 @@ export interface ContentAsset {
 	version: number;
 	createdAt: string;
 }
+
+export interface SeoResult {
+	title: string;
+	metaDescription: string;
+	slug: string;
+	primaryKeyword: string;
+	secondaryKeywords: string[];
+	snippetAnswer: string;
+	headingStructure: {
+		h1: string;
+		h2: string[];
+		h3: string[];
+	};
+	faqSchema: Array<{ question: string; answer: string }>;
+	articleSchema: {
+		headline: string;
+		description: string;
+		author: string;
+		datePublished: string;
+	};
+	seoScore: number;
+	keywordScore: number;
+	rankingPotential: "Low" | "Medium" | "High";
+}

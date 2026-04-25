@@ -24,14 +24,6 @@ interface SessionListItem {
   assetCount: number;
 }
 
-interface ContentAssetRow {
-  id: string;
-  asset_type: string;
-  content: Record<string, unknown>;
-  version: number;
-  created_at: string;
-}
-
 const SUMMARY_THRESHOLD = 5;
 
 export default function DashboardPage() {
@@ -54,46 +46,44 @@ export default function DashboardPage() {
         const supabase = getSupabaseBrowserClient();
 
         const {
-          data: { user },
-          error: userError,
-        } = await supabase.auth.getUser();
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
-        if (userError || !user) {
+        if (sessionError || !session) {
           if (isActive) {
             setHistory([]);
-            setHistoryError(userError?.message ?? "Sign in to load your session history.");
+            setHistoryError(sessionError?.message ?? "Sign in to load your session history.");
           }
           return;
         }
 
-        const { data: sessions, error: sessionsError } = await supabase
-          .from("sessions")
-          .select("id, input_type, input_data, created_at")
-          .eq("user_id", user.id)
-          .order("created_at", { ascending: false });
+        const response = await fetch('/api/sessions', {
+          headers: { authorization: `Bearer ${session.access_token}` },
+        });
 
-        if (sessionsError) {
-          throw new Error(sessionsError.message);
+        if (!response.ok) {
+          const body = await response.json() as { error?: { message?: string } };
+          throw new Error(body.error?.message ?? "Failed to load session history.");
         }
 
-        const sessionRows = sessions ?? [];
+        const body = await response.json() as {
+          sessions: Array<{
+            id: string;
+            created_at: string;
+            input_type: string;
+            input_data: SessionInputData;
+            assets: ContentAsset[];
+          }>;
+        };
 
-        const withCounts = await Promise.all(
-          sessionRows.map(async (session) => {
-            const { count } = await supabase
-              .from("content_assets")
-              .select("id", { count: "exact", head: true })
-              .eq("session_id", session.id);
-
-            return {
-              id: session.id,
-              inputType: session.input_type as SessionInputType,
-              inputData: session.input_data as SessionInputData,
-              createdAt: session.created_at,
-              assetCount: count ?? 0,
-            };
-          }),
-        );
+        const withCounts = body.sessions.map((s) => ({
+          id: s.id,
+          inputType: s.input_type as SessionInputType,
+          inputData: s.input_data,
+          createdAt: s.created_at,
+          assetCount: s.assets.length,
+        }));
 
         if (isActive) {
           setHistory(withCounts);
@@ -126,23 +116,36 @@ export default function DashboardPage() {
     try {
       const supabase = getSupabaseBrowserClient();
 
-      const { data, error } = await supabase
-        .from("content_assets")
-        .select("id, asset_type, content, version, created_at")
-        .eq("session_id", session.id)
-        .order("created_at", { ascending: true });
+      const {
+        data: { session: authSession },
+        error: sessionError,
+      } = await supabase.auth.getSession();
 
-      if (error) {
-        throw new Error(error.message);
+      if (sessionError || !authSession) {
+        throw new Error(sessionError?.message ?? "Sign in to restore a session.");
       }
 
-      const mappedAssets: ContentAsset[] = (data ?? []).map((asset: ContentAssetRow) => ({
-        id: asset.id,
-        assetType: asset.asset_type,
-        content: asset.content,
-        version: asset.version,
-        createdAt: asset.created_at,
-      }));
+      const response = await fetch(`/api/sessions?id=${encodeURIComponent(session.id)}`, {
+        headers: { authorization: `Bearer ${authSession.access_token}` },
+      });
+
+      if (!response.ok) {
+        const body = await response.json() as { error?: { message?: string } };
+        throw new Error(body.error?.message ?? "Failed to restore session.");
+      }
+
+      const body = await response.json() as {
+        sessions: Array<{
+          id: string;
+          created_at: string;
+          input_type: string;
+          input_data: SessionInputData;
+          assets: ContentAsset[];
+        }>;
+      };
+
+      const restored = body.sessions[0];
+      const mappedAssets: ContentAsset[] = restored?.assets ?? [];
 
       loadSession({
         sessionId: session.id,

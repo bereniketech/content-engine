@@ -1,4 +1,4 @@
-import type { SeoResult } from '@/app/api/seo/route'
+import type { SeoResult } from '@/types'
 import type { TopicTone } from '@/types'
 
 interface ResearchOutput {

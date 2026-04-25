@@ -1,70 +1,69 @@
 # Project Configuration
 
 ## Skill Library
-- Path: C:/Users/Hp/Desktop/Experiment/claude_kit
+Path: C:/Users/Hp/Desktop/Experiment/claude_kit
 
 ## Selected Skills
 
-### Core
-- code-writing-software-development → skills/development/code-writing-software-development
-- continuous-learning → skills/core/continuous-learning
-- strategic-compact → skills/core/strategic-compact
-- autonomous-agents-task-automation → skills/planning/autonomous-agents-task-automation
-- tdd-workflow → skills/testing-quality/tdd-workflow
-- security-review → skills/testing-quality/security-review
-- build-website-web-app → skills/development/build-website-web-app
-- claude-developer-platform → skills/ai-platform/claude-developer-platform
-- api-design → skills/development/api-design
-- notebooklm → skills/ai-platform/notebooklm
-- wrapup → skills/core/wrapup
-- database-migrations → skills/data-backend/database-migrations
+### Core (always)
+- skills/core/karpathy-principles
 
-### Distribution & Social Posting (added for next build phase)
-- x-api → skills/integrations/x-api
-- twitter-automation → skills/integrations/twitter-automation
-- linkedin-automation → skills/integrations/linkedin-automation
-- instagram-automation → skills/integrations/instagram-automation
-- reddit-automation → skills/integrations/reddit-automation
+### Development
+- skills/development/code-writing-software-development
+- skills/development/build-website-web-app
+- skills/development/api-design
+- skills/development/systematic-debugging
 
-### Email Delivery (added for next build phase)
-- mailchimp-automation → skills/integrations/mailchimp-automation
-- sendgrid-automation → skills/integrations/sendgrid-automation
-- email-marketing-automation → skills/marketing-growth/email-marketing-automation
+### Frameworks
+- skills/frameworks-frontend/nextjs-patterns
 
-### Analytics (added for next build phase)
-- google-analytics-automation → skills/integrations/google-analytics-automation
-- posthog-automation → skills/integrations/posthog-automation
+### Data & Backend
+- skills/data-backend/postgres-patterns
 
-### Content Strategy & Scheduling (added for next build phase)
-- content-strategy → skills/marketing-growth/content-strategy
-- social-orchestrator → skills/marketing-growth/social-orchestrator
-- social-media-management → skills/marketing-growth/social-media-management
-- competitor-intelligence → skills/marketing-growth/competitor-intelligence
+### Testing & Quality
+- skills/testing-quality/tdd-workflow
+- skills/testing-quality/security-review
+
+### Studio
+- skills/_studio/batch-tasks
+
+## Selected Agents
+
+### Board
+- agents/board/company-coo.md
+
+### software-company
+- agents/software-company/software-cto.md
+- agents/software-company/engineering/web-frontend-expert.md
+- agents/software-company/engineering/web-backend-expert.md
+- agents/software-company/engineering/code-reviewer.md
+- agents/software-company/engineering/refactor-cleaner.md
+- agents/software-company/qa/test-expert.md
+- agents/software-company/qa/security-reviewer.md
+
+## Selected Commands
+- commands/core/task-handoff.md
+- commands/core/wrapup.md
+- commands/development/code-review.md
+- commands/development/verify.md
 
 ## Rules Active
-- common
-- typescript
+- rules/common/ (full)
+- rules/typescript/
+
+## Stack
+- Next.js 14 (App Router, React 18)
+- TypeScript
+- Supabase (PostgreSQL + Auth)
+- Anthropic Claude API
+- Tailwind CSS
+- Vercel (hosting)
+- npm
 
 ## GitHub
 - Repo: https://github.com/bereniketech/content-engine.git
 - Branch: main
 - Visibility: private
-
-## Hosting
-- Provider: Vercel
-- Domain: none
-
-## CI/CD
-- Pipeline: none
-
-## Database
-- Provider: Supabase
-
-## Auth
-- Provider: Supabase Auth
-
-## Package Manager
-- npm
 
 ## Environment Variables
 
@@ -80,20 +79,3 @@
 - GOOGLE_SEARCH_API_KEY
 - GOOGLE_TRENDS_API_KEY
 - FAL_API_KEY
-
-### Needed for next build phase
-- LINKEDIN_CLIENT_ID
-- LINKEDIN_CLIENT_SECRET
-- LINKEDIN_ACCESS_TOKEN
-- INSTAGRAM_ACCESS_TOKEN
-- INSTAGRAM_BUSINESS_ACCOUNT_ID
-- REDDIT_CLIENT_ID
-- REDDIT_CLIENT_SECRET
-- REDDIT_REFRESH_TOKEN
-- MAILCHIMP_API_KEY
-- MAILCHIMP_AUDIENCE_ID
-- SENDGRID_API_KEY
-- GA4_PROPERTY_ID
-- GOOGLE_SEARCH_CONSOLE_SITE_URL
-- GOOGLE_SERVICE_ACCOUNT_JSON
-- POSTHOG_API_KEY
