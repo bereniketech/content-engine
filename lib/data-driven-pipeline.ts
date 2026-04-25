@@ -1,4 +1,24 @@
 import type { ContentAsset } from '@/types'
+import { ASSET_TYPES } from '@/lib/asset-types'
+
+/**
+ * TECH DEBT (P2): Pipeline orchestration is browser-driven from app/dashboard/data-driven/page.tsx.
+ *
+ * Current flow:
+ *   Browser → API route → API route → ... (sequential)
+ * Each step waits for the previous one to complete. If the user closes the tab or
+ * network drops, all in-progress state is lost.
+ *
+ * True fix:
+ *   Implement server-side job queue (Inngest, BullMQ, or Vercel Queue) that:
+ *   - Persists each step's state in the database (or Redis)
+ *   - Handles retries on transient failures
+ *   - Allows resuming pipelines across browser sessions
+ *   - Provides real-time progress updates via WebSocket or SSE
+ *
+ * Estimated effort: Medium-Large (3–5 days)
+ * Tracked in: [link to issue if available]
+ */
 
 export type PipelineMode = 'topic' | 'data'
 
@@ -20,27 +40,16 @@ export interface RestoredPipelineState {
   stepStates: StepStateMap
 }
 
-const PIPELINE_ASSET_TYPES = {
-  research: 'dd_research',
-  article: 'dd_article',
-  seoGeo: 'dd_seo_geo',
-  blog: 'dd_blog',
-  xCampaign: 'dd_x_campaign',
-  threadsCampaign: 'dd_threads_campaign',
-} as const
-
 function hasAsset(assets: ContentAsset[], assetType: string): boolean {
   return assets.some((asset) => asset.assetType === assetType)
 }
 
 function hasAnyDownstreamAsset(assets: ContentAsset[]): boolean {
   return [
-    PIPELINE_ASSET_TYPES.research,
-    PIPELINE_ASSET_TYPES.article,
-    PIPELINE_ASSET_TYPES.seoGeo,
-    PIPELINE_ASSET_TYPES.blog,
-    PIPELINE_ASSET_TYPES.xCampaign,
-    PIPELINE_ASSET_TYPES.threadsCampaign,
+    ASSET_TYPES.DD_RESEARCH,
+    ASSET_TYPES.DD_ARTICLE,
+    ASSET_TYPES.DD_SEO_GEO,
+    ASSET_TYPES.BLOG,
   ].some((assetType) => hasAsset(assets, assetType))
 }
 
@@ -69,7 +78,7 @@ export function buildRestoredPipelineState(options: {
   assets: ContentAsset[]
 }): RestoredPipelineState {
   const { mode, assets } = options
-  const includeResearch = mode === 'topic' || hasAsset(assets, PIPELINE_ASSET_TYPES.research)
+  const includeResearch = mode === 'topic' || hasAsset(assets, ASSET_TYPES.RESEARCH)
   const stepKeys = buildStepKeys(mode, includeResearch)
 
   const stepStates = createEmptyStepStateMap()
@@ -78,21 +87,21 @@ export function buildRestoredPipelineState(options: {
     stepStates.assess = { status: 'complete', content: { restored: true } }
   }
 
-  if (hasAsset(assets, PIPELINE_ASSET_TYPES.research)) {
+  if (hasAsset(assets, ASSET_TYPES.DD_RESEARCH)) {
     stepStates.research = { status: 'complete', content: { restored: true } }
   }
 
-  if (hasAsset(assets, PIPELINE_ASSET_TYPES.article)) {
+  if (hasAsset(assets, ASSET_TYPES.DD_ARTICLE)) {
     stepStates.article = { status: 'complete', content: { restored: true } }
   }
 
-  if (hasAsset(assets, PIPELINE_ASSET_TYPES.seoGeo)) {
+  if (hasAsset(assets, ASSET_TYPES.DD_SEO_GEO)) {
     stepStates.seoGeo = { status: 'complete', content: { restored: true } }
   }
 
   const hasLegacyDistributionAssets =
-    hasAsset(assets, PIPELINE_ASSET_TYPES.blog)
-    && hasAsset(assets, PIPELINE_ASSET_TYPES.xCampaign)
+    hasAsset(assets, ASSET_TYPES.DD_BLOG)
+    && hasAsset(assets, ASSET_TYPES.DD_X_CAMPAIGN)
 
   if (hasLegacyDistributionAssets) {
     stepStates.distribution = { status: 'complete', content: { restored: true } }
@@ -140,16 +149,50 @@ export function resetForRegenerate(
 
 export function getDownstreamAssetTypesForRegenerate(targetStepKey: StepKey): string[] {
   if (targetStepKey === 'assess' || targetStepKey === 'research') {
-    return ['dd_research', 'dd_article', 'dd_seo_geo', 'dd_blog', 'dd_linkedin', 'dd_medium', 'dd_newsletter', 'dd_x_campaign', 'dd_threads_campaign']
+    return [
+      ASSET_TYPES.DD_RESEARCH,
+      ASSET_TYPES.DD_ARTICLE,
+      ASSET_TYPES.DD_SEO_GEO,
+      ASSET_TYPES.DD_BLOG,
+      ASSET_TYPES.DD_LINKEDIN,
+      ASSET_TYPES.DD_MEDIUM,
+      ASSET_TYPES.DD_NEWSLETTER,
+      ASSET_TYPES.DD_X_CAMPAIGN,
+      ASSET_TYPES.DD_THREADS_CAMPAIGN,
+    ]
   }
 
   if (targetStepKey === 'article') {
-    return ['dd_article', 'dd_seo_geo', 'dd_blog', 'dd_linkedin', 'dd_medium', 'dd_newsletter', 'dd_x_campaign', 'dd_threads_campaign']
+    return [
+      ASSET_TYPES.DD_ARTICLE,
+      ASSET_TYPES.DD_SEO_GEO,
+      ASSET_TYPES.DD_BLOG,
+      ASSET_TYPES.DD_LINKEDIN,
+      ASSET_TYPES.DD_MEDIUM,
+      ASSET_TYPES.DD_NEWSLETTER,
+      ASSET_TYPES.DD_X_CAMPAIGN,
+      ASSET_TYPES.DD_THREADS_CAMPAIGN,
+    ]
   }
 
   if (targetStepKey === 'seoGeo') {
-    return ['dd_seo_geo', 'dd_blog', 'dd_linkedin', 'dd_medium', 'dd_newsletter', 'dd_x_campaign', 'dd_threads_campaign']
+    return [
+      ASSET_TYPES.DD_SEO_GEO,
+      ASSET_TYPES.DD_BLOG,
+      ASSET_TYPES.DD_LINKEDIN,
+      ASSET_TYPES.DD_MEDIUM,
+      ASSET_TYPES.DD_NEWSLETTER,
+      ASSET_TYPES.DD_X_CAMPAIGN,
+      ASSET_TYPES.DD_THREADS_CAMPAIGN,
+    ]
   }
 
-  return ['dd_blog', 'dd_linkedin', 'dd_medium', 'dd_newsletter', 'dd_x_campaign', 'dd_threads_campaign']
+  return [
+    ASSET_TYPES.DD_BLOG,
+    ASSET_TYPES.DD_LINKEDIN,
+    ASSET_TYPES.DD_MEDIUM,
+    ASSET_TYPES.DD_NEWSLETTER,
+    ASSET_TYPES.DD_X_CAMPAIGN,
+    ASSET_TYPES.DD_THREADS_CAMPAIGN,
+  ]
 }

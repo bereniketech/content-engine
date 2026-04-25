@@ -3,7 +3,9 @@ import { createMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
-import { isRecord, asStringArray } from '@/lib/type-guards'
+import { isRecord } from '@/lib/type-guards'
+import { extractJsonPayload } from '@/lib/extract-json'
+import { normalizePlatformData } from '@/lib/social-normalize'
 import {
   getSocialRegeneratePrompt,
   SOCIAL_ASSET_TYPE_BY_KEY,
@@ -21,90 +23,12 @@ type RegenerateRequestBody = {
   sessionId?: unknown
 }
 
-function parseJsonPayload(raw: string): unknown {
-  const trimmed = raw.trim()
-  try {
-    return JSON.parse(trimmed)
-  } catch {
-    const fencedJsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i)
-    if (fencedJsonMatch) {
-      return JSON.parse(fencedJsonMatch[1])
-    }
-    throw new Error('Claude response did not contain valid JSON')
-  }
-}
-
 function normalizePlatform(platform: unknown): SocialPlatform | null {
   if (typeof platform !== 'string') {
     return null
   }
 
   return SOCIAL_PLATFORM_KEYS.includes(platform as SocialPlatform) ? (platform as SocialPlatform) : null
-}
-
-function normalizePlatformOutput(platform: SocialPlatform, payload: unknown): SocialOutput[SocialPlatform] {
-  const data = isRecord(payload) ? payload : {}
-
-  if (platform === 'x') {
-    return {
-      tweet: typeof data.tweet === 'string' ? data.tweet : '',
-      thread: asStringArray(data.thread),
-      hooks: asStringArray(data.hooks),
-      replies: asStringArray(data.replies),
-    }
-  }
-
-  if (platform === 'linkedin') {
-    return {
-      storytelling: typeof data.storytelling === 'string' ? data.storytelling : '',
-      authority: typeof data.authority === 'string' ? data.authority : '',
-      carousel: typeof data.carousel === 'string' ? data.carousel : '',
-    }
-  }
-
-  if (platform === 'instagram') {
-    return {
-      carouselCaptions: asStringArray(data.carouselCaptions),
-      reelCaption: typeof data.reelCaption === 'string' ? data.reelCaption : '',
-      hooks: asStringArray(data.hooks),
-      cta: typeof data.cta === 'string' ? data.cta : '',
-    }
-  }
-
-  if (platform === 'medium') {
-    return {
-      article: typeof data.article === 'string' ? data.article : '',
-      canonicalSuggestion: typeof data.canonicalSuggestion === 'string' ? data.canonicalSuggestion : '',
-    }
-  }
-
-  if (platform === 'reddit') {
-    return {
-      post: typeof data.post === 'string' ? data.post : '',
-      subreddits: asStringArray(data.subreddits),
-      questions: asStringArray(data.questions),
-    }
-  }
-
-  if (platform === 'newsletter') {
-    return {
-      subjectLines: asStringArray(data.subjectLines),
-      body: typeof data.body === 'string' ? data.body : '',
-      cta: typeof data.cta === 'string' ? data.cta : '',
-    }
-  }
-
-  return {
-    pins: Array.isArray(data.pins)
-      ? data.pins
-          .filter((pin): pin is Record<string, unknown> => isRecord(pin))
-          .map((pin) => ({
-            title: typeof pin.title === 'string' ? pin.title : '',
-            description: typeof pin.description === 'string' ? pin.description : '',
-            keywords: asStringArray(pin.keywords),
-          }))
-      : [],
-  }
 }
 
 export async function POST(request: NextRequest) {
@@ -178,11 +102,11 @@ export async function POST(request: NextRequest) {
       maxTokens: 1400,
       messages: [{ role: 'user', content: prompt }],
     }) || '{}'
-    const rawPayload = parseJsonPayload(responseText)
+    const rawPayload = extractJsonPayload(responseText)
     const payloadObject = isRecord(rawPayload) ? rawPayload : {}
     const platformSource = isRecord(payloadObject[platform]) ? payloadObject[platform] : payloadObject
 
-    const platformPayload = normalizePlatformOutput(platform, platformSource)
+    const platformPayload = normalizePlatformData(platform, platformSource)
 
     const { data: savedAsset, error: saveError } = await supabase.from('content_assets').insert({
       session_id: sessionId,

@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSessionContext } from '@/lib/context/SessionContext'
 import { getLatestAssetByType } from '@/lib/session-assets'
+import { normalizeSocialOutput, normalizePlatformData } from '@/lib/social-normalize'
+import { asStringArray, isRecord } from '@/lib/type-guards'
 import {
   SOCIAL_PLATFORM_KEYS,
   type SocialOutput,
@@ -33,6 +35,7 @@ const PLATFORM_LABELS: Record<SocialPlatform, string> = {
   pinterest: 'Pinterest',
 }
 
+
 function createEmptySocialOutput(): SocialOutput {
   return {
     x: { tweet: '', thread: [], hooks: [], replies: [] },
@@ -44,10 +47,6 @@ function createEmptySocialOutput(): SocialOutput {
     pinterest: { pins: [] },
     extras: { quotes: [], discussionQuestions: [], miniPosts: [] },
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null
 }
 
 function getValueAtPath(source: unknown, path: string): unknown {
@@ -133,93 +132,6 @@ function setValueAtPath(source: unknown, path: string, value: string): unknown {
   return source
 }
 
-function asStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string') : []
-}
-
-function normalizePlatformData<K extends SocialPlatform>(platform: K, payload: unknown): SocialOutput[K] {
-  const data = isRecord(payload) ? payload : {}
-
-  if (platform === 'x') {
-    return {
-      tweet: typeof data.tweet === 'string' ? data.tweet : '',
-      thread: asStringArray(data.thread),
-      hooks: asStringArray(data.hooks),
-      replies: asStringArray(data.replies),
-    } as SocialOutput[K]
-  }
-
-  if (platform === 'linkedin') {
-    return {
-      storytelling: typeof data.storytelling === 'string' ? data.storytelling : '',
-      authority: typeof data.authority === 'string' ? data.authority : '',
-      carousel: typeof data.carousel === 'string' ? data.carousel : '',
-    } as SocialOutput[K]
-  }
-
-  if (platform === 'instagram') {
-    return {
-      carouselCaptions: asStringArray(data.carouselCaptions),
-      reelCaption: typeof data.reelCaption === 'string' ? data.reelCaption : '',
-      hooks: asStringArray(data.hooks),
-      cta: typeof data.cta === 'string' ? data.cta : '',
-    } as SocialOutput[K]
-  }
-
-  if (platform === 'medium') {
-    return {
-      article: typeof data.article === 'string' ? data.article : '',
-      canonicalSuggestion: typeof data.canonicalSuggestion === 'string' ? data.canonicalSuggestion : '',
-    } as SocialOutput[K]
-  }
-
-  if (platform === 'reddit') {
-    return {
-      post: typeof data.post === 'string' ? data.post : '',
-      subreddits: asStringArray(data.subreddits),
-      questions: asStringArray(data.questions),
-    } as SocialOutput[K]
-  }
-
-  if (platform === 'newsletter') {
-    return {
-      subjectLines: asStringArray(data.subjectLines),
-      body: typeof data.body === 'string' ? data.body : '',
-      cta: typeof data.cta === 'string' ? data.cta : '',
-    } as SocialOutput[K]
-  }
-
-  return {
-    pins: Array.isArray(data.pins)
-      ? data.pins
-          .filter((pin): pin is Record<string, unknown> => isRecord(pin))
-          .map((pin) => ({
-            title: typeof pin.title === 'string' ? pin.title : '',
-            description: typeof pin.description === 'string' ? pin.description : '',
-            keywords: asStringArray(pin.keywords),
-          }))
-      : [],
-  } as SocialOutput[K]
-}
-
-function normalizeSocialOutput(payload: unknown): SocialOutput {
-  const root = isRecord(payload) ? payload : {}
-
-  return {
-    x: normalizePlatformData('x', root.x),
-    linkedin: normalizePlatformData('linkedin', root.linkedin),
-    instagram: normalizePlatformData('instagram', root.instagram),
-    medium: normalizePlatformData('medium', root.medium),
-    reddit: normalizePlatformData('reddit', root.reddit),
-    newsletter: normalizePlatformData('newsletter', root.newsletter),
-    pinterest: normalizePlatformData('pinterest', root.pinterest),
-    extras: {
-      quotes: isRecord(root.extras) ? asStringArray(root.extras.quotes) : [],
-      discussionQuestions: isRecord(root.extras) ? asStringArray(root.extras.discussionQuestions) : [],
-      miniPosts: isRecord(root.extras) ? asStringArray(root.extras.miniPosts) : [],
-    },
-  }
-}
 
 export function SocialPanel({ platform }: SocialPanelProps) {
   const { sessionId, assets, upsertAsset } = useSessionContext()

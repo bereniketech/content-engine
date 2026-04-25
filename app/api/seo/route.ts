@@ -1,3 +1,26 @@
+/**
+ * Generates SEO analysis for content.
+ *
+ * TECH DEBT (P3): qualityBand computation should move to backend.
+ *
+ * Currently, frontend (components/sections/SEOPanel.tsx) computes
+ * qualityBand from metrics using threshold rules:
+ *   if (score >= 90) → 'high'
+ *   if (score >= 70) → 'medium'
+ *   else → 'low'
+ *
+ * Problems with frontend computation:
+ * - Rules are scattered (not single source of truth)
+ * - Hard to test (tied to React component)
+ * - Inconsistent if different clients implement differently
+ *
+ * Solution: Return qualityBand from this endpoint.
+ * - Update Claude prompt to include qualityBand in response
+ * - Validate that returned band is in ['low', 'medium', 'high']
+ * - Include qualityBand in JSON response
+ * - Remove threshold logic from SEOPanel.tsx
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getSeoPrompt, type ResearchOutput } from '@/lib/prompts/seo'
 import { createMessage } from '@/lib/ai'
@@ -95,6 +118,10 @@ export async function POST(request: NextRequest) {
         seoResult = JSON.parse(responseText)
       }
     }
+
+    // TODO (P3): Compute qualityBand: 'low' | 'medium' | 'high' from seoScore
+    // before returning to client. This will allow SEOPanel.tsx to use the
+    // backend-determined quality band instead of hardcoding thresholds (70, 40).
 
     // Save to content_assets
     const { data: asset, error: assetError } = await supabase

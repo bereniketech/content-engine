@@ -2,7 +2,7 @@ export type SessionInputType = "topic" | "upload" | "data-driven";
 
 export type TopicTone = "authority" | "casual" | "storytelling";
 
-const TOPIC_TONES: TopicTone[] = ["authority", "casual", "storytelling"];
+export const TOPIC_TONES: TopicTone[] = ["authority", "casual", "storytelling"];
 
 export interface TopicInputData {
 	topic: string;

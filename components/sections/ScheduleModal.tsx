@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { Loader2, Calendar } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { getSupabaseBrowserClient } from '@/lib/supabase'
+import { getAuthToken } from '@/lib/auth-browser'
+import { VALIDATION_CONSTANTS } from '@/lib/validation'
 
 interface ScheduleModalProps {
   platform: string
@@ -13,12 +14,6 @@ interface ScheduleModalProps {
   contentSnapshot: Record<string, unknown>
   onScheduled: (id: string, publishAt: string) => void
   onClose: () => void
-}
-
-async function getAuthToken(): Promise<string | null> {
-  const supabase = getSupabaseBrowserClient()
-  const { data } = await supabase.auth.getSession()
-  return data.session?.access_token ?? null
 }
 
 export function ScheduleModal({
@@ -33,11 +28,11 @@ export function ScheduleModal({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const minDateTime = new Date(Date.now() + 5 * 60 * 1000)
+  const minDateTime = new Date(Date.now() + VALIDATION_CONSTANTS.SCHEDULING_BUFFER_MS)
     .toISOString()
     .slice(0, 16)
 
-  const isValidDate = publishAt.length > 0 && new Date(publishAt).getTime() > Date.now() + 4 * 60 * 1000
+  const isValidDate = publishAt.length > 0 && new Date(publishAt).getTime() > Date.now() + VALIDATION_CONSTANTS.SCHEDULING_BUFFER_MS
 
   const handleSchedule = async () => {
     if (!isValidDate || loading) return
@@ -104,7 +99,7 @@ export function ScheduleModal({
               onChange={(e) => setPublishAt(e.target.value)}
             />
             <p className="mt-1 text-xs text-muted-foreground">
-              Must be at least 5 minutes from now.
+              Must be at least {Math.floor(VALIDATION_CONSTANTS.SCHEDULING_BUFFER_MS / 60_000)} minutes from now.
             </p>
           </div>
 

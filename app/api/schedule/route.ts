@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
-
-const VALID_PLATFORMS = ['x', 'linkedin', 'instagram', 'reddit', 'newsletter_mailchimp', 'newsletter_sendgrid'] as const
+import { VALIDATION_CONSTANTS } from '@/lib/validation'
+import { SCHEDULABLE_PLATFORMS } from '@/lib/platform-config'
 
 export async function POST(request: NextRequest) {
   let auth
@@ -38,8 +38,8 @@ export async function POST(request: NextRequest) {
 
   const errors: string[] = []
   if (!sessionId) errors.push('sessionId is required')
-  if (!platform || !VALID_PLATFORMS.includes(platform as typeof VALID_PLATFORMS[number])) {
-    errors.push(`platform must be one of: ${VALID_PLATFORMS.join(', ')}`)
+  if (!platform || !SCHEDULABLE_PLATFORMS.includes(platform as typeof SCHEDULABLE_PLATFORMS[number])) {
+    errors.push(`platform must be one of: ${SCHEDULABLE_PLATFORMS.join(', ')}`)
   }
   if (!assetType) errors.push('assetType is required')
   if (!publishAtRaw) errors.push('publishAt is required')
@@ -59,9 +59,9 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  if (publishAt.getTime() <= Date.now()) {
+  if (publishAt.getTime() < Date.now() + VALIDATION_CONSTANTS.SCHEDULING_BUFFER_MS) {
     return NextResponse.json(
-      { error: { code: 'validation_error', message: 'publishAt must be a future timestamp' } },
+      { error: { code: 'validation_error', message: 'publishAt must be at least 5 minutes in the future' } },
       { status: 400 }
     )
   }

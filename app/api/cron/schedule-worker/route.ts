@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { getServiceRoleClient } from '@/lib/supabase-server'
+import { verifyCronSecret } from '@/lib/cron-auth'
 import { postTweet, postThread } from '@/lib/publish/twitter'
 import { postToLinkedIn } from '@/lib/publish/linkedin'
 import { publishToInstagram } from '@/lib/publish/instagram'
@@ -16,17 +17,6 @@ interface ScheduledPostRow {
   asset_type: string
   content_snapshot: Record<string, unknown>
   publish_at: string
-}
-
-function getServiceRoleClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
-  }
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  })
 }
 
 async function publishPost(post: ScheduledPostRow): Promise<string> {
@@ -74,14 +64,17 @@ async function publishPost(post: ScheduledPostRow): Promise<string> {
 }
 
 export async function POST(request: NextRequest) {
-  const cronSecret = process.env.CRON_SECRET
-  const authHeader = request.headers.get('authorization')
-  const token = authHeader?.replace(/^Bearer\s+/i, '').trim()
-
-  if (!cronSecret || token !== cronSecret) {
+  try {
+    verifyCronSecret(request)
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    const status = message === 'Unauthorized' ? 401 : 500
+    const code = status === 401 ? 'unauthorized' : 'config_error'
+    const responseMessage = status === 401 ? 'Invalid cron secret' : 'Cron authentication unavailable'
+    console.error('schedule-worker cron auth error', { error: message })
     return NextResponse.json(
-      { error: { code: 'unauthorized', message: 'Invalid cron secret' } },
-      { status: 401 }
+      { error: { code, message: responseMessage } },
+      { status }
     )
   }
 

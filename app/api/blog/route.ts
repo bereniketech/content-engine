@@ -5,6 +5,8 @@ import { requireAuth } from '@/lib/auth'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
 import { getWordCount } from '@/lib/utils'
+import { VALIDATION_CONSTANTS } from '@/lib/validation'
+import { TOPIC_TONES } from '@/types'
 import type { SeoResult } from '@/types'
 import type { TopicTone } from '@/types'
 
@@ -21,10 +23,8 @@ interface ResearchOutput {
   alternatives?: string[]
 }
 
-const VALID_TONES: TopicTone[] = ['authority', 'casual', 'storytelling']
-
 function normalizeTone(value: unknown): TopicTone {
-  if (typeof value === 'string' && VALID_TONES.includes(value as TopicTone)) {
+  if (typeof value === 'string' && TOPIC_TONES.includes(value as TopicTone)) {
     return value as TopicTone
   }
   return 'authority'
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
     const research = sanitizeUnknown(body.research)
     const tone = normalizeTone(body.tone)
 
-    if (!rawTopic || !seo || !research) {
+    if (!rawTopic || !seo || !research || rawTopic.length < VALIDATION_CONSTANTS.MIN_TOPIC_LENGTH) {
       return NextResponse.json(
         {
           error: {
@@ -68,6 +68,7 @@ export async function POST(request: NextRequest) {
             message: 'Validation failed',
             details: [
               ...(!rawTopic ? [{ field: 'topic', message: 'Topic is required' }] : []),
+              ...(rawTopic && rawTopic.length < VALIDATION_CONSTANTS.MIN_TOPIC_LENGTH ? [{ field: 'topic', message: 'Topic must be at least 6 characters' }] : []),
               ...(!seo ? [{ field: 'seo', message: 'SEO data is required' }] : []),
               ...(!research ? [{ field: 'research', message: 'Research data is required' }] : []),
             ],

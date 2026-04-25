@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { Check, Loader2, AlertCircle, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { getSupabaseBrowserClient } from '@/lib/supabase'
+import { getAuthToken } from '@/lib/auth-browser'
+import { PUBLISH_ENDPOINT_MAP } from '@/lib/platform-config'
 
 type PublishState = 'idle' | 'loading' | 'success' | 'error' | 'already_published'
 
@@ -14,12 +15,6 @@ interface PublishButtonProps {
   label?: string
   onSuccess?: (data: { externalId?: string; campaignId?: string; logId: string }) => void
   onError?: (error: string) => void
-}
-
-async function getAuthToken(): Promise<string | null> {
-  const supabase = getSupabaseBrowserClient()
-  const { data } = await supabase.auth.getSession()
-  return data.session?.access_token ?? null
 }
 
 export function PublishButton({
@@ -34,16 +29,6 @@ export function PublishButton({
   const [errorMessage, setErrorMessage] = useState<string>('')
   const [publishedAt, setPublishedAt] = useState<string>('')
 
-  const endpointMap: Record<string, string> = {
-    x: '/api/publish/x',
-    linkedin: '/api/publish/linkedin',
-    instagram: '/api/publish/instagram',
-    reddit: '/api/publish/reddit',
-    newsletter: '/api/publish/newsletter',
-    newsletter_mailchimp: '/api/publish/newsletter',
-    newsletter_sendgrid: '/api/publish/newsletter',
-  }
-
   const handlePublish = async () => {
     if (state === 'loading') return
     setState('loading')
@@ -56,7 +41,7 @@ export function PublishButton({
       return
     }
 
-    const endpoint = endpointMap[platform]
+    const endpoint = PUBLISH_ENDPOINT_MAP[platform]
     try {
       const response = await fetch(endpoint, {
         method: 'POST',

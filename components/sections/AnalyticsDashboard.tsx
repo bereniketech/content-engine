@@ -6,7 +6,7 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { getSupabaseBrowserClient } from '@/lib/supabase'
+import { getAuthToken } from '@/lib/auth-browser'
 
 interface GA4Data {
   period: string
@@ -28,12 +28,6 @@ interface SCData {
 }
 
 type LoadState<T> = { status: 'loading' } | { status: 'error'; message: string } | { status: 'success'; data: T }
-
-async function getAuthToken(): Promise<string | null> {
-  const supabase = getSupabaseBrowserClient()
-  const { data } = await supabase.auth.getSession()
-  return data.session?.access_token ?? null
-}
 
 function SkeletonCard() {
   return (

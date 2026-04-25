@@ -355,3 +355,5 @@ All validation rules should be authoritative in the backend. Frontend validation
 | Validation parity (frontend ↔ backend) | **Violated in 4 cases** | Backend is more permissive than frontend |
 
 The foundation is solid — the route handler pattern, Supabase integration, and sanitization layer are all correctly structured. Addressing the P0 items (pipeline state endpoint, validation parity) and P1 items (social normalization, JSON extraction, type placement) would close the most significant architectural gaps.
+
+---

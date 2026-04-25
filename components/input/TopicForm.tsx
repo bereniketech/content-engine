@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSessionContext } from "@/lib/context/SessionContext";
 import { isTopicInputData, type TopicInputData, type TopicTone } from "@/types";
-
-const TOPIC_MIN_LENGTH = 6;
+import { VALIDATION_CONSTANTS } from "@/lib/validation";
 
 const toneOptions: Array<{ label: string; value: TopicTone }> = [
 	{ label: "Authority", value: "authority" },
@@ -30,7 +29,7 @@ export function TopicForm() {
 	const [success, setSuccess] = useState<string | null>(null);
 
 	const isTopicValid = useMemo(
-		() => formData.topic.trim().length >= TOPIC_MIN_LENGTH,
+		() => formData.topic.trim().length >= VALIDATION_CONSTANTS.MIN_TOPIC_LENGTH,
 		[formData.topic],
 	);
 
@@ -39,7 +38,7 @@ export function TopicForm() {
 		setSuccess(null);
 
 		if (!isTopicValid) {
-			setError("Topic must be longer than 5 characters.");
+			setError("Topic must be at least 6 characters.");
 			return;
 		}
 

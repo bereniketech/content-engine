@@ -1,3 +1,24 @@
+/**
+ * Generates research alternatives for content.
+ *
+ * TECH DEBT (P3): showAlternatives computation should move to backend.
+ *
+ * Currently, frontend (components/sections/ResearchPanel.tsx) decides
+ * to show alternatives based solely on array length:
+ *   const showAlternatives = alternatives.length > 0
+ *
+ * Problems with frontend computation:
+ * - Decision logic is in UI layer (not in business logic)
+ * - Hard to test (tied to component render)
+ * - Inflexible for future criteria (quality thresholds, filtering)
+ *
+ * Solution: Return showAlternatives from this endpoint.
+ * - Compute based on alternatives.length and any quality criteria
+ * - Include showAlternatives: boolean in JSON response
+ * - Client just renders based on this flag (no logic)
+ * - Future: easily add filtering or quality thresholds without touching UI
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { googleSearch } from '@/lib/google-search'
 import { getResearchPrompt } from '@/lib/prompts/research'
@@ -117,12 +138,16 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // TODO (P3): Include showAlternatives: boolean in response based on
+    // alternatives.length > 0 and demand level. This removes the business rule
+    // from ResearchPanel.tsx (if demand==='low' && alternatives.length > 0).
+
     // If demand is low, ensure alternatives are included
     if (researchResult.demand === 'low') {
       if (!researchResult.alternatives || researchResult.alternatives.length === 0) {
         // Call Claude again to get alternatives
         const altPrompt = `Given the topic "${sanitizedTopic}", suggest 3 high-demand alternative topics that would perform better. Return only a JSON array with 3 strings: ["topic1", "topic2", "topic3"]`
-        
+
         const altText = await createMessage({
           maxTokens: 200,
           messages: [{ role: 'user', content: altPrompt }],

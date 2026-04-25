@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { AlertTriangle, RefreshCw, X, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { getSupabaseBrowserClient } from '@/lib/supabase'
+import { getAuthToken } from '@/lib/auth-browser'
 
 interface RefreshTrigger {
   id: string
@@ -12,12 +12,6 @@ interface RefreshTrigger {
   newRank: number
   sessionId: string | null
   status: 'pending' | 'resolved'
-}
-
-async function getAuthToken(): Promise<string | null> {
-  const supabase = getSupabaseBrowserClient()
-  const { data } = await supabase.auth.getSession()
-  return data.session?.access_token ?? null
 }
 
 async function resolveTrigger(id: string, token: string): Promise<void> {

@@ -4,7 +4,8 @@ import { requireAuth } from '@/lib/auth'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
 import { extractJsonPayload } from '@/lib/extract-json'
-import { isRecord, asStringArray } from '@/lib/type-guards'
+import { isRecord } from '@/lib/type-guards'
+import { normalizeSocialOutput } from '@/lib/social-normalize'
 import {
   getSocialPrompt,
   SOCIAL_ASSET_TYPE_BY_KEY,
@@ -32,74 +33,6 @@ const SOCIAL_OUTPUT_KEYS = [
   'pinterest',
   'extras',
 ] as const
-
-function normalizeSocialOutput(payload: unknown): SocialOutput {
-  if (!isRecord(payload)) {
-    throw new Error('Social output must be an object')
-  }
-
-  const x = isRecord(payload.x) ? payload.x : {}
-  const linkedin = isRecord(payload.linkedin) ? payload.linkedin : {}
-  const instagram = isRecord(payload.instagram) ? payload.instagram : {}
-  const medium = isRecord(payload.medium) ? payload.medium : {}
-  const reddit = isRecord(payload.reddit) ? payload.reddit : {}
-  const newsletter = isRecord(payload.newsletter) ? payload.newsletter : {}
-  const pinterest = isRecord(payload.pinterest) ? payload.pinterest : {}
-  const extras = isRecord(payload.extras) ? payload.extras : {}
-
-  const normalizedPins = Array.isArray(pinterest.pins)
-    ? pinterest.pins
-        .filter((pin): pin is Record<string, unknown> => isRecord(pin))
-        .map((pin) => ({
-          title: typeof pin.title === 'string' ? pin.title : '',
-          description: typeof pin.description === 'string' ? pin.description : '',
-          keywords: asStringArray(pin.keywords),
-        }))
-    : []
-
-  return {
-    x: {
-      tweet: typeof x.tweet === 'string' ? x.tweet : '',
-      thread: asStringArray(x.thread),
-      hooks: asStringArray(x.hooks),
-      replies: asStringArray(x.replies),
-    },
-    linkedin: {
-      storytelling: typeof linkedin.storytelling === 'string' ? linkedin.storytelling : '',
-      authority: typeof linkedin.authority === 'string' ? linkedin.authority : '',
-      carousel: typeof linkedin.carousel === 'string' ? linkedin.carousel : '',
-    },
-    instagram: {
-      carouselCaptions: asStringArray(instagram.carouselCaptions),
-      reelCaption: typeof instagram.reelCaption === 'string' ? instagram.reelCaption : '',
-      hooks: asStringArray(instagram.hooks),
-      cta: typeof instagram.cta === 'string' ? instagram.cta : '',
-    },
-    medium: {
-      article: typeof medium.article === 'string' ? medium.article : '',
-      canonicalSuggestion:
-        typeof medium.canonicalSuggestion === 'string' ? medium.canonicalSuggestion : '',
-    },
-    reddit: {
-      post: typeof reddit.post === 'string' ? reddit.post : '',
-      subreddits: asStringArray(reddit.subreddits),
-      questions: asStringArray(reddit.questions),
-    },
-    newsletter: {
-      subjectLines: asStringArray(newsletter.subjectLines),
-      body: typeof newsletter.body === 'string' ? newsletter.body : '',
-      cta: typeof newsletter.cta === 'string' ? newsletter.cta : '',
-    },
-    pinterest: {
-      pins: normalizedPins,
-    },
-    extras: {
-      quotes: asStringArray(extras.quotes),
-      discussionQuestions: asStringArray(extras.discussionQuestions),
-      miniPosts: asStringArray(extras.miniPosts),
-    },
-  }
-}
 
 function normalizePlatforms(value: unknown): SocialPlatform[] {
   if (!Array.isArray(value) || value.length === 0) {
