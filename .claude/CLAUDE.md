@@ -67,10 +67,12 @@ One-click trending topic generator + cross-platform content creation:
 5. Implement. Run `/task-handoff` when done.
 
 ## Kit Contents
-**Skills:** `.kit/skills/` — auto-loaded (development, testing-quality, data-backend, frameworks-backend, etc.)  
-**Agents:** `.kit/agents/` — invoke with `@agent-name` (if present)  
-**Commands:** `.kit/commands/` — auto-available (key ones: `/verify`, `/task-handoff`, `/tdd`, `/code-review`)  
-**Rules:** `.kit/rules/` — applied automatically  
+**Skills:** `.kit/skills/` (1,200+ skills via junction)  
+**Agents:** `.kit/agents/` (84 agents — main: `media-company/chief-content-officer.md`)  
+**Commands:** `.kit/commands/` (58 commands — main: `/blog`, `/youtube`, `/social`, `/code-review`, `/verify`)  
+**Rules:** `.kit/rules/` (common, typescript)  
+**Contexts:** `.kit/contexts/` (dev, review, research, content, marketing, design)  
+**MCP Configs:** `.kit/mcp-configs/` (14 MCP integrations)  
 
 ## Config & Docs
 - Deployment: `.claude/project-config.md`
