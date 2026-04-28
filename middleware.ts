@@ -89,9 +89,44 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  if (pathname.startsWith('/api/gen/')) {
+    const { data: sub } = await supabase
+      .from('subscriptions')
+      .select('status')
+      .eq('user_id', user.id)
+      .in('status', ['active', 'past_due'])
+      .maybeSingle();
+    if (sub?.status === 'past_due') {
+      return NextResponse.json(
+        { error: 'Your payment failed. Please update your payment method.' },
+        { status: 402 }
+      );
+    }
+  }
+
+  const requestId = crypto.randomUUID();
+  const country = req.headers.get('cf-ipcountry') ?? 'XX';
   const res = NextResponse.next();
+  res.headers.set('x-request-id', requestId);
   res.headers.set('x-user-id', user.id);
   res.headers.set('x-client-ip', ip);
-  res.headers.set('x-country', req.headers.get('cf-ipcountry') ?? 'XX');
+  res.headers.set('x-country', country);
+
+  console.log(JSON.stringify({
+    level: 'info',
+    request_id: requestId,
+    user_id: user.id,
+    method: req.method,
+    pathname,
+    ip,
+    country,
+    ts: new Date().toISOString(),
+  }));
+
+  const trustUpgraded = await redis.get(`trust_upgrade:${user.id}`);
+  if (trustUpgraded !== null && trustUpgraded !== undefined) {
+    res.headers.set('x-trust-upgraded', '1');
+  }
+
   return res;
 }

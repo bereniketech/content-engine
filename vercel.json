@@ -7,6 +7,14 @@
     {
       "path": "/api/cron/analytics-delta",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/daily-credit-rollup",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/abuse-detector",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

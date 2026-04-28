@@ -1,5 +1,6 @@
 import { applyTrustEvent } from '@/lib/abuse/trust';
 import { sendEmail } from '@/lib/email/sender';
+import { applyPaymentTrustUpgrade, applyChargebackPenalty } from '@/lib/billing/trustUpgrade';
 import { SupabaseClient } from '@supabase/supabase-js';
 
 export async function routeWebhookEvent(
@@ -54,6 +55,7 @@ async function handlePaymentCaptured(payload: Record<string, unknown>, supabase:
 
   if (userId) {
     await applyTrustEvent(userId, 'payment_success');
+    await applyPaymentTrustUpgrade(userId);
     await sendEmail('payment_captured', userId, {
       amount: Number(payment.amount) / 100,
       currency: payment.currency,
@@ -171,14 +173,22 @@ async function handlePaymentRefunded(payload: Record<string, unknown>, supabase:
   const notes = paymentEntity?.notes as Record<string, string> | undefined;
   const credits = Number(notes?.credits ?? 0);
   const userId = notes?.userId;
-  if (userId && credits > 0) {
-    const wallet = await getWallet(userId, supabase);
-    if (wallet) {
-      await supabase.rpc('fn_credit_topup', {
-        p_wallet_id: wallet.id,
-        p_amount: -credits,
-        p_payment_id: refund.id,
-      });
+  if (userId) {
+    const refundNotes = refund.notes as Record<string, string> | undefined;
+    const reason = ((refundNotes?.reason ?? '') + (refund.speed_processed as string ?? '')).toLowerCase();
+    const isChargeback = reason.includes('chargeback') || refund.speed_requested === 'chargeback';
+    if (isChargeback) {
+      await applyChargebackPenalty(userId);
+    }
+    if (credits > 0) {
+      const wallet = await getWallet(userId, supabase);
+      if (wallet) {
+        await supabase.rpc('fn_credit_topup', {
+          p_wallet_id: wallet.id,
+          p_amount: -credits,
+          p_payment_id: refund.id,
+        });
+      }
     }
     await sendEmail('payment_refunded', userId, { amount: Number(refund.amount) / 100 });
   }

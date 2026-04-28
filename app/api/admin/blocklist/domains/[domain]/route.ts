@@ -1,0 +1,24 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { requireAdmin, logAdminAction } from '@/lib/admin/auth';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
+
+export async function DELETE(req: NextRequest, { params }: { params: { domain: string } }) {
+  const adminId = await requireAdmin(req);
+  if (!adminId) return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
+
+  await supabase.from('email_domain_blocklist').delete().eq('domain', params.domain);
+
+  await logAdminAction({
+    adminId,
+    actionType: 'domain_unblock',
+    reason: 'Admin removed',
+    metadata: { domain: params.domain },
+  });
+
+  return new NextResponse(null, { status: 204 });
+}
