@@ -1,0 +1,84 @@
+config:
+  target: "http://localhost:3000"  # or staging URL
+  phases:
+    - duration: 60
+      arrivalRate: 10
+      name: "Warm up"
+    - duration: 300
+      arrivalRate: 50
+      name: "Ramp up to load"
+    - duration: 60
+      arrivalRate: 100
+      name: "Peak load"
+  processor: "./scenarios.js"
+  variables:
+    topic: "{{ $randomChoice(['AI in healthcare', 'Climate change solutions', 'Space exploration', 'Quantum computing', 'Machine learning']) }}"
+    fingerprint: "fp_{{ $randomNumber(999999) }}"
+    signature: "sig_{{ $randomString(24) }}"
+    randomIP: "{{ $randomNumber(256) }}.{{ $randomNumber(256) }}.{{ $randomNumber(256) }}.{{ $randomNumber(256) }}"
+
+scenarios:
+  # Scenario 1: Content generation (30 concurrent, 30/min rate limit)
+  - name: "Content generation flow"
+    weight: 40
+    flow:
+      - post:
+          url: "/api/content/generate"
+          headers:
+            Authorization: "Bearer {{ $randomString(32) }}"
+            Content-Type: "application/json"
+          json:
+            action_type: "generate"
+            prompt: "Write a 100-word blog post about {{ topic }}"
+            options:
+              max_tokens: 2048
+          expect:
+            - statusCode: [200, 429]
+          capture:
+            json: "$.tokens_used"
+            as: "tokens"
+          think: 2
+
+  # Scenario 2: Signup flow (IP rate limit: 3 per 24h)
+  - name: "Signup flow"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/auth/signup"
+          headers:
+            Content-Type: "application/json"
+            x-forwarded-for: "{{ randomIP }}"
+          json:
+            email: "user-{{ $randomNumber(10000) }}-{{ $timestamp }}@example.com"
+            password: "SecurePassword123!"
+            fingerprint_hash: "{{ fingerprint }}"
+          expect:
+            - statusCode: [201, 400, 429]
+          think: 1
+
+  # Scenario 3: Webhook processing (100/min rate limit)
+  - name: "Razorpay webhook"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/webhooks/razorpay"
+          headers:
+            Content-Type: "application/json"
+            x-razorpay-signature: "{{ signature }}"
+          json:
+            event: "payment.captured"
+            payload:
+              payment:
+                id: "pay_{{ $randomString(12) }}"
+                amount: 10000
+                status: "captured"
+          expect:
+            - statusCode: [200, 400, 429]
+
+before:
+  flow:
+    - think: 1
+
+after:
+  flow:
+    - think: 1

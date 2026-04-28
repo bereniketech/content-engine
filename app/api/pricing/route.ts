@@ -21,11 +21,17 @@ export async function GET(req: NextRequest) {
     .select('id, name, base_usd_price, monthly_credits')
     .order('base_usd_price');
 
-  const localized = (plans ?? []).map((p) => ({
+  const localizedPrices = await Promise.all(
+    (plans ?? []).map((p) =>
+      priceFor(tier, currency, p.base_usd_price)
+    )
+  );
+
+  const localized = (plans ?? []).map((p, idx) => ({
     id: p.id,
     name: p.name,
     baseUsd: p.base_usd_price,
-    localized: priceFor(tier, currency, p.base_usd_price),
+    localized: localizedPrices[idx],
     monthlyCredits: p.monthly_credits,
   }));
 

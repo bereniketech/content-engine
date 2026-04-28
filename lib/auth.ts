@@ -2,6 +2,14 @@ import { createClient, type SupabaseClient, type User } from '@supabase/supabase
 import { NextRequest } from 'next/server'
 import { createSupabaseRequestClient } from '@/lib/session-assets'
 
+/**
+ * Supabase authentication cookie names
+ * Extracted as constants following DRY principle to prevent drift
+ */
+export const SUPABASE_AUTH_COOKIE = '__Secure-sb-access'
+export const SUPABASE_REFRESH_COOKIE = '__Secure-sb-refresh'
+export const SUPABASE_FALLBACK_COOKIE = 'sb-access-token'
+
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 

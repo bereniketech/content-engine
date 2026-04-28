@@ -1,10 +1,11 @@
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
+import { SUPABASE_AUTH_COOKIE, SUPABASE_FALLBACK_COOKIE } from '@/lib/auth';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const cookieStore = cookies();
-  const token = cookieStore.get('__Secure-sb-access')?.value ?? cookieStore.get('sb-access-token')?.value;
+  const token = cookieStore.get(SUPABASE_AUTH_COOKIE)?.value ?? cookieStore.get(SUPABASE_FALLBACK_COOKIE)?.value;
   if (!token) redirect('/login');
 
   const supabase = createClient(

@@ -34,7 +34,7 @@ CREATE TABLE credit_wallets (
   id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   owner_id    UUID NOT NULL,
   owner_kind  wallet_owner_t NOT NULL,
-  balance     INT NOT NULL DEFAULT 0 CHECK (balance >= 0),
+  balance     INT NOT NULL DEFAULT 0,
   expires_at  TIMESTAMPTZ,
   created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );

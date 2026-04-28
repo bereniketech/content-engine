@@ -38,6 +38,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'action_type and prompt are required.' }, { status: 400 });
   }
 
+  // Validate and clamp max_tokens parameter
+  const MIN_TOKENS = 256;
+  const MAX_TOKENS = 4096;
+
+  if (options?.max_tokens !== undefined) {
+    const requestedTokens = options.max_tokens;
+
+    // Validate is a number
+    if (typeof requestedTokens !== 'number' || !Number.isInteger(requestedTokens)) {
+      return NextResponse.json(
+        { error: 'options.max_tokens must be an integer' },
+        { status: 400 }
+      );
+    }
+
+    // Validate is within bounds
+    if (requestedTokens < MIN_TOKENS || requestedTokens > MAX_TOKENS) {
+      return NextResponse.json(
+        { error: `options.max_tokens must be between ${MIN_TOKENS} and ${MAX_TOKENS}` },
+        { status: 400 }
+      );
+    }
+  }
+
+  const sanitizedOptions = {
+    max_tokens: Math.min(options?.max_tokens ?? 2048, MAX_TOKENS),
+    ...options,
+  };
+
   const promptHash = crypto.createHash('sha256').update(prompt).digest('hex');
   const identical = await checkIdenticalRequest(userId, promptHash);
   if (identical.flagged) {
@@ -54,7 +83,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const result = await generateWithDeduction(userId, action_type, prompt, options ?? {});
+    const result = await generateWithDeduction(userId, action_type, prompt, sanitizedOptions);
     return NextResponse.json({
       result: result.result,
       credits_remaining: result.credits_remaining,

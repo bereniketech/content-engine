@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { SUPABASE_AUTH_COOKIE, SUPABASE_REFRESH_COOKIE } from '@/lib/auth';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -7,12 +8,12 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
-  const token = req.cookies.get('__Secure-sb-access')?.value;
+  const token = req.cookies.get(SUPABASE_AUTH_COOKIE)?.value;
   if (token) {
     await supabase.auth.admin.signOut(token);
   }
   const res = NextResponse.json({ ok: true });
-  res.cookies.delete('__Secure-sb-access');
-  res.cookies.delete('__Secure-sb-refresh');
+  res.cookies.delete(SUPABASE_AUTH_COOKIE);
+  res.cookies.delete(SUPABASE_REFRESH_COOKIE);
   return res;
 }

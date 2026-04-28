@@ -14,14 +14,21 @@ export default async function PricingPage() {
   const tier = await resolveTier(country);
   const currency = country === 'IN' ? 'INR' : country === 'DE' || country === 'FR' ? 'EUR' : 'USD';
 
+  // Pre-calculate all prices since priceFor is now async
+  const prices = await Promise.all(
+    PLANS.map((plan) =>
+      priceFor(tier, currency as 'USD' | 'INR' | 'EUR', plan.base_usd)
+    )
+  );
+
   return (
     <div className="mx-auto max-w-4xl py-16 px-4">
       <h1 className="mb-2 text-center text-3xl font-bold text-white">Simple, honest pricing</h1>
       <p className="mb-10 text-center text-gray-400">Prices shown in your local currency.</p>
 
       <div className="grid gap-6 md:grid-cols-3">
-        {PLANS.map((plan) => {
-          const amount = priceFor(tier, currency as 'USD' | 'INR' | 'EUR', plan.base_usd);
+        {PLANS.map((plan, idx) => {
+          const amount = prices[idx];
           const symbol = CURRENCY_SYMBOL[currency] ?? '$';
           return (
             <div key={plan.id} className="rounded-xl border border-gray-800 bg-gray-900 p-6">

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
+import { logger } from '@/lib/logger';
+import { SUPABASE_AUTH_COOKIE } from '@/lib/auth';
 
 export const config = {
   matcher: ['/api/((?!auth/magic-link/callback|webhooks|email/validate).*)'],
@@ -28,7 +30,7 @@ const webhookLimit = new Ratelimit({
 });
 
 export async function middleware(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for') ?? '127.0.0.1';
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1';
   const pathname = req.nextUrl.pathname;
 
   if (pathname.startsWith('/api/auth')) {
@@ -68,7 +70,7 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
-  const token = req.cookies.get('__Secure-sb-access')?.value ?? req.headers.get('authorization')?.replace('Bearer ', '');
+  const token = req.cookies.get(SUPABASE_AUTH_COOKIE)?.value ?? req.headers.get('authorization')?.replace('Bearer ', '');
   if (!token) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   }
@@ -111,17 +113,16 @@ export async function middleware(req: NextRequest) {
   res.headers.set('x-user-id', user.id);
   res.headers.set('x-client-ip', ip);
   res.headers.set('x-country', country);
+  res.headers.set('x-auth-verified', 'true');
 
-  console.log(JSON.stringify({
-    level: 'info',
+  logger.info({
     request_id: requestId,
     user_id: user.id,
     method: req.method,
     pathname,
     ip,
     country,
-    ts: new Date().toISOString(),
-  }));
+  });
 
   const trustUpgraded = await redis.get(`trust_upgrade:${user.id}`);
   if (trustUpgraded !== null && trustUpgraded !== undefined) {

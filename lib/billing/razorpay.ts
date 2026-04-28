@@ -18,6 +18,7 @@ export const rzp = new Razorpay({
 const TIER_RANK: Record<string, number> = { Tier1: 4, Tier2: 3, Tier3: 2, Tier4: 1 };
 
 function higherTier(a: { tier_name: string }, b: { tier_name: string }) {
+  // Return higher tier; on tie (same rank), prefer first argument (stored country tier wins over detected tier)
   return (TIER_RANK[a.tier_name] ?? 4) >= (TIER_RANK[b.tier_name] ?? 4) ? a : b;
 }
 
@@ -42,7 +43,7 @@ export async function createOrder(params: {
   const effectiveTier = higherTier(storedTier, detectedTier);
 
   const currency: 'INR' | 'USD' = params.countryCode === 'IN' ? 'INR' : 'USD';
-  const localized = priceFor(effectiveTier, currency, pack.base_usd_price);
+  const localized = await priceFor(effectiveTier, currency, pack.base_usd_price);
   const amount = Math.round(localized * 100);
 
   const order = await rzp.orders.create({
