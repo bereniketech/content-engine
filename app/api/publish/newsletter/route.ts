@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth'
 import { checkAlreadyPublished, writeDistributionLog, AlreadyPublishedError } from '@/lib/publish/distribution-log'
 import { dispatchMailchimp, dispatchSendGrid } from '@/lib/publish/newsletter'
 import { ConfigError } from '@/lib/publish/secrets'
+import { logger } from '@/lib/logger'
 
 const VALID_PROVIDERS = ['mailchimp', 'sendgrid'] as const
 type NewsletterProvider = typeof VALID_PROVIDERS[number]
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-    console.error('publish/newsletter error', { provider, error: err instanceof Error ? err.message : String(err) })
+    logger.error({ provider, err: err instanceof Error ? err.message : String(err) }, 'publish/newsletter error')
     return NextResponse.json(
       { error: { code: 'internal_error', message: 'Internal server error' } },
       { status: 500 }

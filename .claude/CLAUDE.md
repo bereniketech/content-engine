@@ -6,7 +6,7 @@
 3. Implement. Run `/task-handoff` when done.
 
 ## Active Task
-Tasks: `.spec/` · Current: `.spec/code-review-remediation/tasks/task-001.md`
+Tasks: `.spec/` · Current: `.spec/`
 
 ## Routing
 Need help outside the current task? `@company-coo` — entry point for board routing.

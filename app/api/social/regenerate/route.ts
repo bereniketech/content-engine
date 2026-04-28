@@ -6,6 +6,7 @@ import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
 import { isRecord } from '@/lib/type-guards'
 import { extractJsonPayload } from '@/lib/extract-json'
 import { normalizePlatformData } from '@/lib/social-normalize'
+import { logger } from '@/lib/logger'
 import {
   getSocialRegeneratePrompt,
   SOCIAL_ASSET_TYPE_BY_KEY,
@@ -138,7 +139,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     )
   } catch (error) {
-    console.error('Social regenerate API error:', error)
+    logger.error({ err: error }, 'Social regenerate API error')
     return NextResponse.json(
       { error: { code: 'internal_error', message: 'Internal server error' } },
       { status: 500 }

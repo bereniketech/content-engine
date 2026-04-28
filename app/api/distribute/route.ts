@@ -6,6 +6,7 @@ import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-asset
 import { sanitizeUnknown } from '@/lib/sanitize'
 import { extractJsonPayload } from '@/lib/extract-json'
 import { isRecord } from '@/lib/type-guards'
+import { logger } from '@/lib/logger'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
@@ -145,7 +146,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error) {
-    console.error('Distribute API error:', error)
+    logger.error({ err: error }, 'Distribute API error')
     return NextResponse.json(
       { error: { code: 'internal_error', message: 'Internal server error' } },
       { status: 500 }

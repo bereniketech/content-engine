@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getBlogPrompt } from '@/lib/prompts/blog'
 import { streamMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
+import { logger } from '@/lib/logger'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
 import { getWordCount } from '@/lib/utils'
@@ -104,16 +105,30 @@ export async function POST(request: NextRequest) {
 
     const readable = new ReadableStream<Uint8Array>({
       async start(controller) {
+        request.signal.addEventListener('abort', () => {
+          controller.close()
+        })
+
+        if (request.signal.aborted) {
+          controller.close()
+          return
+        }
+
         try {
           let fullMarkdown = ''
 
-          // Stream AI response
           for await (const chunk of streamMessage({
             maxTokens: 4000,
             messages: [{ role: 'user', content: prompt }],
           })) {
+            if (request.signal.aborted) break
             fullMarkdown += chunk
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`))
+          }
+
+          if (request.signal.aborted) {
+            controller.close()
+            return
           }
 
           const { data: savedAsset, error: assetError } = await supabase.from('content_assets').insert({
@@ -130,7 +145,7 @@ export async function POST(request: NextRequest) {
             .single()
 
           if (assetError) {
-            console.error('Error saving blog to database:', assetError)
+            logger.error({ err: assetError }, 'Error saving blog to database')
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ error: 'Failed to save blog' })}\n\n`)
             )
@@ -149,8 +164,10 @@ export async function POST(request: NextRequest) {
           )
           controller.close()
         } catch (error) {
-          console.error('Error initializing stream:', error)
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Failed to stream blog content' })}\n\n`))
+          if (!request.signal.aborted) {
+            logger.error({ err: error }, 'Error in blog stream')
+            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Failed to stream blog content' })}\n\n`))
+          }
           controller.close()
         }
       },
@@ -165,7 +182,7 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Error in blog API:', error)
+    logger.error({ err: error }, 'Error in blog API')
     return NextResponse.json(
       { error: { code: 'internal_error', message: 'Internal server error' } },
       { status: 500 }

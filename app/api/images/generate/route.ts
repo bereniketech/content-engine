@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenAI } from '@google/genai'
 import { requireAuth } from '@/lib/auth'
 import { sanitizeInput } from '@/lib/sanitize'
+import { logger } from '@/lib/logger'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
@@ -90,7 +91,7 @@ export async function POST(request: NextRequest) {
     )
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Internal server error'
-    console.error('Error in image generation:', message)
+    logger.error({}, 'Error in image generation: ' + message)
     return NextResponse.json(
       { error: { code: 'server_error', message } },
       { status: 500 }

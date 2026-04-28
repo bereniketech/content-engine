@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { streamMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
 import { parsePdf } from '@/lib/pdf-parse'
+import { logger } from '@/lib/logger'
 import { getDataDrivenArticlePrompt } from '@/lib/prompts/data-driven-article'
 import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
@@ -222,6 +223,15 @@ export async function POST(request: NextRequest) {
 
     const readable = new ReadableStream<Uint8Array>({
       async start(controller) {
+        request.signal.addEventListener('abort', () => {
+          controller.close()
+        })
+
+        if (request.signal.aborted) {
+          controller.close()
+          return
+        }
+
         try {
           let fullMarkdown = ''
 
@@ -229,8 +239,14 @@ export async function POST(request: NextRequest) {
             maxTokens: 8000,
             messages: [{ role: 'user', content: prompt }],
           })) {
+            if (request.signal.aborted) break
             fullMarkdown += chunk
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`))
+          }
+
+          if (request.signal.aborted) {
+            controller.close()
+            return
           }
 
           const wordCount = getWordCount(fullMarkdown)
@@ -248,7 +264,9 @@ export async function POST(request: NextRequest) {
             .single()
 
           if (assetError) {
-            controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Failed to save article' })}\n\n`))
+            if (!request.signal.aborted) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: 'Failed to save article' })}\n\n`))
+            }
             controller.close()
             return
           }
@@ -263,10 +281,13 @@ export async function POST(request: NextRequest) {
             )
           )
           controller.close()
-        } catch {
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ error: 'Failed to stream article content' })}\n\n`)
-          )
+        } catch (error) {
+          if (!request.signal.aborted) {
+            logger.error({ err: error }, 'Error in data-driven article stream')
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ error: 'Failed to stream article content' })}\n\n`)
+            )
+          }
           controller.close()
         }
       },

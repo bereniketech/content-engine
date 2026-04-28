@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { fetchGA4Data } from '@/lib/analytics/ga4'
 import { ConfigError } from '@/lib/publish/secrets'
+import { logger } from '@/lib/logger'
 
 export async function GET(request: NextRequest) {
   let auth
@@ -27,7 +28,7 @@ export async function GET(request: NextRequest) {
         { status: 500 }
       )
     }
-    console.error('analytics/ga4 error', { error: err instanceof Error ? err.message : String(err) })
+    logger.error({ err: err instanceof Error ? err.message : String(err) }, 'analytics/ga4 error')
     return NextResponse.json(
       { error: { code: 'internal_error', message: 'Internal server error' } },
       { status: 500 }

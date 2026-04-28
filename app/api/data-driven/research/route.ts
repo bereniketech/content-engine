@@ -8,6 +8,7 @@ import { runNotebookLmCliResearch } from '@/lib/notebooklm-cli'
 import { extractJsonPayload } from '@/lib/extract-json'
 import { isRecord, asStringArray } from '@/lib/type-guards'
 import type { DeepResearchResult } from '@/types'
+import { logger } from '@/lib/logger'
 
 export const maxDuration = 300
 
@@ -311,7 +312,7 @@ export async function POST(request: NextRequest) {
       })
     } catch (error) {
       const classifiedError = classifyResearchError(error)
-      console.error('Deep research generation failed:', error)
+      logger.error({ err: error }, 'Deep research generation failed')
       return NextResponse.json(
         {
           error: {

@@ -6,6 +6,7 @@ import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-asset
 import { sanitizeInput } from '@/lib/sanitize'
 import { extractJsonPayload } from '@/lib/extract-json'
 import { isRecord, asStringArray } from '@/lib/type-guards'
+import { logger } from '@/lib/logger'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
@@ -153,7 +154,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error) {
-    console.error('Flywheel API error:', error)
+    logger.error({ err: error }, 'Flywheel API error')
     return NextResponse.json(
       { error: { code: 'internal_error', message: 'Internal server error' } },
       { status: 500 }

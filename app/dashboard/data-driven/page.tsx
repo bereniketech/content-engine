@@ -550,23 +550,34 @@ export default function DataDrivenDashboardPage() {
 		[executeStep, setStepRuntimeState, stepState],
 	);
 
+	// Trigger Inngest pipeline when session is ready (replaces browser auto-run loop)
 	useEffect(() => {
-		if (!isReady || stepKeys.length === 0 || runningStepRef.current) {
-			return;
-		}
+		if (!isReady || !sessionId || !dataInput || mode !== "data") return;
+		if (stepKeys.some((k) => stepState[k].status !== "pending")) return;
 
-		const hasInProgress = stepKeys.some((stepKey) => stepState[stepKey].status === "in-progress");
-		if (hasInProgress) {
-			return;
-		}
+		void (async () => {
+			const supabase = getSupabaseBrowserClient();
+			const {
+				data: { session },
+			} = await supabase.auth.getSession();
+			const token = session?.access_token;
+			if (!token) return;
 
-		const nextPendingStepIndex = getNextPendingStepIndex(stepKeys, stepState);
-		if (nextPendingStepIndex < 0) {
-			return;
-		}
-
-		void runStep(stepKeys[nextPendingStepIndex]);
-	}, [isReady, runStep, stepKeys, stepState]);
+			await fetch("/api/pipeline/trigger", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({
+					sessionId,
+					mode,
+					sourceText: (dataInput as DataDrivenInputData).sourceText,
+					tone: (dataInput as DataDrivenInputData).tone,
+				}),
+			});
+		})();
+	}, [isReady, sessionId, dataInput, mode, stepKeys, stepState]);
 
 	const currentStepIndex = useMemo(() => {
 		const inProgressStepIndex = stepKeys.findIndex((stepKey) => stepState[stepKey].status === "in-progress");

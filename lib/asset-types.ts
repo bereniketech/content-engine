@@ -19,6 +19,9 @@ export const ASSET_TYPES = {
   DD_NEWSLETTER: 'dd_newsletter',
   DD_X_CAMPAIGN: 'dd_x_campaign',
   DD_THREADS_CAMPAIGN: 'dd_threads_campaign',
+  TIKTOK_SCRIPT: 'tiktok_script',
+  YOUTUBE_DESCRIPTION: 'youtube_description',
+  SUBSTACK_POST: 'substack_post',
 } as const;
 
 export type AssetType = (typeof ASSET_TYPES)[keyof typeof ASSET_TYPES];

@@ -28,6 +28,7 @@ import { requireAuth } from '@/lib/auth'
 import { resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput, sanitizeUnknown } from '@/lib/sanitize'
 import type { SeoResult } from '@/types'
+import { logger } from '@/lib/logger'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (assetError) {
-      console.error('Error saving asset:', assetError)
+      logger.error({ err: assetError }, 'Error saving asset')
       return NextResponse.json(
         { error: { code: 'storage_error', message: 'Failed to save SEO results' } },
         { status: 500 }
@@ -161,7 +162,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error) {
-    console.error('Error in SEO API:', error)
+    logger.error({ err: error }, 'Error in SEO API')
     return NextResponse.json(
       { error: { code: 'internal_error', message: 'Internal server error' } },
       { status: 500 }

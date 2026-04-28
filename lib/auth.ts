@@ -38,6 +38,12 @@ export function createSupabaseUserClient(token: string): SupabaseClient {
   })
 }
 
+export function isInternalRequest(request: NextRequest): boolean {
+  const secret = process.env.INNGEST_INTERNAL_SECRET
+  if (!secret) return false
+  return request.headers.get('x-inngest-internal') === secret
+}
+
 export async function requireAuth(
   request: NextRequest,
 ): Promise<{ user: User; token: string; supabase: SupabaseClient }> {

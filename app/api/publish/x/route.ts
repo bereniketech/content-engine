@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth'
 import { checkAlreadyPublished, writeDistributionLog, AlreadyPublishedError } from '@/lib/publish/distribution-log'
 import { postTweet, postThread, TwitterRateLimitError } from '@/lib/publish/twitter'
 import { ConfigError } from '@/lib/publish/secrets'
+import { logger } from '@/lib/logger'
 
 type PublishXBody = {
   sessionId?: unknown
@@ -76,13 +77,13 @@ export async function POST(request: NextRequest) {
       )
     }
     if (err instanceof ConfigError) {
-      console.error('publish/x config error', { varName: err.varName })
+      logger.error({ varName: err.varName }, 'publish/x config error')
       return NextResponse.json(
         { error: { code: 'config_error', message: `Missing configuration: ${err.varName}` } },
         { status: 500 }
       )
     }
-    console.error('publish/x error', { error: err instanceof Error ? err.message : String(err) })
+    logger.error({ err: err instanceof Error ? err.message : String(err) }, 'publish/x error')
     return NextResponse.json(
       { error: { code: 'internal_error', message: 'Internal server error' } },
       { status: 500 }
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
       externalId,
     })
   } catch (err) {
-    console.error('publish/x log write error', { error: err instanceof Error ? err.message : String(err) })
+    logger.error({ err: err instanceof Error ? err.message : String(err) }, 'publish/x log write error')
     return NextResponse.json(
       { error: { code: 'storage_error', message: 'Published but failed to log result' } },
       { status: 500 }

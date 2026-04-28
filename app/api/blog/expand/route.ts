@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { streamMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
 import { sanitizeInput } from '@/lib/sanitize'
+import { logger } from '@/lib/logger'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
@@ -73,19 +74,32 @@ Return ONLY the markdown section. No explanations, no code blocks, no additional
 
     const encoder = new TextEncoder()
 
-    // Create streaming response
     const readable = new ReadableStream<Uint8Array>({
       async start(controller) {
+        request.signal.addEventListener('abort', () => {
+          controller.close()
+        })
+
+        if (request.signal.aborted) {
+          controller.close()
+          return
+        }
+
         try {
           let fullMarkdown = ''
 
-          // Stream AI response
           for await (const chunk of streamMessage({
             maxTokens: 1000,
             messages: [{ role: 'user', content: expandPrompt }],
           })) {
+            if (request.signal.aborted) break
             fullMarkdown += chunk
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`))
+          }
+
+          if (request.signal.aborted) {
+            controller.close()
+            return
           }
 
           controller.enqueue(
@@ -93,10 +107,12 @@ Return ONLY the markdown section. No explanations, no code blocks, no additional
           )
           controller.close()
         } catch (error) {
-          console.error('Error initializing stream:', error)
-          controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ error: 'Failed to stream section expansion' })}\n\n`)
-          )
+          if (!request.signal.aborted) {
+            logger.error({ err: error }, 'Error in blog expand stream')
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ error: 'Failed to stream section expansion' })}\n\n`)
+            )
+          }
           controller.close()
         }
       },
@@ -111,7 +127,7 @@ Return ONLY the markdown section. No explanations, no code blocks, no additional
       },
     })
   } catch (error) {
-    console.error('Error in blog expand API:', error)
+    logger.error({ err: error }, 'Error in blog expand API')
     return NextResponse.json(
       { error: { code: 'internal_error', message: 'Internal server error' } },
       { status: 500 }

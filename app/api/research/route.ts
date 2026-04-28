@@ -26,6 +26,7 @@ import { createMessage } from '@/lib/ai'
 import { requireAuth } from '@/lib/auth'
 import { resolveSessionId } from '@/lib/session-assets'
 import { sanitizeInput } from '@/lib/sanitize'
+import { logger } from '@/lib/logger'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
@@ -179,7 +180,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (assetError) {
-      console.error('Error saving asset:', assetError)
+      logger.error({ err: assetError }, 'Error saving asset')
       return NextResponse.json(
         { error: { code: 'storage_error', message: 'Failed to save research results' } },
         { status: 500 }
@@ -201,7 +202,7 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     )
   } catch (error) {
-    console.error('Research API error:', error)
+    logger.error({ err: error }, 'Research API error')
     return NextResponse.json(
       { error: { code: 'server_error', message: 'Internal server error' } },
       { status: 500 }

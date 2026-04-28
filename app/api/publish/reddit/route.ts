@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth'
 import { checkAlreadyPublished, writeDistributionLog, AlreadyPublishedError } from '@/lib/publish/distribution-log'
 import { getRedditAccessToken, submitRedditPost, RedditForbiddenError } from '@/lib/publish/reddit'
 import { ConfigError } from '@/lib/publish/secrets'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   let auth
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
         { status: 500 }
       )
     }
-    console.error('publish/reddit error', { error: err instanceof Error ? err.message : String(err) })
+    logger.error({ err: err instanceof Error ? err.message : String(err) }, 'publish/reddit error')
     return NextResponse.json(
       { error: { code: 'internal_error', message: 'Internal server error' } },
       { status: 500 }

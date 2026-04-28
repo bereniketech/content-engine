@@ -1,7 +1,8 @@
 # Project Configuration
 
 ## Skill Library
-Path: C:/Users/Hp/Desktop/Experiment/claude_kit
+Path: d:/claude_kit
+Kit: d:/content-engine/.kit/
 
 ## Selected Skills
 

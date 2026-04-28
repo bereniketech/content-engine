@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServiceRoleClient } from '@/lib/supabase-server'
 import { verifyCronSecret } from '@/lib/cron-auth'
 import { runDeltaForUser } from '@/lib/analytics/delta'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,7 +12,7 @@ export async function POST(request: NextRequest) {
     const status = message === 'Unauthorized' ? 401 : 500
     const code = status === 401 ? 'unauthorized' : 'config_error'
     const responseMessage = status === 401 ? 'Invalid cron secret' : 'Cron authentication unavailable'
-    console.error('analytics-delta cron auth error', { error: message })
+    logger.error({ err: message }, 'analytics-delta cron auth error')
     return NextResponse.json(
       { error: { code, message: responseMessage } },
       { status }
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
   try {
     supabase = getServiceRoleClient()
   } catch (err) {
-    console.error('analytics-delta service role error', { error: err instanceof Error ? err.message : String(err) })
+    logger.error({ err: err instanceof Error ? err.message : String(err) }, 'analytics-delta service role error')
     return NextResponse.json(
       { error: { code: 'config_error', message: 'Service role client unavailable' } },
       { status: 500 }
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
     .eq('source', 'search_console')
 
   if (fetchError) {
-    console.error('analytics-delta: failed to fetch user ids', { error: fetchError.message })
+    logger.error({ err: fetchError.message }, 'analytics-delta: failed to fetch user ids')
     return NextResponse.json(
       { error: { code: 'storage_error', message: 'Failed to fetch user IDs' } },
       { status: 500 }
@@ -57,10 +58,7 @@ export async function POST(request: NextRequest) {
       triggersCreated += count
       usersProcessed++
     } catch (err) {
-      console.error('analytics-delta: error for user', {
-        userId,
-        error: err instanceof Error ? err.message : String(err),
-      })
+      logger.error({ userId, err: err instanceof Error ? err.message : String(err) }, 'analytics-delta: error for user')
     }
   }
 

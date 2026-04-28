@@ -6,6 +6,7 @@ import { mapAssetRowToContentAsset, resolveSessionId } from '@/lib/session-asset
 import { sanitizeInput } from '@/lib/sanitize'
 import { extractJsonPayload } from '@/lib/extract-json'
 import { VALIDATION_CONSTANTS } from '@/lib/validation'
+import { logger } from '@/lib/logger'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
@@ -136,7 +137,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     )
   } catch (error) {
-    console.error('Improve API error:', error)
+    logger.error({ err: error }, 'Improve API error')
     return NextResponse.json(
       { error: { code: 'internal_error', message: 'Internal server error' } },
       { status: 500 }

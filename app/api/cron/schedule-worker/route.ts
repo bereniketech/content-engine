@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServiceRoleClient } from '@/lib/supabase-server'
 import { verifyCronSecret } from '@/lib/cron-auth'
 import { postTweet, postThread } from '@/lib/publish/twitter'
+import { logger } from '@/lib/logger'
 import { postToLinkedIn } from '@/lib/publish/linkedin'
 import { publishToInstagram } from '@/lib/publish/instagram'
 import { getRedditAccessToken, submitRedditPost } from '@/lib/publish/reddit'
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
     const status = message === 'Unauthorized' ? 401 : 500
     const code = status === 401 ? 'unauthorized' : 'config_error'
     const responseMessage = status === 401 ? 'Invalid cron secret' : 'Cron authentication unavailable'
-    console.error('schedule-worker cron auth error', { error: message })
+    logger.error({ err: message }, 'schedule-worker cron auth error')
     return NextResponse.json(
       { error: { code, message: responseMessage } },
       { status }
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
   try {
     supabase = getServiceRoleClient()
   } catch (err) {
-    console.error('schedule-worker service role error', { error: err instanceof Error ? err.message : String(err) })
+    logger.error({ err: err instanceof Error ? err.message : String(err) }, 'schedule-worker service role error')
     return NextResponse.json(
       { error: { code: 'config_error', message: 'Service role client unavailable' } },
       { status: 500 }
@@ -98,7 +99,7 @@ export async function POST(request: NextRequest) {
     .limit(BATCH_SIZE)
 
   if (fetchError) {
-    console.error('schedule-worker fetch error', { error: fetchError.message })
+    logger.error({ err: fetchError.message }, 'schedule-worker fetch error')
     return NextResponse.json(
       { error: { code: 'storage_error', message: 'Failed to fetch queued posts' } },
       { status: 500 }
@@ -137,7 +138,7 @@ export async function POST(request: NextRequest) {
       processed++
     } catch (err) {
       const errorDetails = err instanceof Error ? err.message : String(err)
-      console.error('schedule-worker publish error', { postId: post.id, platform: post.platform, error: errorDetails })
+      logger.error({ postId: post.id, platform: post.platform, err: errorDetails }, 'schedule-worker publish error')
 
       await supabase
         .from('scheduled_posts')

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { VALIDATION_CONSTANTS } from '@/lib/validation'
 import { SCHEDULABLE_PLATFORMS } from '@/lib/platform-config'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   let auth
@@ -81,7 +82,7 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (error || !data) {
-    console.error('schedule/post insert error', { error: error?.message })
+    logger.error({ err: error?.message }, 'schedule/post insert error')
     return NextResponse.json(
       { error: { code: 'storage_error', message: 'Failed to schedule post' } },
       { status: 500 }
