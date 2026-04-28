@@ -1,11 +1,15 @@
 'use client'
 
 import React, { useMemo, useState, useRef } from 'react'
+import dynamic from 'next/dynamic'
 import { Copy, RefreshCw, Check } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
+
+const ContentEditor = dynamic(() => import('@/components/sections/ContentEditor'), { ssr: false })
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { DetectionBadge } from '@/components/ui/DetectionBadge'
 import { useSessionContext } from '@/lib/context/SessionContext'
 import type { SeoResult } from '@/types'
 import type { TopicTone } from '@/types'
@@ -115,6 +119,9 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone
   const [streamComplete, setStreamComplete] = useState(false)
   const [expandingSection, setExpandingSection] = useState<string | null>(null)
   const [selectedTone, setSelectedTone] = useState<TopicTone>(tone)
+  const [detectionLoading, setDetectionLoading] = useState(false)
+  const [detectionScores, setDetectionScores] = useState<{ originalityScore: number; aiScore: number } | null>(null)
+  const [apiKeyMissing, setApiKeyMissing] = useState(false)
   const abortControllerRef = useRef<AbortController | null>(null)
   const h2Sections = useMemo(() => extractH2Headings(markdown), [markdown])
 
@@ -181,6 +188,25 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone
               const finalWordCount = data.wordCount ?? accumulatedMarkdown.trim().split(/\s+/).filter(Boolean).length
               setWordCount(finalWordCount)
               setStreamComplete(true)
+              // Trigger detection after stream completes (non-blocking)
+              void (async () => {
+                setDetectionLoading(true)
+                try {
+                  const res = await fetch('/api/detect', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sessionId, text: accumulatedMarkdown }),
+                  })
+                  if (res.status === 422) {
+                    setApiKeyMissing(true)
+                  } else if (res.ok) {
+                    const json = (await res.json()) as { data: { originalityScore: number; aiScore: number } }
+                    setDetectionScores({ originalityScore: json.data.originalityScore, aiScore: json.data.aiScore })
+                  }
+                } finally {
+                  setDetectionLoading(false)
+                }
+              })()
               if (data.asset && typeof data.asset === 'object') {
                 const asset = data.asset as {
                   id: string
@@ -383,6 +409,14 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone
               {streamComplete && wordCount > 0 && <Badge variant="secondary">{wordCount} words</Badge>}
               {!streamComplete && isLoading && <Badge variant="outline">Streaming...</Badge>}
             </div>
+            {streamComplete && (
+              <DetectionBadge
+                originalityScore={detectionScores?.originalityScore ?? null}
+                aiScore={detectionScores?.aiScore ?? null}
+                isLoading={detectionLoading}
+                apiKeyMissing={apiKeyMissing}
+              />
+            )}
           </div>
         )}
 
@@ -399,17 +433,10 @@ export const BlogPanel: React.FC<BlogPanelProps> = ({ topic, seo, research, tone
         )}
 
         {markdown && (
-          <div className="prose prose-sm max-w-none dark:prose-invert">
-            <div className="space-y-4 text-sm leading-relaxed">
-              <ReactMarkdown
-                components={{
-                  h2: ({ children }) => <H2WithExpand>{children}</H2WithExpand>,
-                }}
-              >
-                {markdown}
-              </ReactMarkdown>
-            </div>
-          </div>
+          <ContentEditor
+            content={markdown}
+            sessionId={sessionId ?? ''}
+          />
         )}
       </CardContent>
     </Card>

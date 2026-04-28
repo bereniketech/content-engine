@@ -1,0 +1,5 @@
+{
+  "imports": {
+    "@upstash/redis": "https://esm.sh/@upstash/redis@1.34.0"
+  }
+}

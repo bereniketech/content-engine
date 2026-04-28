@@ -1,0 +1,388 @@
+Good. That’s the correct decision.
+Login gives you **control, monetization stability, and real product behavior**.
+
+Now here’s a **clean, no-BS feature list** combining everything we discussed — structured like something you can actually build from.
+
+---
+
+# 1. AUTH & USER IDENTITY
+
+* Email-based signup & login
+* Magic link login (passwordless)
+* Optional password login (fallback)
+* JWT-based session management
+* Refresh tokens (secure session renewal)
+* Logout + session invalidation
+* Multi-device session handling
+* Email verification (on first payment or signup)
+
+---
+
+# 2. USER MODEL (CORE DATA)
+
+* User ID (UUID)
+* Email (primary identity)
+* Country (derived from IP + stored)
+* Account type:
+
+  * individual
+  * team owner
+  * team member
+* Created at / last active
+* Payment history reference
+
+---
+
+# 3. CREDIT SYSTEM (CORE BUSINESS LOGIC)
+
+* Credit wallet per user
+* Credit balance tracking
+* Credit deduction per action (server-side only)
+* Credit purchase (top-up packs)
+* Credit expiry (optional)
+* Usage history:
+
+  * action
+  * credits used
+  * timestamp
+* Free credits for new users
+
+---
+
+# 4. SUBSCRIPTION SYSTEM
+
+(using **Razorpay**)
+
+* Monthly subscription plans
+* Plan → mapped to:
+
+  * monthly credits
+  * feature limits
+* Auto-renewal via Razorpay
+* Webhook-based:
+
+  * subscription activation
+  * renewal credit refill
+  * cancellation handling
+* Upgrade / downgrade plans
+* Subscription status tracking:
+
+  * active
+  * past_due
+  * cancelled
+
+---
+
+# 5. PAYMENT SYSTEM
+
+* Razorpay Checkout integration
+* Payment Links (for quick flows)
+* International card support (~3% fee) ([Razorpay][1])
+* Multi-currency support (handled via your backend)
+* Webhook verification (signature validation mandatory)
+* Payment states:
+
+  * pending
+  * success
+  * failed
+* Refund handling (optional)
+
+---
+
+# 6. COUNTRY-BASED PRICING (PPP ENGINE)
+
+* IP-based country detection
+* Store user country in DB
+* Pricing tiers (PPP model):
+
+  * Tier 1 (US/UK)
+  * Tier 2 (EU)
+  * Tier 3 (India)
+  * Tier 4 (low-income regions)
+* Dynamic pricing logic:
+
+  * frontend displays localized price
+  * backend sends correct amount to Razorpay
+* Currency mapping (INR, USD, EUR, etc.)
+* Price rounding rules (₹499, $9, etc.)
+
+---
+
+# 7. TEAM FUNCTIONALITY
+
+* Team creation
+* Team owner role
+* Invite members via email
+* Shared credit pool (team wallet)
+* Role-based access:
+
+  * owner
+  * member
+* Usage tracking per member
+* Remove members
+* Transfer ownership (optional)
+
+---
+
+# 8. SECURITY (NON-NEGOTIABLE)
+
+* All credit logic handled server-side
+* JWT validation on every request
+* Razorpay webhook signature verification
+* Rate limiting (per user + IP)
+* Device/IP tracking (basic fraud detection)
+* Prevent replay attacks
+* Input validation (strict backend checks)
+* HTTPS everywhere
+
+---
+
+# 9. ANTI-ABUSE SYSTEM
+
+* Free tier limits per user
+* IP-based throttling
+* Device fingerprinting (basic)
+* Duplicate account detection (email/IP patterns)
+* Credit misuse detection
+* CAPTCHA (only when suspicious)
+
+---
+
+# 10. CONTENT ENGINE INTEGRATION
+
+* API endpoint:
+
+  * generate content
+  * deduct credits
+* Configurable credit cost per action
+* Async processing support (if heavy workloads)
+* Response logging (for debugging + analytics)
+
+---
+
+# 11. DASHBOARD (USER SIDE)
+
+* Credit balance display
+* Usage history
+* Subscription status
+* Upgrade / buy credits CTA
+* Team management (if applicable)
+* Billing history
+
+---
+
+# 12. ADMIN PANEL (YOU NEED THIS)
+
+* View users
+* View payments
+* Adjust credits manually
+* Block users
+* Monitor abuse
+* View revenue metrics
+
+---
+
+# 13. ANALYTICS (DON’T SKIP)
+
+* Conversion rate (free → paid)
+* Credit usage patterns
+* Revenue per user
+* Country-wise performance
+* Failed payments tracking
+
+---
+
+# 14. EMAIL SYSTEM
+
+* Magic login links
+* Payment confirmation
+* Subscription renewal alerts
+* Low credit alerts
+* Team invites
+
+---
+
+# 15. SYSTEM ARCHITECTURE (SIMPLE FLOW)
+
+```plaintext
+User → Login → Select Plan
+        ↓
+Frontend → Razorpay Checkout
+        ↓
+Webhook → Backend verifies
+        ↓
+Credits / Subscription activated
+        ↓
+User consumes credits via API
+```
+
+Good — now you’re thinking like someone building a **real system**, not a toy.
+
+Here’s a **clean feature list specifically for email validation + anti-abuse + free credit protection**. No fluff.
+
+---
+
+# 1. EMAIL VALIDATION FEATURES (BASIC LAYER)
+
+* Email format validation (RFC compliant)
+* Domain extraction from email
+* Disposable email domain blocking (maintained blocklist)
+* MX record validation (domain can receive emails)
+* SMTP-level validation (optional, advanced)
+* Typo detection (e.g. gmal.com → gmail.com)
+* Domain allow/deny rules (customizable)
+
+---
+
+# 2. EMAIL VERIFICATION FEATURES
+
+* OTP-based email verification
+* Magic link verification
+* Verification expiry (time-limited links)
+* Resend verification controls (rate-limited)
+* Verification status tracking (verified / unverified)
+* Block access until verification complete
+
+---
+
+# 3. DISPOSABLE EMAIL DETECTION
+
+* Known temp email provider detection
+* Domain reputation scoring
+* Auto-updated disposable domain list
+* Custom blacklist support
+* Heuristic detection for new temp domains (pattern-based)
+
+---
+
+# 4. USER TRUST SCORING SYSTEM
+
+* Trust score per user (0–100)
+* Factors:
+
+  * email domain quality
+  * IP reputation
+  * usage behavior
+* Score-based actions:
+
+  * allow
+  * limit
+  * block
+* Upgrade trust after:
+
+  * payment
+  * consistent usage
+
+---
+
+# 5. FREE CREDIT PROTECTION
+
+* Free credit allocation (once per user)
+* Credit grant only after email verification
+* Limit free credits per:
+
+  * email
+  * IP
+  * device
+* Delayed credit unlock (optional)
+* Reduced credits for low-trust users
+
+---
+
+# 6. IP-BASED CONTROLS
+
+* IP tracking per signup
+* Rate limit:
+
+  * max accounts per IP per day
+* Geo-location detection
+* Suspicious IP detection (VPN / proxy)
+* IP reputation scoring
+
+---
+
+# 7. DEVICE FINGERPRINTING
+
+* Browser fingerprint capture
+* OS + device tracking
+* Session persistence via fingerprint
+* Detect multiple accounts from same device
+* Flag suspicious device reuse
+
+---
+
+# 8. BEHAVIORAL ANALYSIS
+
+* Track:
+
+  * time between actions
+  * usage patterns
+* Detect:
+
+  * rapid signups
+  * repetitive abuse patterns
+* Flag abnormal activity
+* Auto-restrict suspicious users
+
+---
+
+# 9. RATE LIMITING & THROTTLING
+
+* Limit:
+
+  * signup attempts
+  * verification requests
+  * credit usage bursts
+* Cooldown periods after threshold breach
+* CAPTCHA trigger on suspicious activity
+
+---
+
+# 10. PAYMENT-BASED TRUST UPGRADE
+
+* Mark user as “trusted” after successful payment
+* Remove most restrictions for paid users
+* Increase limits automatically
+* Link multiple sessions to same paid identity
+
+---
+
+# 11. ADMIN CONTROLS (YOU NEED THIS)
+
+* View flagged users
+* Manual block / unblock users
+* Adjust user trust score
+* Reset credits
+* View abuse logs
+* Add domains to blacklist/whitelist
+
+---
+
+# 12. LOGGING & AUDIT
+
+* Email validation logs
+* Verification attempts history
+* IP + device logs
+* Credit abuse logs
+* Suspicious activity logs
+
+---
+
+# 13. ALERTING SYSTEM
+
+* Alert on:
+
+  * spike in fake signups
+  * repeated abuse from same IP/device
+* Admin notifications (email/dashboard)
+
+---
+
+# 14. FALLBACK & USER EXPERIENCE
+
+* Allow retry with different email
+* Suggest correct domains (gmail.com, etc.)
+* Soft-block vs hard-block logic
+* Grace limits for legitimate users
+
+

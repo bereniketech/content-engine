@@ -4,11 +4,21 @@ import React, { useState } from 'react'
 import { Check, Copy, Loader2, DownloadIcon } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { IMAGE_STYLES, type ImagePromptsOutput, type ImageStyle } from '@/lib/prompts/images'
+
+interface GeneratedImageResult {
+  imageUrl: string
+  socialCards?: { featured: string; portrait: string }
+  assetId: string
+}
 
 interface ImagesPanelProps {
   data: ImagePromptsOutput
   isLoading?: boolean
+  autoGenerating?: boolean
+  generatedImage?: GeneratedImageResult
+  autoGenerateError?: string
 }
 
 const PromptCard: React.FC<{
@@ -105,7 +115,30 @@ const PromptCard: React.FC<{
   )
 }
 
-export const ImagesPanel: React.FC<ImagesPanelProps> = ({ data, isLoading }) => {
+async function handleDownload(url: string, filename: string): Promise<void> {
+  const link = document.createElement('a')
+  if (url.startsWith('data:')) {
+    link.href = url
+    link.download = filename
+    link.click()
+  } else {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    const blobUrl = URL.createObjectURL(blob)
+    link.href = blobUrl
+    link.download = filename
+    link.click()
+    URL.revokeObjectURL(blobUrl)
+  }
+}
+
+export const ImagesPanel: React.FC<ImagesPanelProps> = ({
+  data,
+  isLoading,
+  autoGenerating,
+  generatedImage,
+  autoGenerateError,
+}) => {
   const [selectedStyle, setSelectedStyle] = useState<ImageStyle>('startup-style')
   const [generatingPrompts, setGeneratingPrompts] = useState<Set<string>>(new Set())
   const [generatedImages, setGeneratedImages] = useState<Record<string, string>>({})
@@ -171,6 +204,89 @@ export const ImagesPanel: React.FC<ImagesPanelProps> = ({ data, isLoading }) => 
 
   return (
     <div className="space-y-6">
+      {/* Auto-generate error badge */}
+      {autoGenerateError && (
+        <Badge variant="destructive">Image generation failed: {autoGenerateError}</Badge>
+      )}
+
+      {/* Auto-generate loading skeleton */}
+      {autoGenerating && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Generated Images</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="animate-pulse bg-gray-200 rounded h-40 w-full mb-2" />
+            <div className="animate-pulse bg-gray-200 rounded h-48 w-32" />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Auto-generated images display */}
+      {!autoGenerating && generatedImage && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Generated Images</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Featured (1200×630)</p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={generatedImage.imageUrl} alt="Featured image" className="w-full rounded" />
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => handleDownload(generatedImage.imageUrl, 'featured-image-1200x630.jpg')}
+              >
+                <DownloadIcon className="h-4 w-4 mr-1" />
+                Download Featured
+              </Button>
+            </div>
+
+            {generatedImage.socialCards && (
+              <div>
+                <p className="text-xs text-muted-foreground mb-1">Portrait (1080×1350)</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={generatedImage.socialCards.portrait}
+                  alt="Portrait social card"
+                  className="max-w-xs rounded"
+                />
+                <div className="flex gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      handleDownload(
+                        generatedImage.socialCards!.featured,
+                        'social-card-1200x630.jpg'
+                      )
+                    }
+                  >
+                    <DownloadIcon className="h-4 w-4 mr-1" />
+                    Download Featured Card
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      handleDownload(
+                        generatedImage.socialCards!.portrait,
+                        'social-card-1080x1350.jpg'
+                      )
+                    }
+                  >
+                    <DownloadIcon className="h-4 w-4 mr-1" />
+                    Download Portrait
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Style Selector */}
       <Card>
         <CardHeader>

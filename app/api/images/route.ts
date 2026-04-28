@@ -11,6 +11,8 @@ import {
 } from '@/lib/prompts/images'
 import { extractJsonPayload } from '@/lib/extract-json'
 import { isRecord } from '@/lib/type-guards'
+import { generateImageFromPrompt } from '@/lib/gemini-image'
+import { generateSocialCards } from '@/lib/fal-images'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
@@ -80,6 +82,7 @@ export async function POST(request: NextRequest) {
     const topic = typeof body.topic === 'string' ? body.topic.trim() : ''
     const blog = body.blog ?? null
     const style = normalizeStyle(body.style)
+    const autoGenerate = body.autoGenerate === true
 
     if (!topic || !blog) {
       return NextResponse.json(
@@ -149,8 +152,74 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Auto-generate featured image if requested
+    let generatedImage: { imageUrl: string; assetId: string; socialCards?: { featured: string; portrait: string } } | undefined
+    let autoGenerateError: string | undefined
+    let socialCardsError: string | undefined
+
+    if (autoGenerate) {
+      try {
+        const imageUrl = await generateImageFromPrompt(images.hero, style)
+
+        const { data: generatedAsset, error: generatedAssetError } = await supabase
+          .from('content_assets')
+          .insert({
+            session_id: sessionId,
+            asset_type: 'image_generated',
+            content: { imageUrl, style, size: '1200x630' },
+          })
+          .select('*')
+          .single()
+
+        if (generatedAssetError) {
+          autoGenerateError = 'Image generated but failed to save asset record'
+        } else {
+          generatedImage = {
+            imageUrl,
+            assetId: generatedAsset.id as string,
+          }
+        }
+      } catch (genErr) {
+        autoGenerateError = genErr instanceof Error ? genErr.message : 'Image generation failed'
+      }
+
+      // Generate social cards via fal.ai — separate try/catch so Gemini failure doesn't block
+      if (generatedImage) {
+        try {
+          const socialCards = await generateSocialCards(images.social, sessionId)
+          await supabase.from('content_assets').insert({
+            session_id: sessionId,
+            asset_type: 'social_cards',
+            content: { featured: socialCards.featured, portrait: socialCards.portrait },
+          })
+          generatedImage.socialCards = socialCards
+        } catch (scErr) {
+          socialCardsError = scErr instanceof Error ? scErr.message : 'Social card generation failed'
+        }
+      }
+    }
+
+    const responseData: Record<string, unknown> = {
+      sessionId,
+      style,
+      images,
+      asset: mapAssetRowToContentAsset(savedAsset),
+    }
+
+    if (generatedImage !== undefined) {
+      responseData.generatedImage = generatedImage
+    }
+
+    if (autoGenerateError !== undefined) {
+      responseData.autoGenerateError = autoGenerateError
+    }
+
+    if (socialCardsError !== undefined) {
+      responseData.socialCardsError = socialCardsError
+    }
+
     return NextResponse.json(
-      { data: { sessionId, style, images, asset: mapAssetRowToContentAsset(savedAsset) } },
+      { data: responseData },
       { status: 201 }
     )
   } catch (err) {

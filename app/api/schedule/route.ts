@@ -22,6 +22,7 @@ export async function POST(request: NextRequest) {
     publishAt?: unknown
     assetType?: unknown
     contentSnapshot?: unknown
+    title?: unknown
   }
   try {
     body = await request.json()
@@ -36,6 +37,7 @@ export async function POST(request: NextRequest) {
   const contentSnapshot = typeof body.contentSnapshot === 'object' && body.contentSnapshot !== null
     ? body.contentSnapshot
     : {}
+  const title = typeof body.title === 'string' ? body.title.trim() || null : null
 
   const errors: string[] = []
   if (!sessionId) errors.push('sessionId is required')
@@ -77,6 +79,7 @@ export async function POST(request: NextRequest) {
       content_snapshot: contentSnapshot,
       status: 'queued',
       publish_at: publishAt.toISOString(),
+      ...(title !== null ? { title } : {}),
     })
     .select('id, status, publish_at')
     .single()

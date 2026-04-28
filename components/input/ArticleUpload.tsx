@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSessionContext } from "@/lib/context/SessionContext";
+import { URLIngestionInput } from "./URLIngestionInput";
 
 interface ImproveApiResponse {
 	id?: string;
@@ -37,6 +38,7 @@ function getFileExtension(fileName: string): string {
 export function ArticleUpload() {
 	const { createSession, isSubmitting, error: sessionError, sessionId, upsertAsset, applyImprovedArticle } = useSessionContext();
 
+	const [activeTab, setActiveTab] = useState<"file" | "url">("file");
 	const [article, setArticle] = useState("");
 	const [fileName, setFileName] = useState<string | null>(null);
 	const [showComingSoon, setShowComingSoon] = useState(false);
@@ -137,15 +139,52 @@ export function ArticleUpload() {
 		}
 	};
 
+	const handleUrlSuccess = (ingestedSessionId: string, _preview: string) => {
+		setSuccess(`URL ingested successfully. Session ID: ${ingestedSessionId}`);
+		setError(null);
+	};
+
+	const handleUrlError = (message: string) => {
+		setError(message);
+		setSuccess(null);
+	};
+
 	return (
 		<Card>
 			<CardHeader>
 				<CardTitle>Upload Or Paste Article</CardTitle>
 				<CardDescription>
-					Paste full text or upload a .txt/.md file to seed downstream content.
+					Paste full text, upload a .txt/.md file, or ingest from a URL.
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
+				{/* Tab switcher */}
+				<div className="flex gap-2 mb-4">
+					<Button
+						type="button"
+						variant={activeTab === "file" ? "default" : "outline"}
+						size="sm"
+						onClick={() => setActiveTab("file")}
+					>
+						File Upload
+					</Button>
+					<Button
+						type="button"
+						variant={activeTab === "url" ? "default" : "outline"}
+						size="sm"
+						onClick={() => setActiveTab("url")}
+					>
+						URL
+					</Button>
+				</div>
+
+				{activeTab === "url" ? (
+					<div className="space-y-4">
+						<URLIngestionInput onSuccess={handleUrlSuccess} onError={handleUrlError} />
+						{error && <p className="text-sm text-destructive">{error}</p>}
+						{success && <p className="text-sm text-primary">{success}</p>}
+					</div>
+				) : (
 				<form className="space-y-4" onSubmit={handleSubmit}>
 					<div className="space-y-1.5">
 						<label className="text-sm font-medium text-foreground" htmlFor="article">
@@ -197,6 +236,7 @@ export function ArticleUpload() {
 								: "Create Upload Session"}
 					</Button>
 				</form>
+				)}
 			</CardContent>
 		</Card>
 	);

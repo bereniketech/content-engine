@@ -25,7 +25,9 @@ export function getBlogPrompt(
   topic: string,
   seo: SeoResult,
   research: ResearchOutput,
-  tone: TopicTone = 'authority'
+  tone: TopicTone = 'authority',
+  briefContext?: string | null,
+  brandVoiceAddendum?: string | null
 ): string {
   const faqContent = research.faqs
     .slice(0, 3)
@@ -34,7 +36,10 @@ export function getBlogPrompt(
 
   const keywords = [seo.primaryKeyword, ...seo.secondaryKeywords].join(', ')
 
-  return `Write a comprehensive, engaging blog article about "${topic}" for ${seo.articleSchema.description}.
+  const briefSection = briefContext ? `${briefContext}\n\n` : ''
+  const brandSection = brandVoiceAddendum ? `\n\n${brandVoiceAddendum}` : ''
+
+  return `${briefSection}Write a comprehensive, engaging blog article about "${topic}" for ${seo.articleSchema.description}.
 
 ## Content Requirements
 - **Primary Title**: ${seo.title}
@@ -88,5 +93,5 @@ Use standard markdown:
 - ### for H3 subsections
 - **bold** for emphasis
 - - for bullet points
-- 1. for numbered lists`
+- 1. for numbered lists${brandSection}`
 }

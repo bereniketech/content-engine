@@ -22,6 +22,11 @@ import {
   Zap,
   Menu,
   X,
+  Library,
+  CalendarDays,
+  Mic,
+  Network,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -43,6 +48,14 @@ const NAV_ITEMS = [
   { label: "Analytics",  href: "/dashboard/analytics",              icon: BarChart2 },
   { label: "History",    href: "/dashboard",                        icon: History },
   { label: "Flywheel",   href: "/dashboard/flywheel",               icon: Repeat },
+] as const;
+
+const FEATURE_NAV_ITEMS = [
+  { label: "Content Library", href: "/dashboard/library",       icon: Library },
+  { label: "Schedule",        href: "/dashboard/schedule",      icon: CalendarDays },
+  { label: "Brand Voice",     href: "/dashboard/brand-voice",   icon: Mic },
+  { label: "Clusters",        href: "/dashboard/clusters",      icon: Network },
+  { label: "Workspace",       href: "/dashboard/workspace",     icon: Users },
 ] as const;
 
 const DATA_PIPELINE_ITEMS = [
@@ -88,6 +101,12 @@ export function Sidebar() {
   const navLinks = (
     <nav className="flex flex-col gap-1 px-2 py-4">
       {NAV_ITEMS.map((item) => renderNavLink(item, pathname, () => setMobileOpen(false)))}
+
+      <hr className="my-2 border-white/10" />
+      <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/70">
+        Features
+      </p>
+      {FEATURE_NAV_ITEMS.map((item) => renderNavLink(item, pathname, () => setMobileOpen(false)))}
 
       <hr className="my-2 border-white/10" />
       <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/70">

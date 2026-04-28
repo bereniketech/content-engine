@@ -10,6 +10,8 @@ import { VALIDATION_CONSTANTS } from '@/lib/validation'
 import { TOPIC_TONES } from '@/types'
 import type { SeoResult } from '@/types'
 import type { TopicTone } from '@/types'
+import { buildBrandVoiceSystemAddendum, type BrandVoice } from '@/lib/brand-voice'
+import { injectBriefIntoGenerationContext, mapBrief } from '@/lib/brief'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
@@ -97,8 +99,44 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Fetch active brand voice (best-effort, non-blocking on failure)
+    let brandVoiceAddendum: string | null = null
+    try {
+      const { data: voiceRow } = await supabase
+        .from('brand_voices')
+        .select('id, name, tone_adjectives, writing_samples, forbidden_phrases, formality_level, is_active')
+        .eq('is_active', true)
+        .maybeSingle()
+      if (voiceRow) {
+        const voice: BrandVoice = {
+          id: voiceRow.id as string,
+          name: voiceRow.name as string,
+          toneAdjectives: (voiceRow.tone_adjectives as string[]) ?? [],
+          writingSamples: (voiceRow.writing_samples as string[]) ?? [],
+          forbiddenPhrases: (voiceRow.forbidden_phrases as string[]) ?? [],
+          formalityLevel: voiceRow.formality_level as string,
+          isActive: voiceRow.is_active as boolean,
+        }
+        brandVoiceAddendum = buildBrandVoiceSystemAddendum(voice)
+      }
+    } catch { /* brand voice injection is optional */ }
+
+    // Fetch approved brief for this session (best-effort)
+    let briefContext: string | null = null
+    try {
+      const { data: briefRow } = await supabase
+        .from('briefs')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('status', 'approved')
+        .maybeSingle()
+      if (briefRow) {
+        briefContext = injectBriefIntoGenerationContext(mapBrief(briefRow as Record<string, unknown>))
+      }
+    } catch { /* brief injection is optional */ }
+
     // Get blog prompt
-    const prompt = getBlogPrompt(topic, seo as SeoResult, research as ResearchOutput, tone as TopicTone)
+    const prompt = getBlogPrompt(topic, seo as SeoResult, research as ResearchOutput, tone as TopicTone, briefContext, brandVoiceAddendum)
 
     // Create streaming response
     const encoder = new TextEncoder()

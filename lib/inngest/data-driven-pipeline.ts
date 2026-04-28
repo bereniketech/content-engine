@@ -86,6 +86,14 @@ export const dataDrivenPipeline = inngest.createFunction(
       return { markdown }
     })
 
+    // Emit detection event if Originality.ai is configured
+    if (process.env.ORIGINALITY_API_KEY) {
+      await step.sendEvent('emit-detect', {
+        name: 'content/detect.run',
+        data: { sessionId, articleText: (article as { markdown: string }).markdown },
+      })
+    }
+
     // Step 4: SEO + GEO
     const seoGeo = await step.run('seo-geo', async () => {
       const response = await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/data-driven/seo-geo`, {
