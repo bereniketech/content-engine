@@ -47,7 +47,7 @@ Blog Summary: ${blogSummary}
 ${styleClause}
 
 Generate a set of 5 detailed image generation prompts for this content. Each prompt must be
-self-contained and optimised for fal.ai / Stable Diffusion XL. Include composition, lighting,
+self-contained and optimised for any AI image generation model. Include composition, lighting,
 color palette, and mood in every prompt.
 
 Return ONLY valid JSON with this exact shape:

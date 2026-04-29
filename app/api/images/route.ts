@@ -11,8 +11,7 @@ import {
 } from '@/lib/prompts/images'
 import { extractJsonPayload } from '@/lib/extract-json'
 import { isRecord } from '@/lib/type-guards'
-import { generateImageFromPrompt } from '@/lib/gemini-image'
-import { generateSocialCards } from '@/lib/fal-images'
+import { generateImage, generateSocialCards } from '@/lib/image-ai'
 
 // OWASP checklist: JWT auth required, middleware rate limits, prompt inputs sanitized, generic error responses.
 
@@ -159,7 +158,7 @@ export async function POST(request: NextRequest) {
 
     if (autoGenerate) {
       try {
-        const imageUrl = await generateImageFromPrompt(images.hero, style)
+        const imageUrl = await generateImage({ prompt: images.hero, style })
 
         const { data: generatedAsset, error: generatedAssetError } = await supabase
           .from('content_assets')
