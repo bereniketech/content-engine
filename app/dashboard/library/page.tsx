@@ -78,15 +78,23 @@ function LibraryContent() {
     router.push(`/dashboard/library?page=${newPage}`)
   }
 
+  const FILTERS = ["all", "published", "scheduled", "review", "draft"] as const
+  type FilterType = typeof FILTERS[number]
+  const [activeFilter, setActiveFilter] = useState<FilterType>("all")
+
+  const filterLabels: Record<FilterType, string> = {
+    all: "All", published: "Published", scheduled: "Scheduled", review: "In Review", draft: "Draft"
+  }
+
   if (loading) {
     return (
-      <div className="p-6 space-y-4">
-        <h1 className="text-2xl font-semibold">Content Library</h1>
-        <div className="rounded-md border overflow-hidden">
-          <div className="bg-muted px-4 py-3 h-12" />
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Content Library</h1>
+        <div className="bg-card rounded-lg shadow-md overflow-hidden">
+          <div className="bg-surface-mid px-4 py-3 h-12" />
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="border-t px-4 py-4">
-              <div className="animate-pulse bg-gray-200 rounded h-4 w-full" />
+            <div key={i} className="border-t border-foreground-4/20 px-4 py-4">
+              <div className="animate-pulse bg-surface-low rounded h-4 w-full" />
             </div>
           ))}
         </div>
@@ -96,13 +104,10 @@ function LibraryContent() {
 
   if (error) {
     return (
-      <div className="p-6 space-y-4">
-        <h1 className="text-2xl font-semibold">Content Library</h1>
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Content Library</h1>
         <p className="text-destructive">{error}</p>
-        <button
-          className="text-sm underline text-primary"
-          onClick={() => window.location.reload()}
-        >
+        <button className="text-sm underline text-primary" onClick={() => window.location.reload()}>
           Retry
         </button>
       </div>
@@ -110,22 +115,41 @@ function LibraryContent() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">Content Library</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          {total} article{total !== 1 ? 's' : ''} · sorted by newest
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Content Library</h1>
+        <p className="text-sm text-foreground-2 mt-1">
+          {total} article{total !== 1 ? "s" : ""} · sorted by newest
         </p>
       </div>
 
-      <ContentLibrary
-        items={items}
-        isGA4Connected={isGA4Connected}
-        onRowClick={handleRowClick}
-        page={page}
-        totalPages={totalPages}
-        onPageChange={handlePageChange}
-      />
+      {/* Filter pills */}
+      <div className="flex flex-wrap gap-2">
+        {FILTERS.map((filter) => (
+          <button
+            key={filter}
+            onClick={() => setActiveFilter(filter)}
+            className={`rounded-full border text-[13px] font-medium px-3.5 py-1.5 transition-colors duration-[120ms] ${
+              activeFilter === filter
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border bg-card text-foreground-2 hover:border-primary/50"
+            }`}
+          >
+            {filterLabels[filter]}
+          </button>
+        ))}
+      </div>
+
+      <div className="bg-card rounded-lg shadow-md overflow-hidden">
+        <ContentLibrary
+          items={items}
+          isGA4Connected={isGA4Connected}
+          onRowClick={handleRowClick}
+          page={page}
+          totalPages={totalPages}
+          onPageChange={handlePageChange}
+        />
+      </div>
     </div>
   )
 }

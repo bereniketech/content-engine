@@ -1,7 +1,9 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { Bold, Italic, List, Link, Quote, Sparkles } from 'lucide-react'
 import { BlogPanel } from '@/components/sections/BlogPanel'
+import { PipelineStepper } from '@/components/ui/PipelineStepper'
 import { useSessionContext } from '@/lib/context/SessionContext'
 import { Button } from '@/components/ui/button'
 import { getLatestAssetByType } from '@/lib/session-assets'
@@ -75,14 +77,18 @@ export default function BlogPage() {
     setSelectionNotice('Improved version is now the default input for downstream engines.')
   }
 
+  const [showAIPanel, setShowAIPanel] = useState(false)
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-foreground">Blog</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">Blog Editor</h2>
+        <p className="mt-1 text-sm text-foreground-2">
           Draft full-length blog articles optimised for SEO and readability.
         </p>
       </div>
+
+      <PipelineStepper current="blog" />
 
       {!topicData && !uploadData ? (
         <div className="rounded bg-red-50 border border-red-200 p-4 text-red-800 text-sm">

@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                "surface-tint": "#006c4e",
+                "primary-container": "#008560",
+                "tertiary-container": "#b85751",
+                "surface-container-highest": "#dee4de",
+                "outline-variant": "#bccac1",
+                "on-error": "#ffffff",
+                "tertiary-fixed": "#ffdad6",
+                "on-tertiary-container": "#fffbff",
+                "secondary": "#0060a8",
+                "on-primary-fixed-variant": "#00513a",
+                "error": "#ba1a1a",
+                "primary-fixed-dim": "#68dbae",
+                "on-surface": "#171d1a",
+                "on-surface-variant": "#3d4943",
+                "surface": "#f5fbf5",
+                "inverse-on-surface": "#ecf2ed",
+                "secondary-fixed-dim": "#a1c9ff",
+                "surface-container-high": "#e4eae4",
+                "error-container": "#ffdad6",
+                "surface-dim": "#d6dbd6",
+                "on-secondary": "#ffffff",
+                "inverse-surface": "#2c322e",
+                "background": "#f5fbf5",
+                "on-primary-fixed": "#002115",
+                "surface-container-low": "#eff5ef",
+                "secondary-container": "#5da9fe",
+                "primary-fixed": "#86f8c9",
+                "outline": "#6d7a73",
+                "on-secondary-fixed-variant": "#004880",
+                "tertiary": "#993f3a",
+                "on-tertiary": "#ffffff",
+                "surface-container": "#eaefea",
+                "on-tertiary-fixed": "#410003",
+                "primary": "#00694c",
+                "tertiary-fixed-dim": "#ffb3ad",
+                "on-tertiary-fixed-variant": "#7e2a27",
+                "surface-container-lowest": "#ffffff",
+                "on-error-container": "#93000a",
+                "on-primary-container": "#f5fff7",
+                "on-secondary-fixed": "#001c38",
+                "on-secondary-container": "#003d6d",
+                "on-background": "#171d1a",
+                "on-primary": "#ffffff",
+                "inverse-primary": "#68dbae",
+                "surface-bright": "#f5fbf5",
+                "secondary-fixed": "#d2e4ff",
+                "surface-variant": "#dee4de"
+            },
+            "borderRadius": {
+                "DEFAULT": "0.25rem",
+                "lg": "0.5rem",
+                "xl": "0.75rem",
+                "full": "9999px"
+            },
+            "spacing": {
+                "lg": "1.5rem",
+                "xs": "0.25rem",
+                "md": "1rem",
+                "gutter": "1.5rem",
+                "container-max": "1280px",
+                "xl": "2.5rem",
+                "sm": "0.5rem",
+                "base": "4px"
+            },
+            "fontFamily": {
+                "h3": ["Inter"],
+                "h2": ["Inter"],
+                "h1": ["Inter"],
+                "body-md": ["Inter"],
+                "label-md": ["Inter"],
+                "caption": ["Inter"],
+                "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                "h3": ["24px", {"lineHeight": "1.3", "letterSpacing": "0", "fontWeight": "600"}],
+                "h2": ["32px", {"lineHeight": "1.25", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                "h1": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                "body-md": ["16px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                "label-md": ["14px", {"lineHeight": "1", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                "caption": ["12px", {"lineHeight": "1.4", "letterSpacing": "0", "fontWeight": "400"}],
+                "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .ai-prompt-bar {
+            background: linear-gradient(to right, rgba(29, 158, 117, 0.05), rgba(55, 138, 221, 0.05));
+            border: 1px solid rgba(29, 158, 117, 0.2);
+        }
+        .terminal-scroll::-webkit-scrollbar {
+            width: 4px;
+        }
+        .terminal-scroll::-webkit-scrollbar-thumb {
+            background: #3d4943;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-0 w-full h-16 flex items-center justify-between px-6 bg-white/80 backdrop-blur-md font-sans antialiased text-slate-900 border-b border-slate-200 shadow-sm z-40">
+<div class="flex items-center gap-4">
+<span class="text-xl font-bold tracking-tight text-teal-700">Content Studio</span>
+<div class="hidden md:flex ml-8 gap-6">
+<span class="text-slate-500 hover:bg-teal-50 transition-colors px-3 py-1 rounded cursor-pointer">Hub</span>
+<span class="text-slate-500 hover:bg-teal-50 transition-colors px-3 py-1 rounded cursor-pointer">Workspace</span>
+<span class="text-teal-600 font-semibold px-3 py-1 rounded">Analytics</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative hidden sm:block">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="pl-10 pr-4 py-2 bg-surface-container-low border border-outline-variant rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 text-sm w-64" placeholder="Search analytics..." type="text"/>
+</div>
+<button class="p-2 text-slate-500 hover:bg-teal-50 rounded-full transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-teal-50 rounded-full transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden bg-slate-200">
+<img alt="User profile" data-alt="A professional headshot of a creative director in a bright, modern studio. The lighting is soft and natural, emphasizing a professional yet approachable aesthetic. The background is a clean, minimalist white wall with subtle teal accents. High-quality digital photography style with a shallow depth of field." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjEhwUtayY35yI2SWYnAFh3SZjseMxC17IMiJN3F-jKtjurYbOsQl86slYwLcjy2WaSXxXurOz8co3VJLKo8o8meogpezEX3YhHCtI92VIaF_vkAXLHYu-WBs8mdsctnVKWHNvO8WEin1d2cmTG81Ytv9cK71KuPLEQrHu53QVCqpvIFKDlQJIeVlcejWvLrTrnLIjnfhKJIrgD2_ejGg-nWHmuH36EKQtL2nXuA3_onQQMgzzBXML1bH-jGVGdQXnACtJlCu5VlE"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-64 bg-slate-50 border-r border-slate-200 font-sans text-sm font-medium flex flex-col pt-20 pb-6 z-30">
+<div class="px-6 mb-8">
+<div class="flex items-center gap-3 p-3 bg-white rounded-xl shadow-sm border border-slate-100">
+<div class="w-10 h-10 rounded-lg bg-primary-container flex items-center justify-center text-white">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<div>
+<p class="text-on-surface font-bold">Content Studio</p>
+<p class="text-slate-500 text-xs">Pro Plan</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<div class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer transition-all">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Hub</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer transition-all">
+<span class="material-symbols-outlined" data-icon="edit_note">edit_note</span>
+<span>Workspace</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 bg-teal-50 text-teal-700 border-r-4 border-teal-600 rounded-lg cursor-pointer transition-all">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span>Analytics</span>
+</div>
+</nav>
+<div class="px-4 mt-auto space-y-1">
+<button class="w-full mb-4 flex items-center justify-center gap-2 py-2.5 bg-primary text-white rounded-lg font-bold shadow-sm hover:opacity-90 active:scale-95 transition-all">
+<span class="material-symbols-outlined text-sm">add</span>
+<span>New Project</span>
+</button>
+<div class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer transition-all">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span>Help</span>
+</div>
+<div class="flex items-center gap-3 px-4 py-3 text-slate-600 hover:bg-slate-100 rounded-lg cursor-pointer transition-all">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>Logout</span>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="ml-64 pt-20 p-8 min-h-screen">
+<div class="max-w-[1440px] mx-auto">
+<!-- Header Section -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<h1 class="font-h1 text-h1 text-on-surface mb-2">Analytics &amp; Insights</h1>
+<p class="text-body-lg text-on-surface-variant max-w-2xl">Real-time performance intelligence and persona resonance mapping for your cross-channel content.</p>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-2 px-4 py-2 border border-outline-variant rounded-lg font-label-md text-label-md text-on-surface-variant hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-lg">calendar_today</span>
+                        Last 30 Days
+                    </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg font-label-md text-label-md shadow-md hover:opacity-90 transition-all active:scale-95">
+<span class="material-symbols-outlined text-lg">download</span>
+                        Export PDF
+                    </button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-12 gap-6">
+<!-- KPI Section -->
+<div class="col-span-12 lg:col-span-4 bg-white p-6 rounded-xl shadow-md border border-slate-100 flex flex-col justify-between">
+<div class="flex justify-between items-start mb-6">
+<span class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">Overall Sentiment</span>
+<span class="material-symbols-outlined text-primary">sentiment_very_satisfied</span>
+</div>
+<div class="flex items-end gap-4">
+<span class="text-h1 font-h1 text-primary">88.4</span>
+<div class="flex flex-col mb-1">
+<span class="text-teal-600 font-bold flex items-center text-sm">
+<span class="material-symbols-outlined text-sm">arrow_upward</span> 12%
+                            </span>
+<span class="text-caption font-caption text-slate-400">vs last month</span>
+</div>
+</div>
+<div class="mt-6 h-2 w-full bg-surface-container rounded-full overflow-hidden">
+<div class="h-full bg-primary" style="width: 88%"></div>
+</div>
+</div>
+<div class="col-span-12 lg:col-span-4 bg-white p-6 rounded-xl shadow-md border border-slate-100 flex flex-col justify-between">
+<div class="flex justify-between items-start mb-6">
+<span class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">Network Health</span>
+<span class="material-symbols-outlined text-secondary">dynamic_form</span>
+</div>
+<div class="flex items-end gap-4">
+<span class="text-h1 font-h1 text-secondary">94%</span>
+<div class="flex flex-col mb-1">
+<span class="text-teal-600 font-bold flex items-center text-sm">
+<span class="material-symbols-outlined text-sm">arrow_upward</span> 4%
+                            </span>
+<span class="text-caption font-caption text-slate-400">Sync efficiency</span>
+</div>
+</div>
+<div class="mt-6 flex gap-1">
+<div class="h-2 flex-1 bg-secondary rounded-full"></div>
+<div class="h-2 flex-1 bg-secondary rounded-full"></div>
+<div class="h-2 flex-1 bg-secondary rounded-full"></div>
+<div class="h-2 flex-1 bg-secondary/30 rounded-full"></div>
+</div>
+</div>
+<div class="col-span-12 lg:col-span-4 bg-white p-6 rounded-xl shadow-md border border-slate-100 flex flex-col justify-between">
+<div class="flex justify-between items-start mb-6">
+<span class="text-label-md font-label-md text-on-surface-variant uppercase tracking-wider">Engagement Delta</span>
+<span class="material-symbols-outlined text-tertiary">trending_up</span>
+</div>
+<div class="flex items-end gap-4">
+<span class="text-h1 font-h1 text-tertiary">+22.5k</span>
+<div class="flex flex-col mb-1">
+<span class="text-teal-600 font-bold flex items-center text-sm">
+<span class="material-symbols-outlined text-sm">bolt</span> High
+                            </span>
+<span class="text-caption font-caption text-slate-400">Weekly interactions</span>
+</div>
+</div>
+<div class="mt-6 flex items-center gap-2">
+<div class="flex -space-x-2">
+<img alt="Avatar" class="w-6 h-6 rounded-full border-2 border-white" data-alt="Close-up portrait of a diverse female professional with a warm smile, set against a blurred office background with cool blue and teal lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIfFitTyJEUFigoak0Fyoc0eOlWDodudbIlVK1fKKCxt_bxNnPMar9ZsU8w15A0DGMxls3vH9tPwjEd6uo375IBTqpDPZtJuDbtvnPl1tky6RKGDjIPbOoTCWSeA5LVfOfeB6OsRZ9LbkF4Hxgz4fMAmAtuHG2FPZy-XZdZTaXeEmkXG_spb3FSgXcau1VjsY6zwt9V6IL0RzdItIty-8xLfTY4vfqK9Ej-5GsrtIHij_UBUuZzB9qD6GyJCUT1Hf3v2xMLb0Rzh8"/>
+<img alt="Avatar" class="w-6 h-6 rounded-full border-2 border-white" data-alt="A clean-shaven male professional with short dark hair, wearing a navy blue blazer, looking confidently at the camera. Professional lighting in a corporate environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAPPbDjQf7-tyAD_j4m9YvoG0bw8TnvAe2dsuFC9x2yniq7LULozW9UAqLlUuO6W8jO6lpPnrHl9oOAVhY6ErNz8tB9bQxCsz9fxnMK5w7yKwdVqYz6OXI6LLwh6-S9ZbKw9EgFlt6BNgJAwdJLU_LVz9KoOUed20JnsRd_8Y872Wl5OcbSmGrtIrOEQE8eq-dhH1pJ7HtHZjils-JLpz0ahyqSVbsCZHDtJG5QDEcWtckjuTCGTR3FAz4GtdfnuG8CDLX5yPK09WA"/>
+<div class="w-6 h-6 rounded-full border-2 border-white bg-slate-200 flex items-center justify-center text-[8px] font-bold">+12</div>
+</div>
+<span class="text-caption font-caption text-slate-500">Recent contributors</span>
+</div>
+</div>
+<!-- Persona Resonance Chart -->
+<div class="col-span-12 lg:col-span-8 bg-white p-8 rounded-xl shadow-md border border-slate-100 min-h-[400px]">
+<div class="flex justify-between items-center mb-8">
+<div>
+<h3 class="font-h3 text-h3 text-on-surface">Persona Resonance Mapping</h3>
+<p class="text-label-md text-on-surface-variant">Content alignment across defined audience segments</p>
+</div>
+<div class="flex gap-2">
+<span class="flex items-center gap-1.5 px-3 py-1 bg-surface-container rounded-full text-xs font-medium text-slate-600">
+<span class="w-2 h-2 rounded-full bg-primary"></span> Alignment
+                            </span>
+<span class="flex items-center gap-1.5 px-3 py-1 bg-surface-container rounded-full text-xs font-medium text-slate-600">
+<span class="w-2 h-2 rounded-full bg-secondary"></span> Potential
+                            </span>
+</div>
+</div>
+<div class="relative w-full h-64 mt-4 flex items-end justify-between gap-4 px-4">
+<!-- Simulated Bar Chart -->
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full flex items-end justify-center gap-1 h-full">
+<div class="w-4 bg-primary/20 rounded-t-sm h-3/4 group-hover:bg-primary transition-colors"></div>
+<div class="w-4 bg-primary rounded-t-sm h-[90%]"></div>
+</div>
+<span class="text-xs font-medium text-slate-500">Tech Lead</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full flex items-end justify-center gap-1 h-full">
+<div class="w-4 bg-primary/20 rounded-t-sm h-1/2 group-hover:bg-primary transition-colors"></div>
+<div class="w-4 bg-primary rounded-t-sm h-[65%]"></div>
+</div>
+<span class="text-xs font-medium text-slate-500">Designer</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full flex items-end justify-center gap-1 h-full">
+<div class="w-4 bg-primary/20 rounded-t-sm h-[85%] group-hover:bg-primary transition-colors"></div>
+<div class="w-4 bg-primary rounded-t-sm h-[40%]"></div>
+</div>
+<span class="text-xs font-medium text-slate-500">Executive</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full flex items-end justify-center gap-1 h-full">
+<div class="w-4 bg-primary/20 rounded-t-sm h-[30%] group-hover:bg-primary transition-colors"></div>
+<div class="w-4 bg-primary rounded-t-sm h-[75%]"></div>
+</div>
+<span class="text-xs font-medium text-slate-500">Marketing</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-3 group">
+<div class="w-full flex items-end justify-center gap-1 h-full">
+<div class="w-4 bg-primary/20 rounded-t-sm h-[95%] group-hover:bg-primary transition-colors"></div>
+<div class="w-4 bg-primary rounded-t-sm h-[55%]"></div>
+</div>
+<span class="text-xs font-medium text-slate-500">Developer</span>
+</div>
+<!-- Grid Lines -->
+<div class="absolute inset-x-0 top-0 h-full flex flex-col justify-between pointer-events-none border-b border-slate-100">
+<div class="w-full border-t border-slate-100/50"></div>
+<div class="w-full border-t border-slate-100/50"></div>
+<div class="w-full border-t border-slate-100/50"></div>
+<div class="w-full border-t border-slate-100/50"></div>
+</div>
+</div>
+</div>
+<!-- Live Node Stream Terminal -->
+<div class="col-span-12 lg:col-span-4 bg-slate-900 rounded-xl shadow-xl overflow-hidden flex flex-col border border-slate-800">
+<div class="bg-slate-800 px-4 py-3 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<div class="flex gap-1.5">
+<div class="w-3 h-3 rounded-full bg-red-500/80"></div>
+<div class="w-3 h-3 rounded-full bg-amber-500/80"></div>
+<div class="w-3 h-3 rounded-full bg-emerald-500/80"></div>
+</div>
+<span class="text-slate-400 text-xs font-mono ml-4">LIVE_NODE_STREAM_V2.0</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+<span class="text-emerald-500 text-[10px] font-mono">ACTIVE</span>
+</div>
+</div>
+<div class="flex-1 p-4 font-mono text-[11px] leading-relaxed text-emerald-500/90 terminal-scroll overflow-y-auto max-h-[320px]">
+<p class="mb-1"><span class="text-slate-500">[14:02:11]</span> NODE_ALPHA: Initializing sentiment sweep...</p>
+<p class="mb-1"><span class="text-slate-500">[14:02:12]</span> <span class="text-blue-400">FETCHING</span> clusters from edge-node-7</p>
+<p class="mb-1"><span class="text-slate-500">[14:02:15]</span> <span class="text-emerald-400">SUCCESS</span> Resonance localized at 0.942</p>
+<p class="mb-1"><span class="text-slate-500">[14:02:18]</span> <span class="text-amber-400">WARNING</span> Latency spike in region-us-west</p>
+<p class="mb-1"><span class="text-slate-500">[14:02:22]</span> NODE_BETA: Rerouting engagement packets...</p>
+<p class="mb-1"><span class="text-slate-500">[14:02:25]</span> <span class="text-emerald-400">STABLE</span> Connection restored. Buffer clear.</p>
+<p class="mb-1"><span class="text-slate-500">[14:02:29]</span> <span class="text-pink-400">INSIGHT</span> Persona 'Tech Lead' resonance +5%</p>
+<p class="mb-1"><span class="text-slate-500">[14:02:33]</span> Re-indexing keyword matrices for 'AI_STRATEGY'</p>
+<p class="mb-1"><span class="text-slate-500">[14:02:38]</span> Global health check: <span class="text-emerald-400">99.8%</span> uptime maintained</p>
+<p class="mb-1"><span class="text-slate-500">[14:02:41]</span> <span class="text-slate-500">&gt;&gt;&gt; SYSTEM IDLE &lt;&lt;&lt;</span></p>
+</div>
+<div class="bg-slate-950 p-3 border-t border-slate-800">
+<div class="flex items-center gap-2 px-2 py-1 bg-slate-900 border border-slate-800 rounded">
+<span class="text-emerald-500 text-xs">$</span>
+<input class="bg-transparent border-none text-emerald-500 text-xs w-full focus:ring-0 p-0" placeholder="execute command..." type="text"/>
+</div>
+</div>
+</div>
+<!-- Sentiment Score Dial Cards -->
+<div class="col-span-12 md:col-span-6 lg:col-span-3 bg-white p-6 rounded-xl shadow-md border border-slate-100 text-center">
+<h4 class="font-label-md text-label-md text-on-surface-variant mb-4 uppercase">Joy Index</h4>
+<div class="relative w-32 h-32 mx-auto mb-4">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-slate-100" cx="64" cy="64" fill="transparent" r="56" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-primary" cx="64" cy="64" fill="transparent" r="56" stroke="currentColor" stroke-dasharray="351.85" stroke-dashoffset="70.37" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-h3 font-h3 text-primary">80%</span>
+</div>
+</div>
+<p class="text-caption font-caption text-slate-500">Highly positive reception in visual content.</p>
+</div>
+<div class="col-span-12 md:col-span-6 lg:col-span-3 bg-white p-6 rounded-xl shadow-md border border-slate-100 text-center">
+<h4 class="font-label-md text-label-md text-on-surface-variant mb-4 uppercase">Trust Factor</h4>
+<div class="relative w-32 h-32 mx-auto mb-4">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-slate-100" cx="64" cy="64" fill="transparent" r="56" stroke="currentColor" stroke-width="8"></circle>
+<circle class="text-secondary" cx="64" cy="64" fill="transparent" r="56" stroke="currentColor" stroke-dasharray="351.85" stroke-dashoffset="35.18" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-h3 font-h3 text-secondary">90%</span>
+</div>
+</div>
+<p class="text-caption font-caption text-slate-500">Solid growth in expert authority metrics.</p>
+</div>
+<!-- Sentiment Heatmap (Image Replacement) -->
+<div class="col-span-12 md:col-span-12 lg:col-span-6 bg-white rounded-xl shadow-md border border-slate-100 overflow-hidden relative group">
+<img alt="Data visualization" class="w-full h-full object-cover min-h-[220px]" data-alt="A sophisticated data visualization dashboard showing a complex network graph of interconnected nodes. The visual style is modern and clean with a dark slate background, featuring vibrant teal and cyan glowing lines. Multiple data points and microscopic text elements suggest a deep dive into neural network health or real-time information flow. The aesthetic is high-tech corporate with subtle glassmorphism overlays." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDhpL92iiZXu-GPpj-H7q5qaH_RZXHj5sDP66Q787NceVCh-V4_AGYHrZvNUzo246FcqcJHnJik7EBLGgEN1uKLQFZfnpgZHMJVsWGTen329j5c_F7BUwZhsBXKHtM1a1T9nlVVqWszRNybC-IyBY6QdfTvfyzWB6lNKFE1aP_Yxq5doFCqMI_IxrOZA7PJnKj-v7P-LnjgoQabZRZcjFumbQ8Rp8LgHxERhPSRHTR1b-9hVsbsB-t41RIwWWGPmnHFRJRBskyuOn8"/>
+<div class="absolute inset-0 bg-gradient-to-t from-slate-900/80 to-transparent p-6 flex flex-col justify-end">
+<h4 class="text-white font-h3 text-h3">Global Content Reach</h4>
+<p class="text-slate-200 text-label-md">Real-time heat distribution of viral content nodes across global markets.</p>
+</div>
+</div>
+<!-- Bottom AI Prompt Bar -->
+<div class="col-span-12 mt-4">
+<div class="ai-prompt-bar p-6 rounded-[24px] flex items-center gap-6">
+<div class="w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-lg flex-shrink-0">
+<span class="material-symbols-outlined text-white" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<div class="flex-1">
+<p class="text-label-md font-bold text-primary uppercase mb-1">AI Insight Engine</p>
+<p class="text-body-md text-on-surface">"The tech lead persona resonance has increased by 15% due to recent deep-dive technical blogs. Recommendation: Increase posting frequency on LinkedIn between 9 AM and 11 AM EST."</p>
+</div>
+<div class="flex gap-2">
+<button class="px-4 py-2 bg-white border border-outline-variant rounded-lg text-sm font-medium hover:bg-slate-50 transition-all">Apply Strategy</button>
+<button class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:opacity-90 transition-all">Dismiss</button>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>

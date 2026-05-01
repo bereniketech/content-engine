@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Login | Content Studio</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-tint": "#006c4e",
+            "primary-container": "#008560",
+            "tertiary-container": "#b85751",
+            "surface-container-highest": "#dee4de",
+            "outline-variant": "#bccac1",
+            "on-error": "#ffffff",
+            "tertiary-fixed": "#ffdad6",
+            "on-tertiary-container": "#fffbff",
+            "secondary": "#0060a8",
+            "on-primary-fixed-variant": "#00513a",
+            "error": "#ba1a1a",
+            "primary-fixed-dim": "#68dbae",
+            "on-surface": "#171d1a",
+            "on-surface-variant": "#3d4943",
+            "surface": "#f5fbf5",
+            "inverse-on-surface": "#ecf2ed",
+            "secondary-fixed-dim": "#a1c9ff",
+            "surface-container-high": "#e4eae4",
+            "error-container": "#ffdad6",
+            "surface-dim": "#d6dbd6",
+            "on-secondary": "#ffffff",
+            "inverse-surface": "#2c322e",
+            "background": "#f5fbf5",
+            "on-primary-fixed": "#002115",
+            "surface-container-low": "#eff5ef",
+            "secondary-container": "#5da9fe",
+            "primary-fixed": "#86f8c9",
+            "outline": "#6d7a73",
+            "on-secondary-fixed-variant": "#004880",
+            "tertiary": "#993f3a",
+            "on-tertiary": "#ffffff",
+            "surface-container": "#eaefea",
+            "on-tertiary-fixed": "#410003",
+            "primary": "#00694c",
+            "tertiary-fixed-dim": "#ffb3ad",
+            "on-tertiary-fixed-variant": "#7e2a27",
+            "surface-container-lowest": "#ffffff",
+            "on-error-container": "#93000a",
+            "on-primary-container": "#f5fff7",
+            "on-secondary-fixed": "#001c38",
+            "on-secondary-container": "#003d6d",
+            "on-background": "#171d1a",
+            "on-primary": "#ffffff",
+            "inverse-primary": "#68dbae",
+            "surface-bright": "#f5fbf5",
+            "secondary-fixed": "#d2e4ff",
+            "surface-variant": "#dee4de"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "lg": "1.5rem",
+            "xs": "0.25rem",
+            "md": "1rem",
+            "gutter": "1.5rem",
+            "container-max": "1280px",
+            "xl": "2.5rem",
+            "sm": "0.5rem",
+            "base": "4px"
+          },
+          "fontFamily": {
+            "h3": ["Inter"],
+            "h2": ["Inter"],
+            "h1": ["Inter"],
+            "body-md": ["Inter"],
+            "label-md": ["Inter"],
+            "caption": ["Inter"],
+            "body-lg": ["Inter"]
+          },
+          "fontSize": {
+            "h3": ["24px", {"lineHeight": "1.3", "letterSpacing": "0", "fontWeight": "600"}],
+            "h2": ["32px", {"lineHeight": "1.25", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "h1": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "body-md": ["16px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+            "label-md": ["14px", {"lineHeight": "1", "letterSpacing": "0.01em", "fontWeight": "500"}],
+            "caption": ["12px", {"lineHeight": "1.4", "letterSpacing": "0", "fontWeight": "400"}],
+            "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    body {
+      background-color: #f5fbf5;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(0, 105, 76, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(55, 138, 221, 0.05) 0px, transparent 50%);
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+    .logo-tier {
+      transition: transform 0.3s ease;
+    }
+    .logo-container:hover .logo-tier-1 { transform: translateY(-2px); }
+    .logo-container:hover .logo-tier-2 { transform: translateY(2px); }
+  </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-6 font-body-md text-on-surface">
+<main class="w-full max-w-[440px] animate-in fade-in slide-in-from-bottom-4 duration-700">
+<!-- Logo Section -->
+<div class="flex flex-col items-center mb-10 logo-container">
+<div class="relative w-16 h-16 mb-4 flex items-center justify-center">
+<div class="absolute inset-0 bg-primary/10 rounded-xl rotate-6 logo-tier logo-tier-1"></div>
+<div class="absolute inset-0 bg-secondary/10 rounded-xl -rotate-3 logo-tier logo-tier-2"></div>
+<div class="relative z-10 w-12 h-12 bg-white shadow-lg rounded-lg flex items-center justify-center border border-surface-variant">
+<span class="material-symbols-outlined text-primary text-3xl" data-icon="auto_awesome">auto_awesome</span>
+</div>
+</div>
+<h1 class="font-h2 text-h2 text-primary tracking-tight">Content Studio</h1>
+<p class="font-caption text-caption text-on-surface-variant mt-1">Intelligence for modern creators</p>
+</div>
+<!-- Login Card -->
+<div class="glass-card rounded-[24px] shadow-xl p-8 md:p-10 border border-outline-variant/30">
+<div class="text-center mb-8">
+<h2 class="font-h3 text-h3 mb-2">Welcome back</h2>
+<p class="font-body-md text-on-surface-variant">Enter your details to access your workspace</p>
+</div>
+<!-- Social Actions -->
+<div class="grid grid-cols-1 gap-3 mb-8">
+<button class="flex items-center justify-center gap-3 w-full h-12 bg-white border border-outline-variant rounded-lg font-label-md hover:bg-surface-container-low transition-colors duration-200">
+<img alt="Google" class="w-5 h-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuEreB-Y_k-8GGJ8lITVlmWSKLlBzs0uedQHhN3cmMPZ4rzEhMGuIIwGY-IJrqNI49xM2wxQi1JHuTP1ISyVrIJrFnu_U6B4nAYSNIL9U0cqh7dojeTy7FYp6aAIxkb0nHYWUIZIwuChsXMI_vnMc87lA-Q7_Fz4F-Ln9mzIo7HGU4BPxz1CPWjxVuEXzl5s3u2GEThs6PXN5qtjv9Yn_56XfPpcYzW9eDaycappW9B9IwKVD06FoYP5RoBdwrV4L8DF3UawpUlx8"/>
+<span>Continue with Google</span>
+</button>
+<button class="flex items-center justify-center gap-3 w-full h-12 bg-white border border-outline-variant rounded-lg font-label-md hover:bg-surface-container-low transition-colors duration-200">
+<span class="material-symbols-outlined text-secondary" data-icon="corporate_fare">corporate_fare</span>
+<span>Sign in with SSO</span>
+</button>
+</div>
+<div class="relative mb-8">
+<div class="absolute inset-0 flex items-center">
+<div class="w-full border-t border-outline-variant/50"></div>
+</div>
+<div class="relative flex justify-center text-xs uppercase">
+<span class="bg-white px-4 text-on-surface-variant font-medium tracking-wider">Or email</span>
+</div>
+</div>
+<!-- Form -->
+<form class="space-y-5">
+<div>
+<label class="block font-label-md text-on-surface-variant mb-2" for="email">Email address</label>
+<input class="w-full h-12 px-4 rounded-lg bg-white border border-outline-variant focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all outline-none" id="email" placeholder="name@company.com" type="email"/>
+</div>
+<div>
+<div class="flex justify-between items-center mb-2">
+<label class="block font-label-md text-on-surface-variant" for="password">Password</label>
+<a class="text-caption text-secondary font-medium hover:underline" href="#">Forgot password?</a>
+</div>
+<div class="relative">
+<input class="w-full h-12 px-4 rounded-lg bg-white border border-outline-variant focus:ring-2 focus:ring-secondary/20 focus:border-secondary transition-all outline-none" id="password" placeholder="••••••••" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant" type="button">
+<span class="material-symbols-outlined text-[20px]" data-icon="visibility">visibility</span>
+</button>
+</div>
+</div>
+<div class="flex items-center gap-2 py-1">
+<input class="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary" id="remember" type="checkbox"/>
+<label class="font-caption text-on-surface-variant select-none" for="remember">Remember me for 30 days</label>
+</div>
+<button class="w-full h-12 bg-primary text-on-primary rounded-lg font-label-md hover:bg-primary-container transition-all active:scale-[0.98] shadow-md shadow-primary/20" type="submit">
+          Sign In
+        </button>
+</form>
+<!-- Footer Info -->
+<div class="mt-10 pt-6 border-t border-outline-variant/30 text-center">
+<p class="font-caption text-on-surface-variant">
+          Don't have an account? 
+          <a class="text-primary font-semibold hover:underline" href="#">Start your free trial</a>
+</p>
+</div>
+</div>
+<!-- Trust Badges / Links -->
+<div class="mt-12 flex flex-col items-center gap-6">
+<div class="flex items-center gap-8 grayscale opacity-50">
+<img alt="Amazon" class="h-4 object-contain" data-alt="A clean, minimalist logo of a well-known tech corporation rendered in a high-key architectural style. The image conveys professionalism and corporate trust through its simple, monochromatic presentation. The background is a crisp, off-white surface with soft, diffused shadows, echoing a modern office aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB3UWUDugWfbEyumkDXkuHJbAIOvz6CHbAqSbXxFsplRCmDJsbUDrYw1J6QuZeCS70B8uYYMJdkOHL8sVzn5G_WsAkfd6sHmc2dChh9FS7_eF_CfB36whMPLpSqgfFiCSD2EdpYWlmYL84hzi-taGUQF-XJbWKfTzlq6og4VjAioAaoTDLFw2B0mbrS5mLD-zmxB2w9H1QKpklfB4Y8Ie1i_4ROn7-ukiRpJmVXyvCSufGkq47Ti4mSlpXD0mIo14RhvuqkEZTMgYo"/>
+<img alt="Google" class="h-4 object-contain" data-alt="A professional corporate logo displayed in a minimalist, high-end gallery setting. The lighting is soft and ambient, highlighting the clean lines of the typography. The overall color palette is muted and sophisticated, focusing on cool grays and soft teals to align with a modern AI-focused brand identity." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGkdWaaZUfqlQLpi_UoefCZNYDw72FZUgP2oz4-S33cU4eWj8CK6S2L2GwcKdS9J1umPCDBR280PUd3WvAGepVrnU4mPNKiHl3P9cCCwFCkbqrh6pnDhLgxJIQ0zaERY7uxCokhvqdjzlNsjmCGEl3ZIJdXejYCp3ntmlYLP549HrekkuNwtGeVHePW4RSuIuzazzSIen3Y408-xAXtd-IlL1eGinZH75TuK1WURJ7NevgyXdYKX3XHE10_EORWLhiWNR7xcawQAA"/>
+</div>
+<div class="flex gap-4 text-caption text-on-surface-variant">
+<a class="hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<span class="w-1 h-1 bg-outline-variant rounded-full self-center"></span>
+<a class="hover:text-primary transition-colors" href="#">Terms of Service</a>
+<span class="w-1 h-1 bg-outline-variant rounded-full self-center"></span>
+<a class="hover:text-primary transition-colors" href="#">Contact Support</a>
+</div>
+</div>
+</main>
+<!-- Visual Accent -->
+<div class="fixed bottom-0 right-0 w-64 h-64 pointer-events-none opacity-20 overflow-hidden">
+<div class="absolute bottom-[-100px] right-[-100px] w-96 h-96 bg-primary-container rounded-full blur-[120px]"></div>
+</div>
+</body></html>

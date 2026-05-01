@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-tint": "#006c4e",
+                    "primary-container": "#008560",
+                    "tertiary-container": "#b85751",
+                    "surface-container-highest": "#dee4de",
+                    "outline-variant": "#bccac1",
+                    "on-error": "#ffffff",
+                    "tertiary-fixed": "#ffdad6",
+                    "on-tertiary-container": "#fffbff",
+                    "secondary": "#0060a8",
+                    "on-primary-fixed-variant": "#00513a",
+                    "error": "#ba1a1a",
+                    "primary-fixed-dim": "#68dbae",
+                    "on-surface": "#171d1a",
+                    "on-surface-variant": "#3d4943",
+                    "surface": "#f5fbf5",
+                    "inverse-on-surface": "#ecf2ed",
+                    "secondary-fixed-dim": "#a1c9ff",
+                    "surface-container-high": "#e4eae4",
+                    "error-container": "#ffdad6",
+                    "surface-dim": "#d6dbd6",
+                    "on-secondary": "#ffffff",
+                    "inverse-surface": "#2c322e",
+                    "background": "#f5fbf5",
+                    "on-primary-fixed": "#002115",
+                    "surface-container-low": "#eff5ef",
+                    "secondary-container": "#5da9fe",
+                    "primary-fixed": "#86f8c9",
+                    "outline": "#6d7a73",
+                    "on-secondary-fixed-variant": "#004880",
+                    "tertiary": "#993f3a",
+                    "on-tertiary": "#ffffff",
+                    "surface-container": "#eaefea",
+                    "on-tertiary-fixed": "#410003",
+                    "primary": "#00694c",
+                    "tertiary-fixed-dim": "#ffb3ad",
+                    "on-tertiary-fixed-variant": "#7e2a27",
+                    "surface-container-lowest": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "on-primary-container": "#f5fff7",
+                    "on-secondary-fixed": "#001c38",
+                    "on-secondary-container": "#003d6d",
+                    "on-background": "#171d1a",
+                    "on-primary": "#ffffff",
+                    "inverse-primary": "#68dbae",
+                    "surface-bright": "#f5fbf5",
+                    "secondary-fixed": "#d2e4ff",
+                    "surface-variant": "#dee4de"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "lg": "1.5rem",
+                    "xs": "0.25rem",
+                    "md": "1rem",
+                    "gutter": "1.5rem",
+                    "container-max": "1280px",
+                    "xl": "2.5rem",
+                    "sm": "0.5rem",
+                    "base": "4px"
+            },
+            "fontFamily": {
+                    "h3": ["Inter"],
+                    "h2": ["Inter"],
+                    "h1": ["Inter"],
+                    "body-md": ["Inter"],
+                    "label-md": ["Inter"],
+                    "caption": ["Inter"],
+                    "body-lg": ["Inter"]
+            },
+            "fontSize": {
+                    "h3": ["24px", {"lineHeight": "1.3", "letterSpacing": "0", "fontWeight": "600"}],
+                    "h2": ["32px", {"lineHeight": "1.25", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "h1": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                    "label-md": ["14px", {"lineHeight": "1", "letterSpacing": "0.01em", "fontWeight": "500"}],
+                    "caption": ["12px", {"lineHeight": "1.4", "letterSpacing": "0", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: #f5fbf5; }
+        .glass-card { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.3); }
+        .prompt-bar-glow { box-shadow: 0 0 20px rgba(29, 158, 117, 0.15); }
+    </style>
+</head>
+<body class="text-on-surface overflow-hidden">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-0 w-full h-16 flex items-center justify-between px-6 bg-white/80 backdrop-blur-md z-40 border-b border-slate-200 shadow-sm font-sans antialiased text-slate-900">
+<div class="flex items-center gap-4">
+<span class="text-xl font-bold tracking-tight text-teal-700">Content Studio</span>
+<div class="hidden md:flex ml-8 items-center bg-surface-container-low rounded-full px-4 py-1.5 border border-outline-variant/30">
+<span class="material-symbols-outlined text-slate-500 mr-2" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-64 text-slate-700" placeholder="Search workspace..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-3">
+<button class="p-2 text-slate-500 hover:bg-teal-50 rounded-full transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-teal-50 rounded-full transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="h-8 w-8 rounded-full overflow-hidden border border-teal-600/20">
+<img alt="User profile" class="h-full w-full object-cover" data-alt="A professional headshot of a person with a warm and approachable expression, set against a soft, out-of-focus office background. The lighting is bright and natural, reflecting the high-key, light-mode aesthetic of the interface. The image is crisp and detailed, maintaining the sophisticated corporate identity of Content Studio with clean lines and balanced tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAf46kcVQlil9VACi3rdUL7fdg9ROtsTBZoMnK-W1Y8e0ldLrQeivxxgDWgAJaUyROXO1O7PBEOirxoglvqSMd94cr8j1W8LMSfM0pQDaSopeIePh0q8qJTti_3VWp0UMvseTcDmzDc91Fj3yk5H0N2OCDdAcOYyXPdIzPFFumZ1P3hQkWI6ZEwXEsuH60nwgnVLqLjD8Bl7KSvzjYjntOTVZlMEV2PMq71v9r0_ghUw4inwFmm5oOsiT6N_Xpeaz2NhtiyHJJ09zM"/>
+</div>
+</div>
+</header>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full w-64 bg-slate-50 border-r border-slate-200 z-50 flex flex-col pt-20 pb-6 font-sans text-sm font-medium">
+<div class="px-4 mb-6">
+<div class="flex items-center p-3 rounded-xl bg-white shadow-sm mb-4">
+<div class="h-10 w-10 bg-primary-container rounded-lg flex items-center justify-center text-white mr-3">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<div>
+<div class="text-slate-900 font-bold">Content Studio</div>
+<div class="text-xs text-slate-500">Pro Plan</div>
+</div>
+</div>
+<button class="w-full bg-primary py-2.5 rounded-lg text-white font-semibold flex items-center justify-center gap-2 shadow-sm hover:brightness-110 active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                New Project
+            </button>
+</div>
+<nav class="flex-1 px-2 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 transition-all cursor-pointer" href="#">
+<span class="material-symbols-outlined text-teal-600" data-icon="dashboard">dashboard</span>
+                Hub
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg bg-teal-50 text-teal-700 border-r-4 border-teal-600 transition-all cursor-pointer" href="#">
+<span class="material-symbols-outlined" data-icon="edit_note" style="font-variation-settings: 'FILL' 1;">edit_note</span>
+                Workspace
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 transition-all cursor-pointer" href="#">
+<span class="material-symbols-outlined text-teal-600" data-icon="analytics">analytics</span>
+                Analytics
+            </a>
+</nav>
+<div class="mt-auto px-2 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 transition-all cursor-pointer" href="#">
+<span class="material-symbols-outlined text-teal-600" data-icon="help">help</span>
+                Help
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-slate-600 hover:bg-slate-100 transition-all cursor-pointer" href="#">
+<span class="material-symbols-outlined text-teal-600" data-icon="logout">logout</span>
+                Logout
+            </a>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="ml-64 pt-20 pb-28 px-8 h-screen overflow-y-auto">
+<header class="flex justify-between items-end mb-8">
+<div>
+<h1 class="font-h1 text-h1 text-on-surface mb-2">Workspace</h1>
+<p class="text-on-surface-variant font-body-md text-body-md">Manage your atomic content units and monitor neural alignment.</p>
+</div>
+<div class="flex gap-4">
+<div class="flex items-center gap-2 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100">
+<span class="material-symbols-outlined text-primary" data-icon="neurology">neurology</span>
+<span class="text-sm font-semibold">Neural Health: 98.4%</span>
+</div>
+</div>
+</header>
+<!-- Bento Grid Content Units -->
+<div class="grid grid-cols-12 gap-6">
+<!-- Visualization Card (Large) -->
+<div class="col-span-12 lg:col-span-8 bg-white rounded-[16px] p-6 shadow-md border border-slate-100 relative overflow-hidden h-[400px]">
+<div class="flex justify-between items-start mb-6 z-10 relative">
+<div>
+<h3 class="font-h3 text-h3 text-on-surface">Latent Space Visualization</h3>
+<p class="text-sm text-on-surface-variant">Real-time vector distribution of content tokens.</p>
+</div>
+<div class="flex gap-2">
+<span class="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Live Monitoring</span>
+</div>
+</div>
+<div class="absolute inset-0 z-0 opacity-40">
+<img alt="Abstract neural network visualization" class="w-full h-full object-cover" data-alt="A sophisticated 3D visualization of a neural network latent space, featuring clusters of floating luminous nodes connected by delicate, glowing filaments. The environment is vast and minimalist, using a soft teal and cool blue color palette consistent with the Intelligent Clarity brand. The lighting is ethereal and diffused, creating a sense of deep machine learning complexity presented with human-centered elegance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCjq81lJKNTVEV18ySHgJhaEyeK0oysglQXQmdibnisYaIZxuJHNsoe2xPGdQycvEGXQUlhzUuugMhYfFTXgrR1SjlHheSnAMXtsAoIgyK405jWkOwkXaJC8DoQ-2pd9yMZTKomTH1jvLe3EQ_BgUPi3eztYwUO3H1wXAISbeKFqOqyifjQs4vss2labc1Tx6kmrrWO1SC7pN_CpLydriEkTAJThz47dupj1SACxkrtvwU7MxYgvk2yiALI4O4sxJ2WIH1c8Ci4CA4"/>
+</div>
+<!-- Overlay Legend -->
+<div class="absolute bottom-6 left-6 z-10 flex gap-4">
+<div class="flex items-center gap-2 glass-card px-3 py-1.5 rounded-lg border border-white/50">
+<div class="h-2 w-2 rounded-full bg-primary animate-pulse"></div>
+<span class="text-xs font-medium">Optimized</span>
+</div>
+<div class="flex items-center gap-2 glass-card px-3 py-1.5 rounded-lg border border-white/50">
+<div class="h-2 w-2 rounded-full bg-secondary"></div>
+<span class="text-xs font-medium">Processing</span>
+</div>
+</div>
+</div>
+<!-- Stats Column -->
+<div class="col-span-12 lg:col-span-4 flex flex-col gap-6">
+<!-- Status Card -->
+<div class="bg-white rounded-[16px] p-6 shadow-md border border-slate-100 flex-1">
+<div class="flex items-center justify-between mb-4">
+<span class="font-semibold text-slate-900">System Alignment</span>
+<span class="material-symbols-outlined text-slate-400" data-icon="sync">sync</span>
+</div>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between text-xs mb-1">
+<span class="text-slate-500 uppercase tracking-tighter font-bold">Semantic Drift</span>
+<span class="text-primary font-bold">0.02%</span>
+</div>
+<div class="w-full bg-slate-100 h-1.5 rounded-full">
+<div class="bg-primary h-full rounded-full" style="width: 98%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs mb-1">
+<span class="text-slate-500 uppercase tracking-tighter font-bold">Contextual Retention</span>
+<span class="text-secondary font-bold">94%</span>
+</div>
+<div class="w-full bg-slate-100 h-1.5 rounded-full">
+<div class="bg-secondary h-full rounded-full" style="width: 94%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Health Card -->
+<div class="bg-white rounded-[16px] p-6 shadow-md border border-slate-100 flex-1 bg-gradient-to-br from-white to-teal-50">
+<h4 class="font-label-md text-label-md text-primary mb-2">Neural Health</h4>
+<div class="text-3xl font-bold text-slate-900 mb-1">Excellent</div>
+<p class="text-sm text-slate-600 mb-4">All clusters are currently aligned to target brand persona.</p>
+<button class="text-xs font-bold text-primary flex items-center gap-1 hover:underline">
+                        VIEW DETAILED REPORT
+                        <span class="material-symbols-outlined text-[14px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Content Units Grid -->
+<div class="col-span-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+<!-- Unit 1 -->
+<div class="bg-white rounded-[16px] p-5 shadow-md border border-slate-100 hover:shadow-lg transition-shadow border-t-4 border-t-primary">
+<div class="flex justify-between items-start mb-4">
+<div class="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="cluster">automatic_cluster</span>
+</div>
+<div class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-bold uppercase tracking-wider">
+<div class="w-1.5 h-1.5 rounded-full bg-teal-600"></div>
+                            Optimized
+                        </div>
+</div>
+<h4 class="font-semibold text-slate-900 mb-1">Semantic Token Clustering</h4>
+<p class="text-xs text-slate-500 mb-4 line-clamp-2">Reorganizing vocabulary tokens based on recent high-performance marketing copy.</p>
+<div class="flex items-center justify-between text-[11px] text-slate-400 font-bold uppercase">
+<span>Last sync: 2m ago</span>
+<button class="hover:text-primary"><span class="material-symbols-outlined text-[18px]" data-icon="more_vert">more_vert</span></button>
+</div>
+</div>
+<!-- Unit 2 -->
+<div class="bg-white rounded-[16px] p-5 shadow-md border border-slate-100 hover:shadow-lg transition-shadow border-t-4 border-t-secondary">
+<div class="flex justify-between items-start mb-4">
+<div class="h-10 w-10 bg-secondary/10 rounded-lg flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined" data-icon="sentiment_satisfied">sentiment_satisfied</span>
+</div>
+<div class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider">
+<div class="w-1.5 h-1.5 rounded-full bg-slate-400"></div>
+                            Idle
+                        </div>
+</div>
+<h4 class="font-semibold text-slate-900 mb-1">Sentiment Alignment</h4>
+<p class="text-xs text-slate-500 mb-4 line-clamp-2">Adjusting tonal parameters to ensure 100% brand safety across multiple languages.</p>
+<div class="flex items-center justify-between text-[11px] text-slate-400 font-bold uppercase">
+<span>Ready to run</span>
+<button class="hover:text-primary"><span class="material-symbols-outlined text-[18px]" data-icon="play_arrow">play_arrow</span></button>
+</div>
+</div>
+<!-- Unit 3 -->
+<div class="bg-white rounded-[16px] p-5 shadow-md border border-slate-100 hover:shadow-lg transition-shadow border-t-4 border-t-error">
+<div class="flex justify-between items-start mb-4">
+<div class="h-10 w-10 bg-error/10 rounded-lg flex items-center justify-center text-error">
+<span class="material-symbols-outlined" data-icon="warning">warning</span>
+</div>
+<div class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-error-container text-on-error-container text-[10px] font-bold uppercase tracking-wider">
+<div class="w-1.5 h-1.5 rounded-full bg-error"></div>
+                            Conflict
+                        </div>
+</div>
+<h4 class="font-semibold text-slate-900 mb-1">Persona Matrix V2</h4>
+<p class="text-xs text-slate-500 mb-4 line-clamp-2">Overlapping parameters detected between "Professional Expert" and "Casual Helper" personas.</p>
+<div class="flex items-center justify-between text-[11px] text-slate-400 font-bold uppercase">
+<span>Resolution required</span>
+<button class="text-error hover:underline">RESOLVE</button>
+</div>
+</div>
+<!-- Unit 4 -->
+<div class="bg-white rounded-[16px] p-5 shadow-md border border-slate-100 hover:shadow-lg transition-shadow border-t-4 border-t-primary">
+<div class="flex justify-between items-start mb-4">
+<div class="h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center text-primary">
+<span class="material-symbols-outlined" data-icon="schema">schema</span>
+</div>
+<div class="flex items-center gap-1 px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 text-[10px] font-bold uppercase tracking-wider">
+<div class="w-1.5 h-1.5 rounded-full bg-teal-600"></div>
+                            Optimized
+                        </div>
+</div>
+<h4 class="font-semibold text-slate-900 mb-1">Knowledge Distillation</h4>
+<p class="text-xs text-slate-500 mb-4 line-clamp-2">Compressing large language patterns into lightweight, high-speed content modules.</p>
+<div class="flex items-center justify-between text-[11px] text-slate-400 font-bold uppercase">
+<span>Active flow</span>
+<button class="hover:text-primary"><span class="material-symbols-outlined text-[18px]" data-icon="more_vert">more_vert</span></button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Command Bar Interface -->
+<div class="fixed bottom-0 left-64 right-0 p-6 z-30 pointer-events-none">
+<div class="max-w-4xl mx-auto pointer-events-auto">
+<div class="bg-white rounded-[24px] shadow-high border border-slate-200/50 p-2 flex items-center gap-2 prompt-bar-glow backdrop-blur-xl">
+<div class="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white flex-shrink-0">
+<span class="material-symbols-outlined" data-icon="bolt">bolt</span>
+</div>
+<input class="flex-1 bg-transparent border-none focus:ring-0 text-slate-800 font-medium px-4" placeholder="Type a command (e.g., 'Rebalance the Semantic Matrix' or 'Audit Health')..." type="text"/>
+<div class="flex gap-2 pr-2">
+<button class="bg-slate-50 hover:bg-slate-100 p-3 rounded-full text-slate-400 transition-colors">
+<span class="material-symbols-outlined" data-icon="mic">mic</span>
+</button>
+<button class="bg-primary hover:brightness-110 p-3 rounded-full text-white transition-all active:scale-95">
+<span class="material-symbols-outlined" data-icon="send">send</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</body></html>

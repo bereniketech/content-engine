@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   FlaskConical,
   Search,
   FileText,
-  Image,
+  Image as ImageIcon,
   Twitter,
   Linkedin,
   Instagram,
@@ -18,7 +19,6 @@ import {
   Calendar,
   BarChart2,
   History,
-  Repeat,
   Zap,
   Menu,
   X,
@@ -27,109 +27,226 @@ import {
   Mic,
   Network,
   Users,
+  HelpCircle,
+  LogOut,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
-  { label: "Research",   href: "/dashboard/research",               icon: FlaskConical },
-  { label: "SEO",        href: "/dashboard/seo",                    icon: Search },
-  { label: "Blog",       href: "/dashboard/blog",                   icon: FileText },
-  { label: "Images",     href: "/dashboard/images",                 icon: Image },
-  { label: "X",          href: "/dashboard/social/x",               icon: Twitter },
-  { label: "LinkedIn",   href: "/dashboard/social/linkedin",        icon: Linkedin },
-  { label: "Instagram",  href: "/dashboard/social/instagram",       icon: Instagram },
-  { label: "Medium",     href: "/dashboard/social/medium",          icon: BookOpen },
-  { label: "Reddit",     href: "/dashboard/social/reddit",          icon: MessageSquare },
-  { label: "Newsletter", href: "/dashboard/social/newsletter",      icon: Mail },
-  { label: "Pinterest",  href: "/dashboard/social/pinterest",       icon: PinIcon },
-  { label: "Distribute", href: "/dashboard/distribute",             icon: History },
-  { label: "Traffic",    href: "/dashboard/traffic",                icon: BarChart2 },
-  { label: "Calendar",   href: "/dashboard/calendar",               icon: Calendar },
-  { label: "Analytics",  href: "/dashboard/analytics",              icon: BarChart2 },
-  { label: "History",    href: "/dashboard",                        icon: History },
-  { label: "Flywheel",   href: "/dashboard/flywheel",               icon: Repeat },
-] as const;
+interface NavItem {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+}
 
-const FEATURE_NAV_ITEMS = [
-  { label: "Content Library", href: "/dashboard/library",       icon: Library },
-  { label: "Schedule",        href: "/dashboard/schedule",      icon: CalendarDays },
-  { label: "Brand Voice",     href: "/dashboard/brand-voice",   icon: Mic },
-  { label: "Clusters",        href: "/dashboard/clusters",      icon: Network },
-  { label: "Workspace",       href: "/dashboard/workspace",     icon: Users },
-] as const;
+const MAIN_NAV_ITEMS: NavItem[] = [
+  { label: "Hub",      href: "/dashboard",           icon: History },
+  { label: "Research", href: "/dashboard/research",  icon: FlaskConical },
+  { label: "SEO",      href: "/dashboard/seo",       icon: Search },
+  { label: "Blog",     href: "/dashboard/blog",      icon: FileText },
+  { label: "Images",   href: "/dashboard/images",    icon: ImageIcon },
+];
 
-const DATA_PIPELINE_ITEMS = [
-  { label: "Data Pipeline", href: "/dashboard/data-driven", icon: Zap },
-  { label: "Blog", href: "/dashboard/data-driven/blog", icon: FileText },
-  { label: "LinkedIn", href: "/dashboard/data-driven/linkedin", icon: Linkedin },
-  { label: "Medium", href: "/dashboard/data-driven/medium", icon: BookOpen },
-  { label: "Newsletter", href: "/dashboard/data-driven/newsletter", icon: Mail },
-  { label: "X Campaign", href: "/dashboard/data-driven/x-campaign", icon: Twitter },
-  { label: "Threads Campaign", href: "/dashboard/data-driven/threads-campaign", icon: MessageSquare },
-] as const;
+const DISTRIBUTE_NAV_ITEMS: NavItem[] = [
+  { label: "X / Twitter", href: "/dashboard/social/x",          icon: Twitter },
+  { label: "LinkedIn",    href: "/dashboard/social/linkedin",    icon: Linkedin },
+  { label: "Instagram",   href: "/dashboard/social/instagram",   icon: Instagram },
+  { label: "Newsletter",  href: "/dashboard/social/newsletter",  icon: Mail },
+  { label: "Medium",      href: "/dashboard/social/medium",      icon: BookOpen },
+  { label: "Reddit",      href: "/dashboard/social/reddit",      icon: MessageSquare },
+  { label: "Pinterest",   href: "/dashboard/social/pinterest",   icon: PinIcon },
+];
 
-function renderNavLink(
-  item: { label: string; href: string; icon: React.ElementType },
-  pathname: string,
-  closeMobile: () => void,
-) {
+const MANAGE_NAV_ITEMS: NavItem[] = [
+  { label: "Calendar",      href: "/dashboard/calendar",      icon: Calendar },
+  { label: "Analytics",     href: "/dashboard/analytics",     icon: BarChart2 },
+  { label: "Library",       href: "/dashboard/library",       icon: Library },
+  { label: "Brand Voice",   href: "/dashboard/brand-voice",   icon: Mic },
+  { label: "Schedule",      href: "/dashboard/schedule",      icon: CalendarDays },
+  { label: "Clusters",      href: "/dashboard/clusters",      icon: Network },
+  { label: "Workspace",     href: "/dashboard/workspace",     icon: Users },
+  { label: "Data Pipeline", href: "/dashboard/data-driven",   icon: Zap },
+];
+
+function NavLink({
+  item,
+  isActive,
+  collapsed,
+  onClick,
+}: {
+  item: NavItem;
+  isActive: boolean;
+  collapsed: boolean;
+  onClick?: () => void;
+}) {
   const { label, href, icon: Icon } = item;
-  const active = pathname === href || pathname.startsWith(href + "/");
 
   return (
     <Link
-      key={href}
       href={href}
-      onClick={closeMobile}
+      onClick={onClick}
       className={cn(
-        "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-        active
-          ? "bg-sidebar-active text-primary-foreground"
-          : "text-sidebar-fg hover:bg-white/10 hover:text-white"
+        "flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors duration-[120ms]",
+        isActive
+          ? "border-l-[3px] border-primary bg-primary/[0.08] text-primary font-semibold"
+          : "text-foreground-2 hover:bg-hover"
       )}
+      title={collapsed ? label : undefined}
     >
       <Icon className="h-4 w-4 shrink-0" />
-      {label}
+      {!collapsed && <span>{label}</span>}
     </Link>
+  );
+}
+
+function SectionLabel({ label, collapsed }: { label: string; collapsed: boolean }) {
+  if (collapsed) {
+    return <hr className="my-2 border-sidebar-border" />;
+  }
+  return (
+    <p className="px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-foreground-3">
+      {label}
+    </p>
+  );
+}
+
+function NavSection({
+  items,
+  pathname,
+  collapsed,
+  onClickItem,
+}: {
+  items: NavItem[];
+  pathname: string;
+  collapsed: boolean;
+  onClickItem?: () => void;
+}) {
+  return (
+    <>
+      {items.map((item) => (
+        <NavLink
+          key={item.href}
+          item={item}
+          isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
+          collapsed={collapsed}
+          onClick={onClickItem}
+        />
+      ))}
+    </>
+  );
+}
+
+function SidebarContent({
+  collapsed,
+  pathname,
+  onClickItem,
+}: {
+  collapsed: boolean;
+  pathname: string;
+  onClickItem?: () => void;
+}) {
+  return (
+    <nav className="flex flex-col gap-1 px-2 py-4 flex-1 overflow-y-auto">
+      <NavSection items={MAIN_NAV_ITEMS} pathname={pathname} collapsed={collapsed} onClickItem={onClickItem} />
+      <SectionLabel label="Distribute" collapsed={collapsed} />
+      <NavSection items={DISTRIBUTE_NAV_ITEMS} pathname={pathname} collapsed={collapsed} onClickItem={onClickItem} />
+      <SectionLabel label="Manage" collapsed={collapsed} />
+      <NavSection items={MANAGE_NAV_ITEMS} pathname={pathname} collapsed={collapsed} onClickItem={onClickItem} />
+    </nav>
   );
 }
 
 export function Sidebar() {
   const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const navLinks = (
-    <nav className="flex flex-col gap-1 px-2 py-4">
-      {NAV_ITEMS.map((item) => renderNavLink(item, pathname, () => setMobileOpen(false)))}
+  useEffect(() => {
+    setCollapsed(localStorage.getItem("sidebar-collapsed") === "true");
+  }, []);
 
-      <hr className="my-2 border-white/10" />
-      <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/70">
-        Features
-      </p>
-      {FEATURE_NAV_ITEMS.map((item) => renderNavLink(item, pathname, () => setMobileOpen(false)))}
-
-      <hr className="my-2 border-white/10" />
-      <p className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white/70">
-        Data Pipeline
-      </p>
-      {DATA_PIPELINE_ITEMS.map((item) => renderNavLink(item, pathname, () => setMobileOpen(false)))}
-    </nav>
-  );
+  const handleToggleCollapse = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    localStorage.setItem("sidebar-collapsed", next ? "true" : "false");
+  };
 
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="hidden md:flex md:w-56 md:flex-col md:shrink-0 bg-sidebar-bg min-h-screen">
-        <div className="flex h-14 items-center border-b border-white/10 px-4">
-          <span className="text-sm font-semibold text-white tracking-wide">Content Engine</span>
+      <aside
+        className={cn(
+          "hidden md:flex md:flex-col md:shrink-0 bg-sidebar min-h-screen border-r border-sidebar-border transition-all duration-200",
+          collapsed ? "md:w-[60px]" : "md:w-[248px]"
+        )}
+      >
+        {/* Brand card */}
+        <div className={cn(
+          "flex items-center border-b border-sidebar-border px-3 py-4",
+          collapsed ? "justify-center" : "gap-3"
+        )}>
+          <Image src="/logo.png" alt="Content Studio" width={36} height={36} className="rounded-sm object-cover shrink-0" />
+          {!collapsed && (
+            <div className="flex flex-col min-w-0">
+              <span className="text-sm font-bold text-foreground truncate">Content Studio</span>
+              <span className="text-[11px] text-foreground-3">Pro Plan</span>
+            </div>
+          )}
         </div>
-        {navLinks}
+
+        {/* New Project button */}
+        <div className="px-2 py-2">
+          <Link
+            href="/dashboard/new-session"
+            className={cn(
+              "flex items-center justify-center gap-2 rounded-sm bg-primary text-primary-foreground font-semibold h-10 transition-opacity hover:opacity-90",
+              collapsed ? "w-10 mx-auto px-0" : "w-full"
+            )}
+            title={collapsed ? "New Project" : undefined}
+          >
+            <Plus className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>New Project</span>}
+          </Link>
+        </div>
+
+        <SidebarContent collapsed={collapsed} pathname={pathname} />
+
+        {/* Footer */}
+        <div className="border-t border-sidebar-border px-2 py-4 flex flex-col gap-1">
+          <NavLink item={{ label: "Help", href: "#", icon: HelpCircle }} isActive={false} collapsed={collapsed} />
+          <button
+            className={cn(
+              "flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium text-foreground-2 hover:bg-hover transition-colors duration-[120ms]",
+              collapsed && "justify-center"
+            )}
+            title={collapsed ? "Logout" : undefined}
+          >
+            <LogOut className="h-4 w-4 shrink-0" />
+            {!collapsed && <span>Logout</span>}
+          </button>
+        </div>
+
+        {/* Collapse toggle */}
+        <div className="px-2 py-2 border-t border-sidebar-border">
+          <button
+            onClick={handleToggleCollapse}
+            className="flex items-center justify-center w-full h-9 rounded-sm hover:bg-hover transition-colors"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed
+              ? <ChevronRight className="h-4 w-4 text-foreground-2" />
+              : <ChevronLeft className="h-4 w-4 text-foreground-2" />
+            }
+          </button>
+        </div>
       </aside>
 
-      {/* Mobile hamburger button */}
+      {/* Mobile hamburger */}
       <button
-        className="md:hidden fixed top-3 left-3 z-50 rounded-md bg-sidebar-bg p-2 text-white shadow-lg"
-        onClick={() => setMobileOpen((prev) => !prev)}
+        className="md:hidden fixed top-3 left-3 z-50 rounded-md bg-primary p-2 text-primary-foreground shadow-lg"
+        onClick={() => setMobileOpen((p) => !p)}
         aria-label="Toggle menu"
       >
         {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -138,15 +255,27 @@ export function Sidebar() {
       {/* Mobile slide-over */}
       {mobileOpen && (
         <>
-          <div
-            className="md:hidden fixed inset-0 z-40 bg-black/50"
-            onClick={() => setMobileOpen(false)}
-          />
-          <aside className="md:hidden fixed inset-y-0 left-0 z-50 w-56 bg-sidebar-bg flex flex-col">
-            <div className="flex h-14 items-center border-b border-white/10 px-4">
-              <span className="text-sm font-semibold text-white tracking-wide">Content Engine</span>
+          <div className="md:hidden fixed inset-0 z-40 bg-black/50" onClick={() => setMobileOpen(false)} />
+          <aside className="md:hidden fixed inset-y-0 left-0 z-50 w-[248px] bg-sidebar flex flex-col overflow-y-auto">
+            {/* Brand card */}
+            <div className="flex items-center gap-3 px-3 py-4 border-b border-sidebar-border">
+              <Image src="/logo.png" alt="Content Studio" width={36} height={36} className="rounded-sm object-cover" />
+              <div className="flex flex-col">
+                <span className="text-sm font-bold text-foreground">Content Studio</span>
+                <span className="text-[11px] text-foreground-3">Pro Plan</span>
+              </div>
             </div>
-            {navLinks}
+
+            <SidebarContent collapsed={false} pathname={pathname} onClickItem={() => setMobileOpen(false)} />
+
+            {/* Footer */}
+            <div className="mt-auto border-t border-sidebar-border px-2 py-4 flex flex-col gap-1">
+              <NavLink item={{ label: "Help", href: "#", icon: HelpCircle }} isActive={false} collapsed={false} onClick={() => setMobileOpen(false)} />
+              <button className="flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium text-foreground-2 hover:bg-hover transition-colors">
+                <LogOut className="h-4 w-4 shrink-0" />
+                <span>Logout</span>
+              </button>
+            </div>
           </aside>
         </>
       )}

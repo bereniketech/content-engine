@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="flowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1D9E75"></stop>
+      <stop offset="100%" stop-color="#185FA5"></stop>
+    </linearGradient>
+  </defs>
+
+  
+  <rect width="120" height="120" rx="24" fill="#0F6E56"></rect>
+
+  
+  <rect x="30" y="28" width="5" height="64" rx="2.5" fill="url(#flowGrad)"></rect>
+
+  
+  <rect x="42" y="28" width="48" height="16" rx="4" fill="#1D9E75"></rect>
+
+  
+  <rect x="42" y="52" width="34" height="16" rx="4" fill="#378ADD"></rect>
+
+  
+  <rect x="42" y="76" width="22" height="16" rx="4" fill="#5DCAA5"></rect>
+</svg>

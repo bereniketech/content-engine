@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Content Studio</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body, #root { height: 100%; }
+    body {
+      background: #f5fbf5;
+      background-image: radial-gradient(at 0% 0%, rgba(0,105,76,0.04) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(55,138,221,0.03) 0px, transparent 50%);
+      color: #171d1a;
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    ::selection { background: rgba(0,105,76,0.15); }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #bccac1; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #6d7a73; }
+    textarea::-webkit-scrollbar { width: 4px; }
+    @media (max-width: 768px) {
+      .desktop-sidebar { display: none !important; }
+      .desktop-topnav { padding: 0 16px !important; }
+      .main-content { padding: 20px 16px !important; }
+    }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    input::placeholder, textarea::placeholder { color: #6d7a73; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <script type="text/babel" src="theme.jsx"></script>
+  <script type="text/babel" src="icons.jsx"></script>
+  <script type="text/babel" src="sidebar.jsx"></script>
+  <script type="text/babel" src="screens-home.jsx"></script>
+  <script type="text/babel" src="screens-pipeline.jsx"></script>
+  <script type="text/babel" src="screens-extra.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+
+  <script type="text/babel">
+    const { useState, useEffect, useCallback } = React;
+
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "accentHue": "teal",
+      "sidebarStyle": "expanded"
+    }/*EDITMODE-END*/;
+
+    function TopNav({ onNavigate, currentPage }) {
+      const pageNames = { dashboard: 'Hub', research: 'Research', seo: 'SEO', blog: 'Blog', images: 'Images', analytics: 'Analytics', calendar: 'Calendar', library: 'Library', 'brand-voice': 'Brand Voice', 'new-session': 'New Session' };
+      const topLinks = ['dashboard', 'blog', 'analytics'];
+
+      return (
+        <header style={{
+          position: 'sticky', top: 0, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '0 24px', background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+          borderBottom: '1px solid #e2e8e4', zIndex: 30, boxShadow: '0 1px 3px rgba(0,60,40,0.04)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+            <span style={{ fontSize: 16, fontWeight: 700, color: T.primary, letterSpacing: '-0.01em' }}>Content Studio</span>
+            <div style={{ display: 'flex', gap: 4 }}>
+              {topLinks.map(id => (
+                <button key={id} style={{
+                  background: 'none', border: 'none', cursor: 'pointer', fontFamily: T.font, fontSize: 13, fontWeight: currentPage === id ? 600 : 500,
+                  color: currentPage === id ? T.primary : T.fg3, padding: '6px 12px', borderRadius: T.r1,
+                  transition: `all ${T.fast}`
+                }} onClick={() => onNavigate(id)}
+                  onMouseEnter={e => { if (currentPage !== id) e.currentTarget.style.background = T.primaryMuted; }}
+                  onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                  {pageNames[id] || id}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: T.bg3, borderRadius: T.r1, padding: '7px 14px', border: `1px solid ${T.fg4}40` }}>
+              <Icons.Search size={15} stroke={T.fg3} />
+              <span style={{ fontSize: 13, color: T.fg3 }}>Search…</span>
+            </div>
+            <button style={{ width: 34, height: 34, borderRadius: '50%', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: T.fg3, transition: `all ${T.fast}` }}
+              onMouseEnter={e => e.currentTarget.style.background = T.primaryMuted}
+              onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+              <Icons.Settings size={18} />
+            </button>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: `linear-gradient(135deg, ${T.primaryContainer}, ${T.secondary})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', border: `2px solid ${T.primary}30`, cursor: 'pointer' }}>JD</div>
+          </div>
+        </header>
+      );
+    }
+
+    function App() {
+      const [authed, setAuthed] = useState(false);
+      const [page, setPage] = useState('dashboard');
+      const [session, setSession] = useState(null);
+      const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+      const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+      useEffect(() => {
+        setSidebarCollapsed(tweaks.sidebarStyle === 'collapsed');
+      }, [tweaks.sidebarStyle]);
+
+      const navigate = useCallback((p) => setPage(p), []);
+      const startSession = useCallback((s) => { setSession(s); setPage('research'); }, []);
+      const openSession = useCallback((s) => { setSession({ topic: s.title }); setPage('research'); }, []);
+
+      if (!authed) return <AuthScreen onLogin={() => setAuthed(true)} />;
+
+      const renderScreen = () => {
+        const wrap = (el) => <div style={{ animation: 'fadeIn 0.2s ease' }} key={page}>{el}</div>;
+        switch (page) {
+          case 'dashboard': return wrap(<DashboardHome onNavigate={navigate} onOpenSession={openSession} />);
+          case 'new-session': return wrap(<NewSessionScreen onNavigate={navigate} onStartSession={startSession} />);
+          case 'research': return wrap(<ResearchScreen session={session} onNavigate={navigate} />);
+          case 'seo': return wrap(<SEOScreen session={session} onNavigate={navigate} />);
+          case 'blog': return wrap(<BlogEditorScreen session={session} onNavigate={navigate} />);
+          case 'images': return wrap(<ImagesScreen session={session} onNavigate={navigate} />);
+          case 'social-x': case 'social-linkedin': case 'social-instagram': case 'social-newsletter': case 'social-medium':
+            return wrap(<SocialScreen session={session} onNavigate={navigate} channel={page} />);
+          case 'analytics': return wrap(<AnalyticsScreen />);
+          case 'calendar': return wrap(<CalendarScreen />);
+          case 'library': return wrap(<LibraryScreen onOpenSession={openSession} />);
+          case 'brand-voice': return wrap(<BrandVoiceScreen />);
+          default: return wrap(<DashboardHome onNavigate={navigate} onOpenSession={openSession} />);
+        }
+      };
+
+      return (
+        <div style={{ display: 'flex', height: '100vh', overflow: 'hidden' }}>
+          <Sidebar activePage={page} onNavigate={navigate} collapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)} />
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <TopNav onNavigate={navigate} currentPage={page} />
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              {renderScreen()}
+            </div>
+          </div>
+          <TweaksPanel title="Content Studio">
+            <TweakRadio label="Sidebar" options={['expanded', 'collapsed']} value={tweaks.sidebarStyle} onChange={v => setTweak('sidebarStyle', v)} />
+          </TweaksPanel>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

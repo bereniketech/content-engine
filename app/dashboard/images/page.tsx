@@ -3,9 +3,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PipelineStepper } from "@/components/ui/PipelineStepper";
 import { ImagesPanel } from "@/components/sections/ImagesPanel";
 import { useSessionContext } from "@/lib/context/SessionContext";
 import { getLatestAssetByType } from "@/lib/session-assets";
+import { cn } from "@/lib/utils";
 import type { ImagePromptsOutput } from "@/lib/prompts/images";
 
 export default function ImagesPage() {
@@ -92,13 +94,36 @@ export default function ImagesPage() {
     }
   };
 
+  const IMAGE_STYLES = ["Realistic", "Illustrative", "Minimalist", "3D", "Abstract"];
+  const [activeStyle, setActiveStyle] = useState("Realistic");
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-foreground">Images</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">Images</h2>
+        <p className="mt-1 text-sm text-foreground-2">
           Generate visual prompt packs from the active blog draft.
         </p>
+      </div>
+
+      <PipelineStepper current="images" />
+
+      {/* Style filter pills */}
+      <div className="flex flex-wrap gap-2">
+        {IMAGE_STYLES.map((style) => (
+          <button
+            key={style}
+            onClick={() => setActiveStyle(style)}
+            className={cn(
+              "rounded-full border text-[13px] font-medium px-4 py-2 transition-colors duration-[120ms]",
+              activeStyle === style
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border bg-card text-foreground-2 hover:border-primary/50"
+            )}
+          >
+            {style}
+          </button>
+        ))}
       </div>
 
       <Card>

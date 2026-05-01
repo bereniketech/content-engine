@@ -2,19 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
-import { ArticleUpload } from "@/components/input/ArticleUpload";
-import { DataDrivenForm } from "@/components/input/DataDrivenForm";
-import { TopicForm } from "@/components/input/TopicForm";
+import { Loader2, FileText, Eye, TrendingUp, Zap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatCard } from "@/components/ui/StatCard";
+import { AIInsightBar } from "@/components/ui/AIInsightBar";
 import { SummaryPanel } from "@/components/dashboard/SummaryPanel";
 import { useSessionContext } from "@/lib/context/SessionContext";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import type { ContentAsset, SessionInputData, SessionInputType } from "@/types";
-
-type InputTab = "topic" | "upload" | "data-driven";
 
 interface SessionListItem {
   id: string;
@@ -27,11 +24,11 @@ interface SessionListItem {
 const SUMMARY_THRESHOLD = 5;
 
 export default function DashboardPage() {
-  const [activeTab, setActiveTab] = useState<InputTab>("topic");
   const [history, setHistory] = useState<SessionListItem[]>([]);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
   const [restoringSessionId, setRestoringSessionId] = useState<string | null>(null);
+  const [showInsightBar, setShowInsightBar] = useState(true);
   const { assets, loadSession } = useSessionContext();
   const router = useRouter();
 
@@ -174,17 +171,13 @@ export default function DashboardPage() {
         "topic" in session.inputData && typeof session.inputData.topic === "string"
           ? session.inputData.topic.trim()
           : "";
-      if (topic) {
-        return topic;
-      }
+      if (topic) return topic;
 
       const sourceText =
         "sourceText" in session.inputData && typeof session.inputData.sourceText === "string"
           ? session.inputData.sourceText.trim()
           : "";
-      if (sourceText) {
-        return sourceText.slice(0, 80);
-      }
+      if (sourceText) return sourceText.slice(0, 80);
 
       const sourceFileName =
         "sourceFileName" in session.inputData && typeof session.inputData.sourceFileName === "string"
@@ -201,9 +194,7 @@ export default function DashboardPage() {
   }
 
   function getDataDrivenSourceBadgeLabel(session: SessionListItem): "Data" | "Topic" | null {
-    if (session.inputType !== "data-driven") {
-      return null;
-    }
+    if (session.inputType !== "data-driven") return null;
 
     const hasSourceText =
       "sourceText" in session.inputData
@@ -215,11 +206,7 @@ export default function DashboardPage() {
       && typeof session.inputData.sourceFileName === "string"
       && session.inputData.sourceFileName.trim().length > 0;
 
-    if (hasSourceText || hasSourceFileName) {
-      return "Data";
-    }
-
-    return "Topic";
+    return hasSourceText || hasSourceFileName ? "Data" : "Topic";
   }
 
   if (assets.length >= SUMMARY_THRESHOLD) {
@@ -227,53 +214,49 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      {/* Page heading */}
       <div>
-        <h2 className="text-2xl font-semibold text-foreground">Create New Session</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Start with a topic brief, source material, or an uploaded article to initialize your workflow.
+        <h1 className="text-[32px] font-bold text-foreground" style={{ letterSpacing: "-0.02em" }}>
+          Content Studio Hub
+        </h1>
+        <p className="mt-2 text-base text-foreground-2">
+          Real-time status of your pipeline.
         </p>
       </div>
 
-      <div className="inline-flex rounded-md border border-border bg-card p-1">
-        <Button
-          type="button"
-          variant={activeTab === "topic" ? "default" : "ghost"}
-          onClick={() => setActiveTab("topic")}
-        >
-          Topic
+      {/* Stat cards grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard value="23"    label="Articles" icon={FileText}    change="+2"   changePositive={true}  iconColor="primary"   />
+        <StatCard value="14.2k" label="Traffic"  icon={Eye}         change="+12%" changePositive={true}  iconColor="secondary" />
+        <StatCard value="87"    label="SEO Avg"  icon={TrendingUp}  change="+4"   changePositive={true}  iconColor="primary"   />
+        <StatCard value="842"   label="Credits"  icon={Zap}         change="-8"   changePositive={false} iconColor="secondary" />
+      </div>
+
+      {/* Quick actions */}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" className="rounded-full px-4 py-2.5 text-[13px] font-medium" onClick={() => router.push("/dashboard/new-session?tab=topic")}>
+          New from Topic
         </Button>
-        <Button
-          type="button"
-          variant={activeTab === "upload" ? "default" : "ghost"}
-          onClick={() => setActiveTab("upload")}
-        >
+        <Button variant="outline" className="rounded-full px-4 py-2.5 text-[13px] font-medium" onClick={() => router.push("/dashboard/new-session?tab=upload")}>
           Upload Article
         </Button>
-        <Button
-          type="button"
-          variant={activeTab === "data-driven" ? "default" : "ghost"}
-          onClick={() => setActiveTab("data-driven")}
-        >
-          Data-Driven
+        <Button variant="outline" className="rounded-full px-4 py-2.5 text-[13px] font-medium" onClick={() => router.push("/dashboard/new-session?tab=url")}>
+          Repurpose URL
+        </Button>
+        <Button variant="outline" className="rounded-full px-4 py-2.5 text-[13px] font-medium" onClick={() => router.push("/dashboard/new-session?tab=data-driven")}>
+          Data Pipeline
         </Button>
       </div>
 
-      {activeTab === "topic" ? (
-        <TopicForm />
-      ) : activeTab === "upload" ? (
-        <ArticleUpload />
-      ) : (
-        <DataDrivenForm />
-      )}
-
+      {/* Recent sessions */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">History</CardTitle>
+          <CardTitle className="text-lg">Recent Sessions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {isHistoryLoading && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2 text-sm text-foreground-3">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading session history...
             </div>
@@ -286,8 +269,8 @@ export default function DashboardPage() {
           )}
 
           {!isHistoryLoading && !historyError && history.length === 0 && (
-            <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-sm text-muted-foreground">
-              No sessions yet - start your first generation above
+            <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-sm text-foreground-3">
+              No sessions yet — start your first generation above.
             </p>
           )}
 
@@ -303,7 +286,7 @@ export default function DashboardPage() {
                   type="button"
                   onClick={() => void handleRestoreSession(session)}
                   disabled={isRestoring}
-                  className="w-full rounded-md border border-border bg-card px-3 py-3 text-left transition-colors hover:bg-muted/40 disabled:opacity-70"
+                  className="w-full rounded-md bg-card px-3 py-3 text-left transition-colors duration-[120ms] hover:bg-surface-low disabled:opacity-70"
                 >
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant={session.inputType === "topic" ? "default" : "secondary"}>
@@ -318,7 +301,7 @@ export default function DashboardPage() {
                         {dataDrivenSourceBadge}
                       </Badge>
                     )}
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-sm text-foreground-3">
                       {new Date(session.createdAt).toLocaleString()}
                     </span>
                     <span className="text-sm font-medium text-foreground">
@@ -327,14 +310,23 @@ export default function DashboardPage() {
                   </div>
                   <p className="mt-2 text-sm text-foreground">{getSessionLabel(session)}</p>
                   {isRestoring && (
-                    <p className="mt-2 text-xs text-muted-foreground">Restoring session...</p>
+                    <p className="mt-2 text-xs text-foreground-3">Restoring session...</p>
                   )}
                 </button>
               );
             })}
         </CardContent>
       </Card>
+
+      {/* AI Insight Bar */}
+      {showInsightBar && (
+        <AIInsightBar
+          title="AI Insight Engine"
+          description='Your "RAG Architecture" guide is trending higher than expected. Click to apply this strategy to other topics.'
+          onApply={() => console.log("Apply strategy")}
+          onDismiss={() => setShowInsightBar(false)}
+        />
+      )}
     </div>
   );
 }
-

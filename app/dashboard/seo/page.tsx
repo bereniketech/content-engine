@@ -1,12 +1,15 @@
 'use client'
 
 import { useMemo, useState, FormEvent } from 'react'
+import { Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PipelineStepper } from '@/components/ui/PipelineStepper'
 import { SEOPanel } from '@/components/sections/SEOPanel'
 import { useSessionContext } from '@/lib/context/SessionContext'
 import { getLatestAssetByType } from '@/lib/session-assets'
 import type { SeoResult } from '@/types'
+import { cn } from '@/lib/utils'
 
 interface SeoData {
   id: string
@@ -94,14 +97,40 @@ export default function SEOPage() {
     }
   }
 
+  function ScoreDial({ score }: { score: number }) {
+    const circumference = 2 * Math.PI * 60
+    const strokeDashoffset = circumference - (score / 100) * circumference
+    const isGood = score >= 80
+
+    return (
+      <div className="flex items-center justify-center">
+        <div className="relative w-[140px] h-[140px]">
+          <svg viewBox="0 0 140 140" className="w-full h-full">
+            <circle cx="70" cy="70" r="60" fill="none" stroke="currentColor" strokeWidth="8" className="text-foreground-4 opacity-25" />
+            <circle cx="70" cy="70" r="60" fill="none" stroke="currentColor" strokeWidth="8"
+              strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round"
+              className={isGood ? "text-primary" : "text-warning"}
+              style={{ transform: "rotate(-90deg)", transformOrigin: "70px 70px", transition: "stroke-dashoffset 500ms ease" }} />
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-[38px] font-extrabold text-foreground">{score}</span>
+            <span className="text-[11px] uppercase tracking-wider text-foreground-3">SEO</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-foreground">SEO</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h2 className="text-2xl font-bold tracking-tight text-foreground">SEO</h2>
+        <p className="mt-1 text-sm text-foreground-2">
           Generate keyword targets, meta descriptions, and structured data.
         </p>
       </div>
+
+      <PipelineStepper current="seo" />
 
       {/* Input Form */}
       {!seoData && (
