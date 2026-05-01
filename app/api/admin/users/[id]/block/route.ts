@@ -7,22 +7,23 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const adminId = await requireAdmin(req);
   if (!adminId) return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
 
   const { reason } = await req.json();
+  const { id } = await params;
 
   await supabase
     .from('users')
     .update({ account_status: 'blocked' })
-    .eq('id', params.id);
+    .eq('id', id);
 
-  await supabase.auth.admin.signOut(params.id, 'global');
+  await supabase.auth.admin.signOut(id, 'global');
 
   await logAdminAction({
     adminId,
-    targetUserId: params.id,
+    targetUserId: id,
     actionType: 'block',
     reason: reason ?? 'Admin block',
     metadata: {},

@@ -5,7 +5,7 @@ import { logger } from '@/lib/logger'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     let auth
@@ -19,7 +19,7 @@ export async function PATCH(
     }
 
     const { user, supabase } = auth
-    const assetId = params.id
+    const { id: assetId } = await params
 
     if (!assetId) {
       return NextResponse.json(

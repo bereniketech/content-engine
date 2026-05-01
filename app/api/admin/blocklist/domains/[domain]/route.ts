@@ -7,17 +7,19 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function DELETE(req: NextRequest, { params }: { params: { domain: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ domain: string }> }) {
   const adminId = await requireAdmin(req);
   if (!adminId) return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
 
-  await supabase.from('email_domain_blocklist').delete().eq('domain', params.domain);
+  const { domain } = await params;
+
+  await supabase.from('email_domain_blocklist').delete().eq('domain', domain);
 
   await logAdminAction({
     adminId,
     actionType: 'domain_unblock',
     reason: 'Admin removed',
-    metadata: { domain: params.domain },
+    metadata: { domain },
   });
 
   return new NextResponse(null, { status: 204 });

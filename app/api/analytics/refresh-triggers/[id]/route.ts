@@ -3,7 +3,7 @@ import { requireAuth } from '@/lib/auth'
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   let auth
   try {
@@ -16,7 +16,7 @@ export async function PATCH(
   }
   const { user, supabase } = auth
 
-  const { id } = params
+  const { id } = await params
 
   let body: { status?: unknown }
   try {

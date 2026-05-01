@@ -5,7 +5,7 @@ const FIVE_MINUTES_MS = 5 * 60 * 1000
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   let auth
   try {
@@ -28,7 +28,7 @@ export async function PATCH(
     )
   }
 
-  const { id } = params
+  const { id } = await params
   const updates: Record<string, unknown> = {}
 
   if (typeof body.publishAt === 'string') {
@@ -85,7 +85,7 @@ export async function PATCH(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   let auth
   try {
@@ -98,7 +98,7 @@ export async function DELETE(
   }
   const { user, supabase } = auth
 
-  const { id } = params
+  const { id } = await params
 
   const { data: existing, error: fetchError } = await supabase
     .from('scheduled_posts')

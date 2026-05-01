@@ -1,22 +1,23 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
-export async function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const { id } = await params;
   const { data: team, error: teamErr } = await supabase
     .from('teams')
     .select('id, name, owner_user_id')
-    .eq('id', params.id)
+    .eq('id', id)
     .single();
   if (teamErr || !team) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const { data: members } = await supabase
     .from('team_members')
     .select('user_id, role, joined_at, users:users!user_id(email)')
-    .eq('team_id', params.id);
+    .eq('team_id', id);
 
   const periodStart = new Date();
   periodStart.setDate(1);
@@ -25,7 +26,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
   const { data: walletRow } = await supabase
     .from('credit_wallets')
     .select('id')
-    .eq('owner_id', params.id)
+    .eq('owner_id', id)
     .eq('owner_kind', 'team')
     .single();
 

@@ -6,14 +6,16 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = req.headers.get('x-user-id');
   if (!userId) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
+
+  const { id } = await params;
 
   const { data: membership } = await supabase
     .from('team_members')
     .select('role')
-    .eq('team_id', params.id)
+    .eq('team_id', id)
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -22,7 +24,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const { data: wallet } = await supabase
     .from('credit_wallets')
     .select('id')
-    .eq('owner_id', params.id)
+    .eq('owner_id', id)
     .eq('owner_kind', 'team')
     .single();
 
@@ -47,7 +49,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   const { data: members } = await supabase
     .from('team_members')
     .select('user_id, users(email, last_active_at)')
-    .eq('team_id', params.id);
+    .eq('team_id', id);
 
   const memberStats = (members ?? []).map((m: Record<string, unknown>) => ({
     user_id: m.user_id,

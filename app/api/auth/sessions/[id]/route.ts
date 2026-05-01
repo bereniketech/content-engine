@@ -6,14 +6,15 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = req.headers.get('x-user-id');
   if (!userId) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
 
+  const { id } = await params;
   const { data, error } = await supabase
     .from('user_devices')
     .delete()
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('user_id', userId)
     .select('id')
     .single();

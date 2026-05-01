@@ -8,11 +8,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const adminId = await requireAdmin(req);
   if (!adminId) return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
 
   const { delta, reason } = await req.json();
+  const { id } = await params;
   if (!reason || reason.length < 10) {
     return NextResponse.json({ error: 'Reason must be at least 10 characters.' }, { status: 400 });
   }
@@ -23,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   const { data: wallet } = await supabase
     .from('credit_wallets')
     .select('id, balance')
-    .eq('owner_id', params.id)
+    .eq('owner_id', id)
     .eq('owner_kind', 'user')
     .single();
 
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   await supabase.from('credit_transactions').insert({
     wallet_id: wallet.id,
-    acting_user_id: params.id,
+    acting_user_id: id,
     action_type: 'admin_adjustment',
     delta,
     balance_after: newBalance,
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   await logAdminAction({
     adminId,
-    targetUserId: params.id,
+    targetUserId: id,
     actionType: 'credit_adjust',
     reason,
     metadata: { before: beforeBalance, after: newBalance, delta },

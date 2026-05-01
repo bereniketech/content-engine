@@ -6,14 +6,15 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = req.headers.get('x-user-id');
   if (!userId) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
 
+  const { id } = await params;
   const { data } = await supabase
     .from('generation_log')
     .select('status, request_id')
-    .eq('request_id', params.id)
+    .eq('request_id', id)
     .eq('user_id', userId)
     .single();
 
