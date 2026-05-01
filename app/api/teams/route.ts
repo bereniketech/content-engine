@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
   if (!membership) return NextResponse.json({ team: null });
 
-  const teamRow = membership.teams as { id: string; name: string; owner_user_id: string } | null;
+  const teamRow = membership.teams as unknown as { id: string; name: string; owner_user_id: string } | null;
   if (!teamRow) return NextResponse.json({ team: null });
 
   const { data: members } = await supabase
