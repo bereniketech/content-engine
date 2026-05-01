@@ -3,9 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import { generateOtp, hashOtp } from '@/lib/auth/otp';
 import { Redis } from '@upstash/redis';
 
-const redis = Redis.fromEnv();
-
 export async function POST(req: NextRequest) {
+  const redis = Redis.fromEnv();
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!

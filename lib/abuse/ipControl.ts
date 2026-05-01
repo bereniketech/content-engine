@@ -2,7 +2,11 @@ import { Redis } from '@upstash/redis';
 import { createClient } from '@supabase/supabase-js';
 import { applyTrustEvent } from '@/lib/abuse/trust';
 
-const redis = Redis.fromEnv();
+let _redis: Redis | null = null;
+function getRedis(): Redis {
+  if (!_redis) _redis = Redis.fromEnv();
+  return _redis;
+}
 
 function adminClient() {
   return createClient(
@@ -15,8 +19,8 @@ export async function checkIpSignupLimit(
   ip: string
 ): Promise<{ allowed: boolean; count: number }> {
   const key = `signup:ip:${ip}`;
-  const count = await redis.incr(key);
-  if (count === 1) await redis.expire(key, 86400);
+  const count = await getRedis().incr(key);
+  if (count === 1) await getRedis().expire(key, 86400);
   if (count > 3) {
     const supabase = adminClient();
     const since = new Date(Date.now() - 86400_000).toISOString();
@@ -34,7 +38,7 @@ export async function detectVpn(
   ip: string
 ): Promise<{ isVpn: boolean; cached: boolean }> {
   const cacheKey = `vpn:${ip}`;
-  const cached = await redis.get<boolean>(cacheKey);
+  const cached = await getRedis().get<boolean>(cacheKey);
   if (cached !== null && cached !== undefined) return { isVpn: cached, cached: true };
   try {
     const res = await fetch(
@@ -46,7 +50,7 @@ export async function detectVpn(
     }
     const data = (await res.json()) as { vpn?: boolean; proxy?: boolean };
     const isVpn = !!(data.vpn || data.proxy);
-    await redis.set(cacheKey, isVpn, { ex: 3600 });
+    await getRedis().set(cacheKey, isVpn, { ex: 3600 });
     return { isVpn, cached: false };
   } catch {
     return { isVpn: false, cached: false };

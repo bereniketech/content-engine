@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { Redis } from '@upstash/redis';
 
-const redis = Redis.fromEnv();
+let _redis: Redis | null = null;
+function getRedis(): Redis {
+  if (!_redis) _redis = Redis.fromEnv();
+  return _redis;
+}
 
 function getSupabase() {
   return createClient(
@@ -97,7 +101,7 @@ export function requiresCaptcha(score: number, isSuspiciousAction: boolean): boo
 }
 
 export async function getEffectiveTrustScore(userId: string): Promise<number> {
-  const cached = await redis.get(`trust_upgrade:${userId}`);
+  const cached = await getRedis().get(`trust_upgrade:${userId}`);
   if (cached !== null && cached !== undefined) {
     return Number(cached);
   }

@@ -9,32 +9,36 @@ export const config = {
   matcher: ['/api/((?!auth/magic-link/callback|webhooks|email/validate).*)'],
 };
 
-const redis = Redis.fromEnv();
+let _redis: Redis | null = null;
+function getRedis(): Redis {
+  if (!_redis) _redis = Redis.fromEnv();
+  return _redis;
+}
 
-const authLimit = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(10, '1 m'),
-  prefix: 'auth:ip',
-});
+let _authLimit: Ratelimit | null = null;
+function getAuthLimit(): Ratelimit {
+  if (!_authLimit) _authLimit = new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(10, '1 m'), prefix: 'auth:ip' });
+  return _authLimit;
+}
 
-const genLimit = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(30, '1 m'),
-  prefix: 'gen:user',
-});
+let _genLimit: Ratelimit | null = null;
+function getGenLimit(): Ratelimit {
+  if (!_genLimit) _genLimit = new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(30, '1 m'), prefix: 'gen:user' });
+  return _genLimit;
+}
 
-const webhookLimit = new Ratelimit({
-  redis,
-  limiter: Ratelimit.slidingWindow(100, '1 m'),
-  prefix: 'webhook:ip',
-});
+let _webhookLimit: Ratelimit | null = null;
+function getWebhookLimit(): Ratelimit {
+  if (!_webhookLimit) _webhookLimit = new Ratelimit({ redis: getRedis(), limiter: Ratelimit.slidingWindow(100, '1 m'), prefix: 'webhook:ip' });
+  return _webhookLimit;
+}
 
 export async function middleware(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1';
   const pathname = req.nextUrl.pathname;
 
   if (pathname.startsWith('/api/auth')) {
-    const { success, reset } = await authLimit.limit(ip);
+    const { success, reset } = await getAuthLimit().limit(ip);
     if (!success) {
       return NextResponse.json(
         { error: 'Too many requests.' },
@@ -44,7 +48,7 @@ export async function middleware(req: NextRequest) {
   }
 
   if (pathname.startsWith('/api/webhooks')) {
-    const { success, reset } = await webhookLimit.limit(ip);
+    const { success, reset } = await getWebhookLimit().limit(ip);
     if (!success) {
       const alertUrl = process.env.ADMIN_ALERT_WEBHOOK_URL;
       if (alertUrl) {
@@ -82,7 +86,7 @@ export async function middleware(req: NextRequest) {
   }
 
   if (pathname.startsWith('/api/content')) {
-    const { success, reset } = await genLimit.limit(user.id);
+    const { success, reset } = await getGenLimit().limit(user.id);
     if (!success) {
       return NextResponse.json(
         { error: 'Rate limit exceeded.' },
@@ -124,7 +128,7 @@ export async function middleware(req: NextRequest) {
     country,
   });
 
-  const trustUpgraded = await redis.get(`trust_upgrade:${user.id}`);
+  const trustUpgraded = await getRedis().get(`trust_upgrade:${user.id}`);
   if (trustUpgraded !== null && trustUpgraded !== undefined) {
     res.headers.set('x-trust-upgraded', '1');
   }

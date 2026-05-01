@@ -1,25 +1,46 @@
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 
-const redis = Redis.fromEnv();
+let _redis: Redis | null = null;
+function getRedis(): Redis {
+  if (!_redis) _redis = Redis.fromEnv();
+  return _redis;
+}
 
-const limiters = {
-  'auth:ip':           new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(10, '1 m'),  prefix: 'rl:auth:ip' }),
-  'gen:user':          new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(30, '1 m'),  prefix: 'rl:gen:user' }),
-  'webhook:ip':        new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(100, '1 m'), prefix: 'rl:webhook:ip' }),
-  'otp:user':          new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, '10 m'),  prefix: 'rl:otp:user' }),
-  'magic:email':       new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, '10 m'),  prefix: 'rl:magic:email' }),
-  'signup:ip':         new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(3, '24 h'),  prefix: 'rl:signup:ip' }),
-  'email-validate:ip': new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(30, '1 m'),  prefix: 'rl:email-validate:ip' }),
-} as const;
+type LimitersMap = {
+  'auth:ip': Ratelimit;
+  'gen:user': Ratelimit;
+  'webhook:ip': Ratelimit;
+  'otp:user': Ratelimit;
+  'magic:email': Ratelimit;
+  'signup:ip': Ratelimit;
+  'email-validate:ip': Ratelimit;
+};
 
-export type RateLimitScope = keyof typeof limiters;
+let _limiters: LimitersMap | null = null;
+function getLimiters(): LimitersMap {
+  if (!_limiters) {
+    const redis = getRedis();
+    _limiters = {
+      'auth:ip':           new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(10, '1 m'),  prefix: 'rl:auth:ip' }),
+      'gen:user':          new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(30, '1 m'),  prefix: 'rl:gen:user' }),
+      'webhook:ip':        new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(100, '1 m'), prefix: 'rl:webhook:ip' }),
+      'otp:user':          new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, '10 m'),  prefix: 'rl:otp:user' }),
+      'magic:email':       new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(5, '10 m'),  prefix: 'rl:magic:email' }),
+      'signup:ip':         new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(3, '24 h'),  prefix: 'rl:signup:ip' }),
+      'email-validate:ip': new Ratelimit({ redis, limiter: Ratelimit.slidingWindow(30, '1 m'),  prefix: 'rl:email-validate:ip' }),
+    };
+  }
+  return _limiters;
+}
+
+export type RateLimitScope = keyof LimitersMap;
 
 export async function checkRateLimit(
   scope: RateLimitScope,
   identifier: string
 ): Promise<{ success: boolean; reset: number; remaining: number }> {
-  const result = await limiters[scope].limit(identifier);
+  const result = await getLimiters()[scope].limit(identifier);
   return { success: result.success, reset: result.reset, remaining: result.remaining };
 }
 

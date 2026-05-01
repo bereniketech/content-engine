@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { Redis } from '@upstash/redis';
 
-const redis = Redis.fromEnv();
+let _redis: Redis | null = null;
+function getRedis(): Redis {
+  if (!_redis) _redis = Redis.fromEnv();
+  return _redis;
+}
 const TRUST_UPGRADE_TTL_SECONDS = 60 * 60 * 24 * 30;
 const PAID_FLOOR = 80;
 const CHARGEBACK_PENALTY = 40;
@@ -37,7 +41,7 @@ export async function applyPaymentTrustUpgrade(userId: string): Promise<{ previo
     });
   }
 
-  await redis.set(`trust_upgrade:${userId}`, current, { ex: TRUST_UPGRADE_TTL_SECONDS });
+  await getRedis().set(`trust_upgrade:${userId}`, current, { ex: TRUST_UPGRADE_TTL_SECONDS });
 
   return { previous, current };
 }
@@ -64,12 +68,12 @@ export async function applyChargebackPenalty(userId: string): Promise<{ previous
     reason: 'chargeback',
   });
 
-  await redis.del(`trust_upgrade:${userId}`);
+  await getRedis().del(`trust_upgrade:${userId}`);
 
   return { previous, current };
 }
 
 export async function isTrustUpgraded(userId: string): Promise<boolean> {
-  const v = await redis.get(`trust_upgrade:${userId}`);
+  const v = await getRedis().get(`trust_upgrade:${userId}`);
   return v !== null && v !== undefined;
 }

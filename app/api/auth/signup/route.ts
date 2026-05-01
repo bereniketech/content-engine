@@ -13,13 +13,12 @@ import {
 } from '@/lib/abuse/ipControl';
 import { applyTrustEvent } from '@/lib/abuse/trust';
 
-const ratelimit = new Ratelimit({
-  redis: Redis.fromEnv(),
-  limiter: Ratelimit.slidingWindow(10, '1 m'),
-  prefix: 'signup:rate',
-});
-
 export async function POST(req: NextRequest) {
+  const ratelimit = new Ratelimit({
+    redis: Redis.fromEnv(),
+    limiter: Ratelimit.slidingWindow(10, '1 m'),
+    prefix: 'signup:rate',
+  });
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
