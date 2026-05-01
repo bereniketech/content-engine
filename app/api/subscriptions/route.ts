@@ -40,7 +40,7 @@ export async function POST(req: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({
-    hosted_url: (rzpSub as Record<string, unknown>).short_url ?? '',
+    hosted_url: (rzpSub as unknown as Record<string, unknown>).short_url ?? '',
     subscription_id: row.id,
   });
 }
