@@ -1,5 +1,5 @@
 import { headers } from 'next/headers';
-import { resolveTier, priceFor } from '@/lib/pricing/ppp';
+import { resolveTier, priceFor, currencyFor } from '@/lib/pricing/ppp';
 
 const PLANS = [
   { id: 'starter', name: 'Starter', credits: 200, base_usd: 9, features: ['200 credits/mo', 'Email support'] },
@@ -12,7 +12,7 @@ const CURRENCY_SYMBOL: Record<string, string> = { USD: '$', INR: 'â‚¹', EUR: 'â‚
 export default async function PricingPage() {
   const country = headers().get('cf-ipcountry') ?? 'XX';
   const tier = await resolveTier(country);
-  const currency = country === 'IN' ? 'INR' : country === 'DE' || country === 'FR' ? 'EUR' : 'USD';
+  const currency = currencyFor(country);
 
   // Pre-calculate all prices since priceFor is now async
   const prices = await Promise.all(

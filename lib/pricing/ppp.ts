@@ -61,6 +61,17 @@ export async function resolveTier(countryCode: string): Promise<PppTier> {
   return fallback as PppTier;
 }
 
+const EUR_COUNTRIES = new Set([
+  'AT','BE','CY','EE','FI','FR','DE','GR','IE','IT','LV','LT','LU','MT','NL','PT','SK','SI','ES',
+]);
+
+export function currencyFor(countryCode: string): Currency {
+  const cc = (countryCode || 'XX').toUpperCase();
+  if (cc === 'IN') return 'INR';
+  if (EUR_COUNTRIES.has(cc)) return 'EUR';
+  return 'USD';
+}
+
 export async function priceFor(
   tier: PppTier,
   currency: Currency,

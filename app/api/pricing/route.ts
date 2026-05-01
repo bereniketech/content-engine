@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { resolveTier, priceFor } from '@/lib/pricing/ppp';
+import { resolveTier, priceFor, currencyFor } from '@/lib/pricing/ppp';
 
 export async function GET(req: NextRequest) {
   const supabase = createClient();
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     if (headerCountry) countryCode = headerCountry;
   }
   const tier = await resolveTier(countryCode);
-  const currency: 'INR' | 'USD' = countryCode === 'IN' ? 'INR' : 'USD';
+  const currency = currencyFor(countryCode);
 
   const { data: plans } = await supabase
     .from('subscription_plans')
