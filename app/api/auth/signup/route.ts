@@ -19,12 +19,11 @@ const ratelimit = new Ratelimit({
   prefix: 'signup:rate',
 });
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(req: NextRequest) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? '127.0.0.1';
   const { success } = await ratelimit.limit(ip);
   if (!success) return NextResponse.json({ error: 'Too many requests.' }, { status: 429 });

@@ -5,12 +5,12 @@ import { Redis } from '@upstash/redis';
 import { grantFreeCredits } from '@/lib/credits/freeGrant';
 
 const redis = Redis.fromEnv();
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export async function POST(req: NextRequest) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
   const { user_id, otp } = await req.json();
 
   const lockKey = `otp:lock:${user_id}`;

@@ -3,12 +3,11 @@ import { createClient } from '@supabase/supabase-js';
 import { requireAdmin, logAdminAction } from '@/lib/admin/auth';
 import crypto from 'crypto';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
   const adminId = await requireAdmin(req);
   if (!adminId) return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
 

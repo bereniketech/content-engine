@@ -4,12 +4,12 @@ import { generateOtp, hashOtp } from '@/lib/auth/otp';
 import { Redis } from '@upstash/redis';
 
 const redis = Redis.fromEnv();
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export async function POST(req: NextRequest) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
   const { user_id } = await req.json();
   const cooldownKey = `otp:cooldown:${user_id}`;
   const inCooldown = await redis.get(cooldownKey);

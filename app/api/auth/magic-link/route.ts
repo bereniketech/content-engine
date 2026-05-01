@@ -10,12 +10,11 @@ const ratelimit = new Ratelimit({
   prefix: 'magic:email',
 });
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function POST(req: NextRequest) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
   const { email } = await req.json();
   const { success } = await ratelimit.limit(email);
   if (!success) return NextResponse.json({ error: 'Too many login attempts. Please try again in 10 minutes.' }, { status: 429 });
