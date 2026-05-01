@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { ContentLibrary } from '@/components/sections/ContentLibrary'
 import { getSupabaseBrowserClient } from '@/lib/supabase'
@@ -23,7 +23,7 @@ interface ROIResponse {
   error?: { message: string }
 }
 
-export default function LibraryPage() {
+function LibraryContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10) || 1)
@@ -127,5 +127,25 @@ export default function LibraryPage() {
         onPageChange={handlePageChange}
       />
     </div>
+  )
+}
+
+export default function LibraryPage() {
+  return (
+    <Suspense fallback={
+      <div className="p-6 space-y-4">
+        <h1 className="text-2xl font-semibold">Content Library</h1>
+        <div className="rounded-md border overflow-hidden">
+          <div className="bg-muted px-4 py-3 h-12" />
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="border-t px-4 py-4">
+              <div className="animate-pulse bg-gray-200 rounded h-4 w-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    }>
+      <LibraryContent />
+    </Suspense>
   )
 }
