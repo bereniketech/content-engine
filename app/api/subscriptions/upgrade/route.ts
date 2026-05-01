@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { rzp } from '@/lib/billing/razorpay';
+import { getRzp } from '@/lib/billing/razorpay';
 import { getActiveSubscription, getPlan, calcProration } from '@/lib/billing/subscriptions';
 
 export async function POST(req: Request) {
@@ -41,6 +41,7 @@ export async function POST(req: Request) {
     });
   }
 
+  const rzp = getRzp();
   await rzp.subscriptions.update(sub.razorpay_subscription_id, {
     plan_id: newPlan.razorpay_plan_id,
     schedule_change_at: 'now',

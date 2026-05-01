@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { getActiveSubscription, getPlan } from '@/lib/billing/subscriptions';
+import { getRzp } from '@/lib/billing/razorpay';
 
 export async function POST(req: Request) {
   const supabase = createClient();
@@ -17,6 +18,12 @@ export async function POST(req: Request) {
   if (newPlan.monthly_credits >= (sub.plan as { monthly_credits: number }).monthly_credits) {
     return NextResponse.json({ error: 'New plan must be lower tier.' }, { status: 400 });
   }
+
+  const rzp = getRzp();
+  await rzp.subscriptions.update(sub.razorpay_subscription_id, {
+    plan_id: newPlan.razorpay_plan_id,
+    schedule_change_at: 'cycle_end',
+  } as Parameters<typeof rzp.subscriptions.update>[1]);
 
   await supabase
     .from('subscriptions')

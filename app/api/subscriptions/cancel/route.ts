@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { rzp } from '@/lib/billing/razorpay';
+import { getRzp } from '@/lib/billing/razorpay';
 import { getActiveSubscription } from '@/lib/billing/subscriptions';
 
 export async function POST() {
@@ -11,7 +11,7 @@ export async function POST() {
   const sub = await getActiveSubscription(user.id);
   if (!sub) return NextResponse.json({ error: 'No active subscription.' }, { status: 400 });
 
-  await rzp.subscriptions.cancel(sub.razorpay_subscription_id, true);
+  await getRzp().subscriptions.cancel(sub.razorpay_subscription_id, true);
 
   await supabase
     .from('subscriptions')

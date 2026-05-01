@@ -10,10 +10,16 @@ function adminClient() {
   );
 }
 
-export const rzp = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
+let _rzp: Razorpay | null = null;
+export function getRzp(): Razorpay {
+  if (!_rzp) {
+    _rzp = new Razorpay({
+      key_id: process.env.RAZORPAY_KEY_ID!,
+      key_secret: process.env.RAZORPAY_KEY_SECRET!,
+    });
+  }
+  return _rzp;
+}
 
 const TIER_RANK: Record<string, number> = { Tier1: 4, Tier2: 3, Tier3: 2, Tier4: 1 };
 
@@ -46,7 +52,7 @@ export async function createOrder(params: {
   const localized = await priceFor(effectiveTier, currency, pack.base_usd_price);
   const amount = Math.round(localized * 100);
 
-  const order = await rzp.orders.create({
+  const order = await getRzp().orders.create({
     amount,
     currency,
     receipt: `pack_${params.userId.slice(0, 8)}_${Date.now()}`,
@@ -75,7 +81,7 @@ export async function createSubscription(params: {
   planId: string;
   razorpayPlanId: string;
 }): Promise<{ subscriptionId: string; hostedUrl: string }> {
-  const sub = await rzp.subscriptions.create({
+  const sub = await getRzp().subscriptions.create({
     plan_id: params.razorpayPlanId,
     total_count: 12,
     quantity: 1,

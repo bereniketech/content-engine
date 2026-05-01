@@ -7,17 +7,15 @@ import { routeWebhookEvent } from '@/lib/billing/webhookHandlers';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
-if (!webhookSecret) {
-  throw new Error('RAZORPAY_WEBHOOK_SECRET not configured in environment');
-}
-
 function entityId(entry: unknown): string | undefined {
   const e = entry as Record<string, unknown> | undefined;
   return (e?.entity as Record<string, unknown> | undefined)?.id as string | undefined;
 }
 
 export async function POST(req: NextRequest) {
+  if (!process.env.RAZORPAY_WEBHOOK_SECRET) {
+    return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 });
+  }
   const rawBody = await req.text();
   const signature = req.headers.get('x-razorpay-signature') ?? '';
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';

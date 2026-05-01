@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { rzp } from '@/lib/billing/razorpay';
+import { getRzp } from '@/lib/billing/razorpay';
 import { getActiveSubscription, getPlan } from '@/lib/billing/subscriptions';
 
 export async function POST(req: Request) {
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
   const plan = await getPlan(plan_id);
   if (!plan) return NextResponse.json({ error: 'Plan not found' }, { status: 404 });
 
-  const rzpSub = await rzp.subscriptions.create({
+  const rzpSub = await getRzp().subscriptions.create({
     plan_id: plan.razorpay_plan_id,
     total_count: 12,
     customer_notify: 1,
