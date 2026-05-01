@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { PipelineStepper } from '@/components/ui/PipelineStepper'
 import { ResearchPanel } from '@/components/sections/ResearchPanel'
 import { useSessionContext } from '@/lib/context/SessionContext'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { isTopicInputData } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -149,6 +150,16 @@ export default function ResearchPage() {
     if (score > 60) return 'text-destructive font-semibold'
     if (score >= 40) return 'text-warning font-semibold'
     return 'text-primary font-semibold'
+  }
+
+  if (!sessionId) {
+    return (
+      <EmptyState
+        title="No active session"
+        description="Return to the dashboard to start or resume a content generation session."
+        action={{ label: 'Go to Dashboard', href: '/dashboard' }}
+      />
+    )
   }
 
   return (

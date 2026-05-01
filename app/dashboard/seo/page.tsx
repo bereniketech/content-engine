@@ -8,6 +8,7 @@ import { PipelineStepper } from '@/components/ui/PipelineStepper'
 import { SEOPanel } from '@/components/sections/SEOPanel'
 import { useSessionContext } from '@/lib/context/SessionContext'
 import { getLatestAssetByType } from '@/lib/session-assets'
+import { EmptyState } from '@/components/ui/EmptyState'
 import type { SeoResult } from '@/types'
 import { cn } from '@/lib/utils'
 
@@ -118,6 +119,16 @@ export default function SEOPage() {
           </div>
         </div>
       </div>
+    )
+  }
+
+  if (!sessionId) {
+    return (
+      <EmptyState
+        title="No active session"
+        description="Return to the dashboard to start or resume a content generation session."
+        action={{ label: 'Go to Dashboard', href: '/dashboard' }}
+      />
     )
   }
 

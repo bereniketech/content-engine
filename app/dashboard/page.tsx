@@ -253,10 +253,10 @@ export default function DashboardPage() {
 
       {/* Stat cards grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard value={String(history.length)}                                                                      label="Articles" icon={FileText}   change="+2"   changePositive={true}  iconColor="primary"   />
-        <StatCard value={traffic !== null ? (traffic >= 1000 ? `${(traffic / 1000).toFixed(1)}k` : String(traffic)) : "0"} label="Traffic"  icon={Eye}        change="+12%" changePositive={true}  iconColor="secondary" />
-        <StatCard value={seoAvg !== null ? String(seoAvg) : "0"}                                                       label="SEO Avg"  icon={TrendingUp} change="+4"   changePositive={true}  iconColor="primary"   />
-        <StatCard value={creditsBalance !== null ? String(creditsBalance) : "0"}                                       label="Credits"  icon={Zap}        change="-8"   changePositive={false} iconColor="secondary" />
+        <StatCard value={String(history.length)}                                                                      label="Articles" icon={FileText}   iconColor="primary"   />
+        <StatCard value={traffic !== null ? (traffic >= 1000 ? `${(traffic / 1000).toFixed(1)}k` : String(traffic)) : "0"} label="Traffic"  icon={Eye}        iconColor="secondary" />
+        <StatCard value={seoAvg !== null ? String(seoAvg) : "0"}                                                       label="SEO Avg"  icon={TrendingUp} iconColor="primary"   />
+        <StatCard value={creditsBalance !== null ? String(creditsBalance) : "0"}                                       label="Credits"  icon={Zap}        iconColor="secondary" />
       </div>
 
       {/* Quick actions */}

@@ -8,6 +8,7 @@ import { useSessionContext } from '@/lib/context/SessionContext'
 import { getLatestAssetByType } from '@/lib/session-assets'
 import { normalizeSocialOutput, normalizePlatformData } from '@/lib/social-normalize'
 import { asStringArray, isRecord } from '@/lib/type-guards'
+import { EmptyState } from '@/components/ui/EmptyState'
 import {
   SOCIAL_PLATFORM_KEYS,
   type SocialOutput,
@@ -334,6 +335,16 @@ export function SocialPanel({ platform }: SocialPanelProps) {
     }
   }
 
+  if (!sessionId) {
+    return (
+      <EmptyState
+        title="No active session"
+        description="Return to the dashboard to start or resume a content generation session."
+        action={{ label: 'Go to Dashboard', href: '/dashboard' }}
+      />
+    )
+  }
+
   return (
     <div className="space-y-6">
       <Card>
@@ -375,7 +386,7 @@ export function SocialPanel({ platform }: SocialPanelProps) {
         </CardContent>
       </Card>
 
-      {error && <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+      {error && <p className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
 
       <Card>
         <CardHeader>

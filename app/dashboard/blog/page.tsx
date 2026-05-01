@@ -7,6 +7,7 @@ import { PipelineStepper } from '@/components/ui/PipelineStepper'
 import { useSessionContext } from '@/lib/context/SessionContext'
 import { Button } from '@/components/ui/button'
 import { getLatestAssetByType } from '@/lib/session-assets'
+import { EmptyState } from '@/components/ui/EmptyState'
 import type { SeoResult } from '@/types'
 import { isTopicInputData } from '@/types'
 
@@ -28,7 +29,7 @@ interface UploadImprovementData {
 }
 
 export default function BlogPage() {
-  const { inputType, applyImprovedArticle, improvedArticle, inputData, assets } = useSessionContext()
+  const { sessionId, inputType, applyImprovedArticle, improvedArticle, inputData, assets } = useSessionContext()
   const [focusedVersion, setFocusedVersion] = useState<'original' | 'improved'>('improved')
   const [selectionNotice, setSelectionNotice] = useState<string | null>(null)
 
@@ -79,6 +80,16 @@ export default function BlogPage() {
 
   const [showAIPanel, setShowAIPanel] = useState(false)
 
+  if (!sessionId) {
+    return (
+      <EmptyState
+        title="No active session"
+        description="Return to the dashboard to start or resume a content generation session."
+        action={{ label: 'Go to Dashboard', href: '/dashboard' }}
+      />
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -91,11 +102,14 @@ export default function BlogPage() {
       <PipelineStepper current="blog" />
 
       {!topicData && !uploadData ? (
-        <div className="rounded bg-red-50 border border-red-200 p-4 text-red-800 text-sm">
-          {inputType === 'upload'
-            ? 'Upload an article first to generate improvements.'
+        <EmptyState
+          variant="info"
+          title={inputType === 'upload' ? 'Upload an article first' : 'Complete earlier pipeline steps'}
+          description={inputType === 'upload'
+            ? 'Upload an article to generate improvements.'
             : 'Generate research and SEO assets first to draft the blog.'}
-        </div>
+          action={{ label: 'Go to Dashboard', href: '/dashboard' }}
+        />
       ) : inputType === 'upload' && uploadData ? (
         <div className="space-y-5">
           <div className="flex flex-wrap items-center gap-2">

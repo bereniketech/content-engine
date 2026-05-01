@@ -181,17 +181,23 @@ function ProfileAvatar({ collapsed }: { collapsed: boolean }) {
       const avatarUrl = meta?.avatar_url ?? null;
 
       let credits: number | null = null;
+      let plan = "Free";
       try {
-        const res = await fetch("/api/credits/balance", {
-          headers: { authorization: `Bearer ${session.access_token}` },
-        });
-        if (res.ok) {
-          const body = await res.json() as { balance: number };
+        const [creditsRes, subRes] = await Promise.all([
+          fetch("/api/credits/balance", { headers: { authorization: `Bearer ${session.access_token}` } }),
+          fetch("/api/subscriptions/status", { headers: { authorization: `Bearer ${session.access_token}` } }),
+        ]);
+        if (creditsRes.ok) {
+          const body = await creditsRes.json() as { balance: number };
           credits = body.balance;
+        }
+        if (subRes.ok) {
+          const body = await subRes.json() as { plan_name: string | null };
+          if (body.plan_name) plan = body.plan_name;
         }
       } catch { /* ignore */ }
 
-      setProfile({ name, email: user.email ?? "", avatarUrl, plan: "Pro Plan", credits });
+      setProfile({ name, email: user.email ?? "", avatarUrl, plan, credits });
     });
   }, []);
 

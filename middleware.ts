@@ -112,12 +112,17 @@ export async function middleware(req: NextRequest) {
 
   const requestId = crypto.randomUUID();
   const country = req.headers.get('cf-ipcountry') ?? 'XX';
-  const res = NextResponse.next();
+
+  // Forward auth context to route handlers via request headers
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set('x-user-id', user.id);
+  requestHeaders.set('x-client-ip', ip);
+  requestHeaders.set('x-country', country);
+  requestHeaders.set('x-auth-verified', 'true');
+  requestHeaders.set('x-request-id', requestId);
+
+  const res = NextResponse.next({ request: { headers: requestHeaders } });
   res.headers.set('x-request-id', requestId);
-  res.headers.set('x-user-id', user.id);
-  res.headers.set('x-client-ip', ip);
-  res.headers.set('x-country', country);
-  res.headers.set('x-auth-verified', 'true');
 
   logger.info({
     request_id: requestId,
@@ -128,9 +133,13 @@ export async function middleware(req: NextRequest) {
     country,
   });
 
-  const trustUpgraded = await getRedis().get(`trust_upgrade:${user.id}`);
-  if (trustUpgraded !== null && trustUpgraded !== undefined) {
-    res.headers.set('x-trust-upgraded', '1');
+  try {
+    const trustUpgraded = await getRedis().get(`trust_upgrade:${user.id}`);
+    if (trustUpgraded !== null && trustUpgraded !== undefined) {
+      res.headers.set('x-trust-upgraded', '1');
+    }
+  } catch {
+    // Redis unavailable — non-critical, continue without trust upgrade flag
   }
 
   return res;

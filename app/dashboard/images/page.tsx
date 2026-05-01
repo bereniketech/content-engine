@@ -8,6 +8,7 @@ import { ImagesPanel } from "@/components/sections/ImagesPanel";
 import { useSessionContext } from "@/lib/context/SessionContext";
 import { getLatestAssetByType } from "@/lib/session-assets";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/ui/EmptyState";
 import type { ImagePromptsOutput } from "@/lib/prompts/images";
 
 export default function ImagesPage() {
@@ -97,6 +98,16 @@ export default function ImagesPage() {
   const IMAGE_STYLES = ["Realistic", "Illustrative", "Minimalist", "3D", "Abstract"];
   const [activeStyle, setActiveStyle] = useState("Realistic");
 
+  if (!sessionId) {
+    return (
+      <EmptyState
+        title="No active session"
+        description="Return to the dashboard to start or resume a content generation session."
+        action={{ label: 'Go to Dashboard', href: '/dashboard' }}
+      />
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -135,9 +146,12 @@ export default function ImagesPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {!topic || !blog ? (
-            <p className="text-sm text-muted-foreground">
-              Generate the topic, research, SEO, and blog assets first, then return here for image prompts.
-            </p>
+            <EmptyState
+              variant="info"
+              title="Pipeline assets required"
+              description="Generate the topic, research, SEO, and blog assets first, then return here for image prompts."
+              action={{ label: 'Go to Dashboard', href: '/dashboard' }}
+            />
           ) : (
             <Button onClick={handleGenerate} disabled={isLoading}>
               {isLoading ? "Generating Image Prompts..." : "Generate Image Prompts"}

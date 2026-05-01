@@ -6,7 +6,7 @@ export async function GET(req: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
 
   const wallet = await resolveWallet(userId);
-  if (!wallet) return NextResponse.json({ error: 'Wallet not found.' }, { status: 404 });
+  if (!wallet) return NextResponse.json({ balance: 0, wallet_kind: null, wallet_id: null });
 
   return NextResponse.json({
     balance: wallet.balance,

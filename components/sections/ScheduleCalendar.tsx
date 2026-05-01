@@ -2,6 +2,7 @@
 
 import { CalendarSlot, type ScheduledPost } from '@/components/ui/CalendarSlot'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/EmptyState'
 
 interface ScheduleCalendarProps {
   posts: ScheduledPost[]
@@ -69,8 +70,16 @@ export function ScheduleCalendar({
         </Button>
       </div>
 
+      {posts.length === 0 && (
+        <EmptyState
+          title="Nothing scheduled yet"
+          description="Generate and distribute content from the pipeline, then return here to manage your publishing queue."
+          variant="muted"
+        />
+      )}
+
       {/* Calendar grid */}
-      <div className="overflow-x-auto border rounded-md">
+      {posts.length > 0 && <div className="overflow-x-auto border rounded-md">
         <div className="min-w-[700px]">
           {/* Day headers */}
           <div className="grid grid-cols-[60px_repeat(7,1fr)] bg-muted border-b">
@@ -108,7 +117,7 @@ export function ScheduleCalendar({
             </div>
           ))}
         </div>
-      </div>
+      </div>}
     </div>
   )
 }
