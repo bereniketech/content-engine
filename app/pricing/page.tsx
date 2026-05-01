@@ -10,7 +10,7 @@ const PLANS = [
 const CURRENCY_SYMBOL: Record<string, string> = { USD: '$', INR: '₹', EUR: '€' };
 
 export default async function PricingPage() {
-  const country = headers().get('cf-ipcountry') ?? 'XX';
+  const country = (await headers()).get('cf-ipcountry') ?? 'XX';
   const tier = await resolveTier(country);
   const currency = currencyFor(country);
 

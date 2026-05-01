@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 
 export default function BalanceCard({ balance }: { balance: number }) {
   const [displayed, setDisplayed] = useState(0);
-  const rafRef = useRef<number>();
+  const rafRef = useRef<number | undefined>(undefined);
   const prefersReduced = typeof window !== 'undefined'
     ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
     : false;

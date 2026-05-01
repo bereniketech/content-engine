@@ -9,6 +9,12 @@ extendZodWithOpenApi(z)
 
 export const registry = new OpenAPIRegistry()
 
+registry.registerComponent('securitySchemes', 'bearerAuth', {
+  type: 'http',
+  scheme: 'bearer',
+  bearerFormat: 'JWT',
+})
+
 // ---------------------------------------------------------------------------
 // Shared schemas
 // ---------------------------------------------------------------------------
@@ -32,7 +38,7 @@ const ContentAssetSchema = registry.register(
     id: z.string().uuid(),
     sessionId: z.string().uuid(),
     assetType: z.string(),
-    content: z.record(z.unknown()),
+    content: z.record(z.string(), z.unknown()),
     createdAt: z.string().datetime(),
   })
 )
@@ -45,8 +51,8 @@ const BlogRequestSchema = registry.register(
   'BlogRequest',
   z.object({
     topic: z.string().min(6).openapi({ example: 'The future of AI content' }),
-    seo: z.record(z.unknown()),
-    research: z.record(z.unknown()),
+    seo: z.record(z.string(), z.unknown()),
+    research: z.record(z.string(), z.unknown()),
     tone: z.enum(['authority', 'conversational', 'educational', 'professional']).optional(),
     sessionId: z.string().uuid().optional(),
   })
@@ -104,7 +110,7 @@ const SeoRequestSchema = registry.register(
   'SeoRequest',
   z.object({
     topic: z.string().min(6),
-    research: z.record(z.unknown()),
+    research: z.record(z.string(), z.unknown()),
     sessionId: z.string().uuid().optional(),
   })
 )
@@ -130,7 +136,7 @@ const SocialRequestSchema = registry.register(
   z.object({
     topic: z.string(),
     article: z.string(),
-    seo: z.record(z.unknown()),
+    seo: z.record(z.string(), z.unknown()),
     sessionId: z.string().uuid().optional(),
   })
 )
@@ -142,7 +148,7 @@ registry.registerPath({
   security: [{ bearerAuth: [] }],
   request: { body: { content: { 'application/json': { schema: SocialRequestSchema } } } },
   responses: {
-    200: { description: 'Social content assets', content: { 'application/json': { schema: z.object({ data: z.record(ContentAssetSchema) }) } } },
+    200: { description: 'Social content assets', content: { 'application/json': { schema: z.object({ data: z.record(z.string(), ContentAssetSchema) }) } } },
   },
 })
 
@@ -249,7 +255,7 @@ registry.registerPath({
   summary: 'List user sessions',
   security: [{ bearerAuth: [] }],
   responses: {
-    200: { description: 'Sessions list', content: { 'application/json': { schema: z.object({ data: z.array(z.record(z.unknown())) }) } } },
+    200: { description: 'Sessions list', content: { 'application/json': { schema: z.object({ data: z.array(z.record(z.string(), z.unknown())) }) } } },
     401: { description: 'Unauthorized', content: { 'application/json': { schema: ErrorResponseSchema } } },
   },
 })
@@ -269,14 +275,5 @@ export function generateOpenApiDocument() {
       description: 'AI-powered content generation and distribution API',
     },
     servers: [{ url: process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000' }],
-    components: {
-      securitySchemes: {
-        bearerAuth: {
-          type: 'http',
-          scheme: 'bearer',
-          bearerFormat: 'JWT',
-        },
-      },
-    },
   })
 }

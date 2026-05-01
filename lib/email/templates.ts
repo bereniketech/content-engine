@@ -12,7 +12,8 @@ export type TemplateId =
   | 'low_credits_alert'
   | 'team_invite'
   | 'team_member_removed'
-  | 'account_blocked';
+  | 'account_blocked'
+  | 'payment_refunded';
 
 export type TemplateData = Record<string, unknown>;
 
@@ -104,6 +105,12 @@ export function buildEmail(
         subject: 'Account suspended',
         html: `<p>Your account has been suspended. Contact support if you believe this is an error.</p>`,
         text: `Your account has been suspended. Contact support if you believe this is an error.`,
+      };
+    case 'payment_refunded':
+      return {
+        subject: 'Payment refunded',
+        html: `<p>Your payment of ${data.amount} has been refunded.</p>`,
+        text: `Your payment of ${data.amount} has been refunded.`,
       };
     default:
       throw new Error(`Unknown template: ${template}`);

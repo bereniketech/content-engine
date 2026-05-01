@@ -64,7 +64,7 @@ export async function generateWithDeduction(
       status: 'failed',
       request_id: requestId,
       error: String(aiError),
-    }).catch(() => {});
+    }).then(null, () => {});
 
     throw aiError;
   }
@@ -80,7 +80,7 @@ export async function generateWithDeduction(
     latency_ms: latencyMs,
     status: 'success',
     request_id: requestId,
-  }).catch(() => {});
+  }).then(null, () => {});
 
   return {
     result,

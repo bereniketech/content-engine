@@ -1,18 +1,17 @@
-import { describe, it, expect, vi } from 'vitest';
 import { rateLimitHeaders } from './ratelimit';
 
-vi.mock('@upstash/redis', () => ({
+jest.mock('@upstash/redis', () => ({
   Redis: {
     fromEnv: () => ({
-      evalsha: vi.fn(),
-      scriptLoad: vi.fn(),
-      eval: vi.fn().mockResolvedValue([1, Date.now() + 60000, 29]),
+      evalsha: jest.fn(),
+      scriptLoad: jest.fn(),
+      eval: jest.fn().mockResolvedValue([1, Date.now() + 60000, 29]),
     }),
   },
 }));
 
-vi.mock('@upstash/ratelimit', () => {
-  const mockLimit = vi.fn().mockResolvedValue({ success: true, reset: Date.now() + 60000, remaining: 29 });
+jest.mock('@upstash/ratelimit', () => {
+  const mockLimit = jest.fn().mockResolvedValue({ success: true, reset: Date.now() + 60000, remaining: 29 });
   return {
     Ratelimit: Object.assign(
       function () { return { limit: mockLimit }; },

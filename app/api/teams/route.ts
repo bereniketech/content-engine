@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       owner_id: teamRow.owner_user_id,
       members: (members ?? []).map((m) => ({
         user_id: m.user_id,
-        email: (m.users as { email: string } | null)?.email ?? '',
+        email: (m.users as unknown as { email: string } | null)?.email ?? '',
         role: m.role,
         credits_used: 0,
       })),

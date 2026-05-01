@@ -9,8 +9,8 @@ export const scheduledPublish = inngest.createFunction(
     id: 'scheduled-publish',
     name: 'Scheduled Post Publisher',
     concurrency: { limit: 5 },
+    triggers: [{ cron: '* * * * *' }],
   },
-  { cron: '* * * * *' },
   async ({ step }) => {
     const duePosts = await step.run('fetch-due-posts', async () => {
       const supabase = createClient(

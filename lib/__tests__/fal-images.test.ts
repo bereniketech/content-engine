@@ -1,4 +1,4 @@
-import { generateSocialCards } from '../fal-images'
+import { generateSocialCards } from '../image-ai'
 
 jest.mock('@fal-ai/client', () => ({
   fal: {

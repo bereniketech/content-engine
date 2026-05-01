@@ -1,8 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-
 const store = new Map<string, unknown>();
 
-vi.mock('@upstash/redis', () => ({
+jest.mock('@upstash/redis', () => ({
   Redis: {
     fromEnv: () => ({
       incr: async (k: string) => { const n = ((store.get(k) as number) ?? 0) + 1; store.set(k, n); return n; },
@@ -13,7 +11,7 @@ vi.mock('@upstash/redis', () => ({
   },
 }));
 
-vi.mock('@supabase/supabase-js', () => ({
+jest.mock('@supabase/supabase-js', () => ({
   createClient: () => ({
     from: () => ({
       select: () => ({
@@ -30,8 +28,8 @@ vi.mock('@supabase/supabase-js', () => ({
   }),
 }));
 
-vi.mock('@/lib/abuse/trust', () => ({
-  applyTrustEvent: vi.fn().mockResolvedValue(undefined),
+jest.mock('@/lib/abuse/trust', () => ({
+  applyTrustEvent: jest.fn().mockResolvedValue(undefined),
 }));
 
 import { checkIpSignupLimit, detectVpn, checkDeviceFingerprint } from './ipControl';
@@ -60,11 +58,11 @@ describe('checkIpSignupLimit', () => {
 describe('detectVpn', () => {
   beforeEach(() => {
     store.clear();
-    global.fetch = vi.fn();
+    global.fetch = jest.fn();
   });
 
   it('returns isVpn=true when IPQS reports vpn', async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+    (global.fetch as jest.Mock).mockResolvedValueOnce({
       ok: true,
       json: async () => ({ vpn: true, proxy: false }),
     });
@@ -74,13 +72,13 @@ describe('detectVpn', () => {
   });
 
   it('fail-opens when IPQS errors', async () => {
-    (global.fetch as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('timeout'));
+    (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('timeout'));
     const r = await detectVpn('22.33.44.55');
     expect(r.isVpn).toBe(false);
   });
 
   it('returns cached value on second call', async () => {
-    (global.fetch as ReturnType<typeof vi.fn>)
+    (global.fetch as jest.Mock)
       .mockResolvedValueOnce({ ok: true, json: async () => ({ vpn: false, proxy: false }) });
     await detectVpn('33.44.55.66');
     const r2 = await detectVpn('33.44.55.66');

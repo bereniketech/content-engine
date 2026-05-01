@@ -1,7 +1,7 @@
 import Razorpay from 'razorpay';
 import crypto from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
-import { resolveTier, priceFor } from '@/lib/pricing/ppp';
+import { resolveTier, priceFor, PppTier } from '@/lib/pricing/ppp';
 
 function adminClient() {
   return createClient(
@@ -17,7 +17,7 @@ export const rzp = new Razorpay({
 
 const TIER_RANK: Record<string, number> = { Tier1: 4, Tier2: 3, Tier3: 2, Tier4: 1 };
 
-function higherTier(a: { tier_name: string }, b: { tier_name: string }) {
+function higherTier(a: PppTier, b: PppTier): PppTier {
   // Return higher tier; on tie (same rank), prefer first argument (stored country tier wins over detected tier)
   return (TIER_RANK[a.tier_name] ?? 4) >= (TIER_RANK[b.tier_name] ?? 4) ? a : b;
 }
@@ -82,7 +82,7 @@ export async function createSubscription(params: {
     customer_notify: 1,
     notes: { userId: params.userId, planId: params.planId },
   });
-  return { subscriptionId: sub.id, hostedUrl: (sub as Record<string, unknown>).short_url as string ?? '' };
+  return { subscriptionId: sub.id, hostedUrl: (sub as unknown as Record<string, unknown>).short_url as string ?? '' };
 }
 
 export function verifyWebhookSignature(rawBody: string, signature: string): boolean {

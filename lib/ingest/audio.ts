@@ -29,7 +29,8 @@ export async function transcribeAudio(url: string): Promise<string> {
   let result: WhisperResult
   try {
     result = await Promise.race([
-      fal.run('fal-ai/whisper', { input: { audio_url: url } }) as Promise<WhisperResult>,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      fal.run('fal-ai/whisper', { input: { audio_url: url } }) as any as Promise<WhisperResult>,
       timeoutPromise,
     ])
   } catch (err) {

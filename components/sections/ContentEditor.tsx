@@ -137,7 +137,7 @@ export default function ContentEditor({ content, sessionId, assetId, articleCont
     if (editor && content) {
       const html = markdownToHtml(content)
       if (editor.getHTML() !== html) {
-        editor.commands.setContent(html, false)
+        editor.commands.setContent(html, { emitUpdate: false })
       }
     }
   }, [content, editor])

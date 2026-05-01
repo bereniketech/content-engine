@@ -74,7 +74,8 @@ export async function generateImage(opts: GenerateImageOptions): Promise<string>
           height: opts.height ?? 630,
         },
       },
-    }) as FalRunResult
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any as FalRunResult
 
     const url = result.images[0]?.url
     if (!url) throw new Error('fal.ai returned no image URL')
@@ -159,10 +160,12 @@ export async function generateSocialCards(
   const [featuredResult, portraitResult] = await Promise.all([
     fal.run(model, {
       input: { prompt: sanitizedPrompt, image_size: { width: 1200, height: 630 } },
-    }) as Promise<FalRunResult>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any as Promise<FalRunResult>,
     fal.run(model, {
       input: { prompt: sanitizedPrompt, image_size: { width: 1080, height: 1350 } },
-    }) as Promise<FalRunResult>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any as Promise<FalRunResult>,
   ])
 
   const featured = featuredResult.images[0]?.url

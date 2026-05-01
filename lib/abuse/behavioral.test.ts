@@ -1,8 +1,6 @@
-import { describe, it, expect, vi } from 'vitest';
-
 const store = new Map<string, unknown>();
 
-vi.mock('@upstash/redis', () => ({
+jest.mock('@upstash/redis', () => ({
   Redis: {
     fromEnv: () => ({
       incr: async (k: string) => { const n = ((store.get(k) as number) ?? 0) + 1; store.set(k, n); return n; },

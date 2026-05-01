@@ -5,8 +5,8 @@ export const dataDrivenPipeline = inngest.createFunction(
     id: 'data-driven-pipeline',
     name: 'Data-Driven Content Pipeline',
     retries: 3,
+    triggers: [{ event: 'content/pipeline.start' }],
   },
-  { event: 'content/pipeline.start' },
   async ({ event, step }) => {
     const { sessionId, userId, mode, sourceText, researchData, tone } = event.data as {
       sessionId: string

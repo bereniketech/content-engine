@@ -3,8 +3,7 @@ import { inngest } from './client'
 import { runDetectionWithRewrite } from '@/lib/detect'
 
 export const runDetection = inngest.createFunction(
-  { id: 'run-detection', name: 'Post-Generation Detection' },
-  { event: 'content/detect.run' },
+  { id: 'run-detection', name: 'Post-Generation Detection', triggers: [{ event: 'content/detect.run' }] },
   async ({ event, step }) => {
     const { sessionId, articleText } = event.data as { sessionId: string; articleText: string }
     await step.run('detect-and-rewrite', async () => {
