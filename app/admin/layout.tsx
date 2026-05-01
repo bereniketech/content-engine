@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { createClient } from '@supabase/supabase-js';
+import Image from 'next/image';
 import { SUPABASE_AUTH_COOKIE, SUPABASE_FALLBACK_COOKIE } from '@/lib/auth';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -28,6 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100">
       <nav className="flex items-center gap-6 border-b border-gray-800 px-6 py-3 text-sm">
+        <Image src="/logo.png" alt="Content Studio" width={28} height={28} className="rounded-sm object-cover shrink-0" />
         <span className="font-semibold text-white">Admin</span>
         <a href="/admin/users" className="text-gray-400 hover:text-white">Users</a>
         <a href="/admin/payments" className="text-gray-400 hover:text-white">Payments</a>
