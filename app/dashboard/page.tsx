@@ -27,6 +27,9 @@ export default function DashboardPage() {
   const [history, setHistory] = useState<SessionListItem[]>([]);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [isHistoryLoading, setIsHistoryLoading] = useState(true);
+  const [creditsBalance, setCreditsBalance] = useState<number | null>(null);
+  const [seoAvg, setSeoAvg] = useState<number | null>(null);
+  const [traffic, setTraffic] = useState<number | null>(null);
   const [restoringSessionId, setRestoringSessionId] = useState<string | null>(null);
   const [showInsightBar, setShowInsightBar] = useState(true);
   const { assets, loadSession } = useSessionContext();
@@ -35,7 +38,7 @@ export default function DashboardPage() {
   useEffect(() => {
     let isActive = true;
 
-    async function loadHistory() {
+    async function loadDashboardData() {
       setIsHistoryLoading(true);
       setHistoryError(null);
 
@@ -55,16 +58,26 @@ export default function DashboardPage() {
           return;
         }
 
-        const response = await fetch('/api/sessions', {
-          headers: { authorization: `Bearer ${session.access_token}` },
-        });
+        const authHeader = { authorization: `Bearer ${session.access_token}` };
 
-        if (!response.ok) {
-          const body = await response.json() as { error?: { message?: string } };
-          throw new Error(body.error?.message ?? "Failed to load session history.");
+        const [sessionsResponse, creditsResponse, statsResponse] = await Promise.all([
+          fetch('/api/sessions', { headers: authHeader }),
+          fetch('/api/credits/balance', { headers: authHeader }),
+          fetch('/api/stats', { headers: authHeader }),
+        ]);
+
+        if (!sessionsResponse.ok) {
+          let message = "Failed to load session history.";
+          try {
+            const body = await sessionsResponse.json() as { error?: { message?: string } };
+            message = body.error?.message ?? message;
+          } catch {
+            // response was not JSON (e.g. a server error page)
+          }
+          throw new Error(message);
         }
 
-        const body = await response.json() as {
+        const sessionsBody = await sessionsResponse.json() as {
           sessions: Array<{
             id: string;
             created_at: string;
@@ -74,7 +87,7 @@ export default function DashboardPage() {
           }>;
         };
 
-        const withCounts = body.sessions.map((s) => ({
+        const withCounts = sessionsBody.sessions.map((s) => ({
           id: s.id,
           inputType: s.input_type as SessionInputType,
           inputData: s.input_data,
@@ -84,6 +97,19 @@ export default function DashboardPage() {
 
         if (isActive) {
           setHistory(withCounts);
+        }
+
+        if (creditsResponse.ok) {
+          const creditsBody = await creditsResponse.json() as { balance: number };
+          if (isActive) setCreditsBalance(creditsBody.balance);
+        }
+
+        if (statsResponse.ok) {
+          const statsBody = await statsResponse.json() as { seoAvg: number; traffic: number };
+          if (isActive) {
+            setSeoAvg(statsBody.seoAvg);
+            setTraffic(statsBody.traffic);
+          }
         }
       } catch (error) {
         if (isActive) {
@@ -99,7 +125,7 @@ export default function DashboardPage() {
       }
     }
 
-    void loadHistory();
+    void loadDashboardData();
 
     return () => {
       isActive = false;
@@ -227,10 +253,10 @@ export default function DashboardPage() {
 
       {/* Stat cards grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard value="23"    label="Articles" icon={FileText}    change="+2"   changePositive={true}  iconColor="primary"   />
-        <StatCard value="14.2k" label="Traffic"  icon={Eye}         change="+12%" changePositive={true}  iconColor="secondary" />
-        <StatCard value="87"    label="SEO Avg"  icon={TrendingUp}  change="+4"   changePositive={true}  iconColor="primary"   />
-        <StatCard value="842"   label="Credits"  icon={Zap}         change="-8"   changePositive={false} iconColor="secondary" />
+        <StatCard value={String(history.length)}                                                                      label="Articles" icon={FileText}   change="+2"   changePositive={true}  iconColor="primary"   />
+        <StatCard value={traffic !== null ? (traffic >= 1000 ? `${(traffic / 1000).toFixed(1)}k` : String(traffic)) : "0"} label="Traffic"  icon={Eye}        change="+12%" changePositive={true}  iconColor="secondary" />
+        <StatCard value={seoAvg !== null ? String(seoAvg) : "0"}                                                       label="SEO Avg"  icon={TrendingUp} change="+4"   changePositive={true}  iconColor="primary"   />
+        <StatCard value={creditsBalance !== null ? String(creditsBalance) : "0"}                                       label="Credits"  icon={Zap}        change="-8"   changePositive={false} iconColor="secondary" />
       </div>
 
       {/* Quick actions */}
@@ -319,7 +345,7 @@ export default function DashboardPage() {
       </Card>
 
       {/* AI Insight Bar */}
-      {showInsightBar && (
+      {showInsightBar && history.length > 0 && (
         <AIInsightBar
           title="AI Insight Engine"
           description='Your "RAG Architecture" guide is trending higher than expected. Click to apply this strategy to other topics.'

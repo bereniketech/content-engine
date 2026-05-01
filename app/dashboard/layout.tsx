@@ -48,12 +48,6 @@ export default function DashboardLayout({
       <div className="flex min-h-screen bg-background">
         <Sidebar />
         <div className="flex flex-1 flex-col min-w-0">
-          {/* Top bar */}
-          <header className="flex h-14 shrink-0 items-center border-b border-sidebar-border bg-card px-6 md:px-8">
-            <h1 className="text-[14px] font-semibold text-foreground">
-              {pageTitle}
-            </h1>
-          </header>
           {/* Content area */}
           <main className="flex-1 overflow-y-auto px-6 py-6 md:px-10 md:py-8">
             {children}

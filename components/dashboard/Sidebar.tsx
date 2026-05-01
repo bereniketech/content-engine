@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   FlaskConical,
   Search,
@@ -27,12 +27,12 @@ import {
   Mic,
   Network,
   Users,
-  HelpCircle,
   LogOut,
   Plus,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
+import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -158,6 +158,127 @@ function SidebarContent({
   );
 }
 
+interface UserProfile {
+  name: string;
+  email: string;
+  avatarUrl: string | null;
+  plan: string;
+  credits: number | null;
+}
+
+function ProfileAvatar({ collapsed }: { collapsed: boolean }) {
+  const [profile, setProfile] = useState<UserProfile>({ name: "", email: "", avatarUrl: null, plan: "Pro Plan", credits: null });
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const supabase = getSupabaseBrowserClient();
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) return;
+      const user = session.user;
+      const meta = user.user_metadata as Record<string, string> | undefined;
+      const name = meta?.full_name ?? meta?.name ?? user.email ?? "";
+      const avatarUrl = meta?.avatar_url ?? null;
+
+      let credits: number | null = null;
+      try {
+        const res = await fetch("/api/credits/balance", {
+          headers: { authorization: `Bearer ${session.access_token}` },
+        });
+        if (res.ok) {
+          const body = await res.json() as { balance: number };
+          credits = body.balance;
+        }
+      } catch { /* ignore */ }
+
+      setProfile({ name, email: user.email ?? "", avatarUrl, plan: "Pro Plan", credits });
+    });
+  }, []);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    if (open) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [open]);
+
+  const initials = profile.name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join("");
+
+  const avatar = profile.avatarUrl ? (
+    <Image src={profile.avatarUrl} alt={profile.name} width={28} height={28} className="rounded-full shrink-0 object-cover" />
+  ) : (
+    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/20 text-[11px] font-semibold text-primary">
+      {initials || "?"}
+    </span>
+  );
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((p) => !p)}
+        className={cn(
+          "flex w-full items-center gap-3 rounded-sm px-3 py-2 transition-colors duration-[120ms] hover:bg-hover",
+          collapsed && "justify-center px-0"
+        )}
+        title={collapsed ? profile.name : undefined}
+      >
+        {avatar}
+        {!collapsed && (
+          <span className="truncate text-sm font-medium text-foreground">
+            {profile.name || "Account"}
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className={cn(
+          "absolute bottom-full mb-2 z-50 w-64 rounded-lg border border-sidebar-border bg-card shadow-lg",
+          collapsed ? "left-0" : "left-2"
+        )}>
+          {/* Header */}
+          <div className="flex items-center gap-3 px-4 py-4 border-b border-sidebar-border">
+            <div className="shrink-0">
+              {profile.avatarUrl ? (
+                <Image src={profile.avatarUrl} alt={profile.name} width={40} height={40} className="rounded-full object-cover" />
+              ) : (
+                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/20 text-sm font-semibold text-primary">
+                  {initials || "?"}
+                </span>
+              )}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-foreground">{profile.name || "Account"}</p>
+              <p className="truncate text-[11px] text-foreground-3">{profile.email}</p>
+            </div>
+          </div>
+
+          {/* Details */}
+          <div className="px-4 py-3 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] text-foreground-3">Plan</span>
+              <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[11px] font-semibold text-primary">{profile.plan}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[12px] text-foreground-3">Credits</span>
+              <span className="text-[12px] font-medium text-foreground">
+                {profile.credits !== null ? profile.credits.toLocaleString() : "—"}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
@@ -215,7 +336,7 @@ export function Sidebar() {
 
         {/* Footer */}
         <div className="border-t border-sidebar-border px-2 py-4 flex flex-col gap-1">
-          <NavLink item={{ label: "Help", href: "#", icon: HelpCircle }} isActive={false} collapsed={collapsed} />
+          <ProfileAvatar collapsed={collapsed} />
           <button
             className={cn(
               "flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium text-foreground-2 hover:bg-hover transition-colors duration-[120ms]",
@@ -270,7 +391,7 @@ export function Sidebar() {
 
             {/* Footer */}
             <div className="mt-auto border-t border-sidebar-border px-2 py-4 flex flex-col gap-1">
-              <NavLink item={{ label: "Help", href: "#", icon: HelpCircle }} isActive={false} collapsed={false} onClick={() => setMobileOpen(false)} />
+              <ProfileAvatar collapsed={false} />
               <button className="flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium text-foreground-2 hover:bg-hover transition-colors">
                 <LogOut className="h-4 w-4 shrink-0" />
                 <span>Logout</span>
