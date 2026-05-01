@@ -10,19 +10,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: { code: 'unauthorized', message: 'Authentication required' } }, { status: 401 })
   }
 
-  if (!process.env.ORIGINALITY_API_KEY) {
-    return NextResponse.json(
-      {
-        error: {
-          code: 'config_error',
-          message: 'Connect Originality.ai in settings',
-          connectUrl: '/dashboard/settings',
-        },
-      },
-      { status: 422 }
-    )
-  }
-
   let body: Record<string, unknown>
   try {
     body = (await request.json()) as Record<string, unknown>
