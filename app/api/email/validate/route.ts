@@ -1,15 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateEmail } from '@/lib/abuse/emailValidate';
-import { createRateLimiter } from '@/lib/abuse/ratelimit';
+import { checkRateLimit } from '@/lib/abuse/ratelimit';
 
 export const runtime = 'nodejs';   // dns module requires Node runtime
 export const dynamic = 'force-dynamic';
-
-let _limiter: ReturnType<typeof createRateLimiter> | null = null;
-function getLimiter() {
-  if (!_limiter) _limiter = createRateLimiter('email-validate', 30, '1 m');
-  return _limiter;
-}
 
 function clientIp(req: NextRequest): string {
   const xff = req.headers.get('x-forwarded-for');
@@ -20,7 +14,7 @@ function clientIp(req: NextRequest): string {
 export async function POST(req: NextRequest) {
   try {
     const ip = clientIp(req);
-    const { success } = await getLimiter().limit(ip);
+    const { success } = await checkRateLimit('email-validate:ip', ip);
     if (!success) {
       return NextResponse.json({ error: 'RATE_LIMITED' }, { status: 429 });
     }

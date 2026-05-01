@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
-import { APIStatusError } from '@anthropic-ai/sdk'
+import { APIError } from '@anthropic-ai/sdk'
 import { setTimeout } from 'timers/promises'
 import OpenAI from 'openai'
 
@@ -37,7 +37,7 @@ export function getDefaultModel(provider?: AIProvider): string {
 // ---------------------------------------------------------------------------
 
 export function isRetryableError(err: unknown): boolean {
-  if (err instanceof APIStatusError) {
+  if (err instanceof APIError) {
     return err.status === 529 || err.status === 503
   }
   if (err instanceof Error) {

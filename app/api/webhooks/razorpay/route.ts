@@ -12,6 +12,11 @@ if (!webhookSecret) {
   throw new Error('RAZORPAY_WEBHOOK_SECRET not configured in environment');
 }
 
+function entityId(entry: unknown): string | undefined {
+  const e = entry as Record<string, unknown> | undefined;
+  return (e?.entity as Record<string, unknown> | undefined)?.id as string | undefined;
+}
+
 export async function POST(req: NextRequest) {
   const rawBody = await req.text();
   const signature = req.headers.get('x-razorpay-signature') ?? '';
@@ -37,12 +42,9 @@ export async function POST(req: NextRequest) {
   }
 
   const idempotencyKey =
-    (event.payload?.payment as Record<string, unknown> | undefined)?.entity &&
-    ((event.payload.payment as Record<string, unknown>).entity as Record<string, unknown>)?.id as string | undefined ??
-    (event.payload?.subscription as Record<string, unknown> | undefined)?.entity &&
-    ((event.payload.subscription as Record<string, unknown>).entity as Record<string, unknown>)?.id as string | undefined ??
-    (event.payload?.refund as Record<string, unknown> | undefined)?.entity &&
-    ((event.payload.refund as Record<string, unknown>).entity as Record<string, unknown>)?.id as string | undefined ??
+    entityId(event.payload?.payment) ??
+    entityId(event.payload?.subscription) ??
+    entityId(event.payload?.refund) ??
     crypto.randomUUID();
 
   const { data: inserted, error: insertErr } = await supabase
