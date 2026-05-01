@@ -11,7 +11,9 @@ function getSupabase() {
   );
 }
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+function getAnthropic() {
+  return new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+}
 
 export type GenerateResult = {
   result: string;
@@ -45,7 +47,7 @@ export async function generateWithDeduction(
   let completionTokens = 0;
 
   try {
-    const response = await anthropic.messages.create({
+    const response = await getAnthropic().messages.create({
       model: 'claude-sonnet-4-6',
       max_tokens: (options.max_tokens as number) ?? 2048,
       messages: [{ role: 'user', content: prompt }],

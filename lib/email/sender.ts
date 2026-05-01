@@ -2,7 +2,9 @@ import { Resend } from 'resend';
 import { createClient } from '@supabase/supabase-js';
 import { buildEmail, TemplateId, TemplateData } from './templates';
 
-const resend = new Resend(process.env.RESEND_API_KEY!);
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY!);
+}
 
 function db() {
   return createClient(
@@ -37,7 +39,7 @@ export async function sendEmail(
 
   for (let attempt = 0; attempt <= 2; attempt++) {
     try {
-      const { data: sent, error } = await resend.emails.send({
+      const { data: sent, error } = await getResend().emails.send({
         from: process.env.RESEND_FROM_EMAIL!,
         to,
         subject,
