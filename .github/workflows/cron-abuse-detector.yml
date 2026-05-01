@@ -1,0 +1,15 @@
+name: Cron — Abuse Detector
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger abuse-detector
+        run: |
+          curl -sf -X POST "${{ vars.APP_URL }}/api/cron/abuse-detector" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
