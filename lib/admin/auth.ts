@@ -1,15 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
 import { NextRequest } from 'next/server';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export async function requireAdmin(req: NextRequest): Promise<string | null> {
   const userId = req.headers.get('x-user-id');
   if (!userId) return null;
 
+  const supabase = getSupabase();
   const { data: user } = await supabase
     .from('users')
     .select('account_type')
@@ -27,6 +30,7 @@ export async function logAdminAction(opts: {
   reason: string;
   metadata: Record<string, unknown>;
 }) {
+  const supabase = getSupabase();
   await supabase.from('admin_actions').insert({
     admin_id: opts.adminId,
     target_user_id: opts.targetUserId ?? null,
