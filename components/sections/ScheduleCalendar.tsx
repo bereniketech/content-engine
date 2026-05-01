@@ -10,11 +10,11 @@ interface ScheduleCalendarProps {
   onReschedule: (postId: string, newPublishAt: string) => Promise<void>
   onRetry: (postId: string) => Promise<void>
   onWeekChange: (direction: 'prev' | 'next') => void
+  startHour?: number
+  endHour?: number
 }
 
 const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-const START_HOUR = 6
-const END_HOUR = 22
 
 function buildDays(weekStart: Date): Date[] {
   return Array.from({ length: 7 }, (_, i) => {
@@ -25,9 +25,9 @@ function buildDays(weekStart: Date): Date[] {
   })
 }
 
-function buildHours(): number[] {
+function buildHours(startHour: number, endHour: number): number[] {
   const hours = []
-  for (let h = START_HOUR; h <= END_HOUR; h++) hours.push(h)
+  for (let h = startHour; h <= endHour; h++) hours.push(h)
   return hours
 }
 
@@ -47,9 +47,11 @@ export function ScheduleCalendar({
   onReschedule,
   onRetry,
   onWeekChange,
+  startHour = 6,
+  endHour = 22,
 }: ScheduleCalendarProps) {
   const days = buildDays(weekStart)
-  const hours = buildHours()
+  const hours = buildHours(startHour, endHour)
 
   const weekLabel = weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
 

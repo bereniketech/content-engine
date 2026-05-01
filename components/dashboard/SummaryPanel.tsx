@@ -324,8 +324,24 @@ function useCountUp(target: number, duration = 1200): number {
 export function SummaryPanel() {
   const { assets, clearSession } = useSessionContext();
   const router = useRouter();
+  const [planPostCounts, setPlanPostCounts] = useState<Record<string, number>>({})
 
-  const presentEntries = ASSET_CATALOG.filter((entry) =>
+  useEffect(() => {
+    fetch('/api/user/plan-limits')
+      .then((r) => r.json())
+      .then((d: { postCounts?: Record<string, number> }) => {
+        if (d.postCounts) setPlanPostCounts(d.postCounts)
+      })
+      .catch(() => {})
+  }, [])
+
+  const catalog = ASSET_CATALOG.map((entry) =>
+    planPostCounts[entry.assetType] !== undefined
+      ? { ...entry, defaultCount: planPostCounts[entry.assetType] }
+      : entry
+  )
+
+  const presentEntries = catalog.filter((entry) =>
     assets.some((a) => a.assetType === entry.assetType),
   );
 

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useAppConfig } from '@/lib/hooks/useAppConfig'
 import {
   LineChart, Line, BarChart, Bar,
   XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid
@@ -62,6 +63,9 @@ function ErrorCard({ title, message }: { title: string; message: string }) {
 export function AnalyticsDashboard() {
   const [ga4State, setGa4State] = useState<LoadState<GA4Data>>({ status: 'loading' })
   const [scState, setScState] = useState<LoadState<SCData>>({ status: 'loading' })
+  const appConfig = useAppConfig()
+  const seoTop = appConfig.seo_rank_thresholds?.top ?? 3
+  const seoMid = appConfig.seo_rank_thresholds?.mid ?? 10
 
   useEffect(() => {
     let cancelled = false
@@ -222,7 +226,7 @@ export function AnalyticsDashboard() {
                 <div key={q.query} className="flex items-center text-sm">
                   <span className="flex-1 truncate text-foreground">{q.query}</span>
                   <span className="w-14 text-right text-foreground">{q.clicks}</span>
-                  <span className={`w-14 text-right font-medium ${q.position <= 3 ? 'text-green-600' : q.position <= 10 ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                  <span className={`w-14 text-right font-medium ${q.position <= seoTop ? 'text-green-600' : q.position <= seoMid ? 'text-amber-600' : 'text-muted-foreground'}`}>
                     #{q.position}
                   </span>
                 </div>

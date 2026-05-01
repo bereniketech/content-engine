@@ -47,6 +47,8 @@ export default function SchedulePage() {
   const [posts, setPosts] = useState<ScheduledPost[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [scheduleStartHour, setScheduleStartHour] = useState(6)
+  const [scheduleEndHour, setScheduleEndHour] = useState(22)
 
   const fetchPosts = async (start: Date) => {
     setLoading(true)
@@ -83,6 +85,16 @@ export default function SchedulePage() {
   useEffect(() => {
     void fetchPosts(weekStart)
   }, [weekStart])
+
+  useEffect(() => {
+    fetch('/api/user/preferences')
+      .then((r) => r.json())
+      .then((d: { scheduleStartHour?: number; scheduleEndHour?: number }) => {
+        if (typeof d.scheduleStartHour === 'number') setScheduleStartHour(d.scheduleStartHour)
+        if (typeof d.scheduleEndHour === 'number') setScheduleEndHour(d.scheduleEndHour)
+      })
+      .catch(() => {})
+  }, [])
 
   const handleReschedule = async (postId: string, newPublishAt: string) => {
     const previousPosts = posts
@@ -165,6 +177,8 @@ export default function SchedulePage() {
           onReschedule={handleReschedule}
           onRetry={handleRetry}
           onWeekChange={handleWeekChange}
+          startHour={scheduleStartHour}
+          endHour={scheduleEndHour}
         />
       )}
     </div>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useAppConfig } from '@/lib/hooks/useAppConfig'
 
 interface BrandScoreCardProps {
   score: number
@@ -9,15 +10,17 @@ interface BrandScoreCardProps {
   isLoading?: boolean
 }
 
-function scoreColor(score: number): string {
-  if (score >= 80) return '#22c55e'
-  if (score >= 60) return '#f59e0b'
+function scoreColor(score: number, good: number, fair: number): string {
+  if (score >= good) return '#22c55e'
+  if (score >= fair) return '#f59e0b'
   return '#ef4444'
 }
 
 export function BrandScoreCard({ score, violations, voiceName, isLoading }: BrandScoreCardProps) {
   const [showViolations, setShowViolations] = useState(false)
-  const color = scoreColor(score)
+  const config = useAppConfig()
+  const thresholds = config.brand_score_thresholds
+  const color = scoreColor(score, thresholds?.good ?? 80, thresholds?.fair ?? 60)
 
   return (
     <div className="rounded-lg border bg-card p-4 text-card-foreground shadow-sm w-fit" data-testid="brand-score-card">
