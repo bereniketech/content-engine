@@ -4,10 +4,12 @@ import { resolveWallet, deductCredits } from '@/lib/credits/wallet';
 import { getCreditCost } from '@/lib/config/credit-costs';
 import crypto from 'crypto';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
 
@@ -52,9 +54,9 @@ export async function generateWithDeduction(
     promptTokens = response.usage.input_tokens;
     completionTokens = response.usage.output_tokens;
   } catch (aiError) {
-    await supabase.rpc('fn_refund_credits', { p_request_id: requestId });
+    await getSupabase().rpc('fn_refund_credits', { p_request_id: requestId });
 
-    await supabase.from('generation_log').insert({
+    await getSupabase().from('generation_log').insert({
       user_id: userId,
       action_type: actionType,
       model_used: 'claude-sonnet-4-6',
@@ -71,7 +73,7 @@ export async function generateWithDeduction(
 
   const latencyMs = Date.now() - start;
 
-  await supabase.from('generation_log').insert({
+  await getSupabase().from('generation_log').insert({
     user_id: userId,
     action_type: actionType,
     model_used: 'claude-sonnet-4-6',

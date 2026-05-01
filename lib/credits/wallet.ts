@@ -1,9 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getSupabase() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+}
 
 export type WalletInfo = {
   id: string;
@@ -12,14 +14,14 @@ export type WalletInfo = {
 };
 
 export async function resolveWallet(userId: string): Promise<WalletInfo | null> {
-  const { data: membership } = await supabase
+  const { data: membership } = await getSupabase()
     .from('team_members')
     .select('team_id')
     .eq('user_id', userId)
     .maybeSingle();
 
   if (membership) {
-    const { data: wallet } = await supabase
+    const { data: wallet } = await getSupabase()
       .from('credit_wallets')
       .select('id, balance, owner_kind')
       .eq('owner_id', membership.team_id)
@@ -28,7 +30,7 @@ export async function resolveWallet(userId: string): Promise<WalletInfo | null> 
     return wallet ?? null;
   }
 
-  const { data: wallet } = await supabase
+  const { data: wallet } = await getSupabase()
     .from('credit_wallets')
     .select('id, balance, owner_kind')
     .eq('owner_id', userId)
@@ -44,7 +46,7 @@ export async function deductCredits(
   requestId: string,
   actingUserId: string
 ): Promise<number> {
-  const { data, error } = await supabase.rpc('fn_deduct_credits', {
+  const { data, error } = await getSupabase().rpc('fn_deduct_credits', {
     p_wallet_id: walletId,
     p_cost: cost,
     p_action_type: actionType,
@@ -60,7 +62,7 @@ export async function topupCredits(
   amount: number,
   paymentId: string
 ): Promise<number> {
-  const { data, error } = await supabase.rpc('fn_credit_topup', {
+  const { data, error } = await getSupabase().rpc('fn_credit_topup', {
     p_wallet_id: walletId,
     p_amount: amount,
     p_payment_id: paymentId,
