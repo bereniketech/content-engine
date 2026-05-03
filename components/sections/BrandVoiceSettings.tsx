@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { Mic } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { getSupabaseBrowserClient } from '@/lib/supabase'
 
 interface BrandVoice {
@@ -71,19 +73,30 @@ export function BrandVoiceSettings() {
   const [editingId, setEditingId] = useState<string | 'new' | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm())
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  // fetchError: problem loading the list from the server
+  const [fetchError, setFetchError] = useState(false)
+  // formError: inline validation / save / delete error
+  const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const fetchVoices = async () => {
     setLoading(true)
-    setError(null)
+    setFetchError(false)
     try {
       const res = await apiFetch('/api/brand-voice')
-      if (!res.ok) throw new Error('Failed to load brand voices')
+      // 404 on a fresh account means no table rows yet — treat as empty
+      if (res.status === 404) {
+        setVoices([])
+        return
+      }
+      if (!res.ok) {
+        setFetchError(true)
+        return
+      }
       const json = (await res.json()) as { data: BrandVoice[] }
-      setVoices(json.data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load')
+      setVoices(json.data ?? [])
+    } catch {
+      setFetchError(true)
     } finally {
       setLoading(false)
     }
@@ -122,11 +135,11 @@ export function BrandVoiceSettings() {
 
   const handleSave = async () => {
     if (!form.name.trim()) {
-      setError('Name is required')
+      setFormError('Name is required')
       return
     }
     setSaving(true)
-    setError(null)
+    setFormError(null)
     try {
       const payload = {
         name: form.name.trim(),
@@ -154,7 +167,7 @@ export function BrandVoiceSettings() {
       setEditingId(null)
       await fetchVoices()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Save failed')
+      setFormError(err instanceof Error ? err.message : 'Save failed')
     } finally {
       setSaving(false)
     }
@@ -167,7 +180,7 @@ export function BrandVoiceSettings() {
       if (!res.ok) throw new Error('Delete failed')
       await fetchVoices()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delete failed')
+      setFormError(err instanceof Error ? err.message : 'Delete failed')
     }
   }
 
@@ -180,12 +193,34 @@ export function BrandVoiceSettings() {
       if (!res.ok) throw new Error('Failed to set active')
       await fetchVoices()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to set active')
+      setFormError(err instanceof Error ? err.message : 'Failed to set active')
     }
   }
 
   if (loading) {
     return <div className="text-sm text-muted-foreground animate-pulse">Loading brand voices…</div>
+  }
+
+  if (fetchError) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-12 text-center">
+        <p className="text-sm text-muted-foreground">Unable to load brand profiles.</p>
+        <Button variant="outline" size="sm" onClick={() => void fetchVoices()}>
+          Try again
+        </Button>
+      </div>
+    )
+  }
+
+  if (voices.length === 0 && editingId === null) {
+    return (
+      <EmptyState
+        icon={Mic}
+        heading="No brand voice profiles yet"
+        body="Define your brand's tone, vocabulary, and writing style to keep content consistent."
+        cta={{ label: 'Add Profile', onClick: handleAddNew }}
+      />
+    )
   }
 
   return (
@@ -202,7 +237,7 @@ export function BrandVoiceSettings() {
         </Button>
       </div>
 
-      {error && <div className="text-sm text-destructive">{error}</div>}
+      {formError && <div className="text-sm text-muted-foreground">{formError}</div>}
 
       <div className="space-y-3">
         {voices.map((v) => (

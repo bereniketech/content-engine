@@ -22,9 +22,9 @@ export default function NewSessionPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-semibold text-foreground">Create New Session</h2>
+        <h2 className="text-2xl font-semibold text-foreground">New Article</h2>
         <p className="mt-1 text-sm text-foreground-2">
-          Start with a topic brief, source material, or an uploaded article to initialize your workflow.
+          Start with a topic brief, source material, or an uploaded article to create a new article.
         </p>
       </div>
 
@@ -67,7 +67,7 @@ export default function NewSessionPage() {
               />
             </div>
             <Button className="w-full h-[52px] rounded-sm text-[15px] font-semibold bg-primary text-primary-foreground hover:opacity-90">
-              Fetch &amp; Create Session
+              Fetch &amp; Create Article
             </Button>
           </div>
         )}

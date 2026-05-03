@@ -31,6 +31,8 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  Share2,
 } from "lucide-react";
 import { getSupabaseBrowserClient } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
@@ -39,6 +41,13 @@ interface NavItem {
   label: string;
   href: string;
   icon: React.ElementType;
+}
+
+function isNavItemActive(itemHref: string, pathname: string): boolean {
+  if (itemHref === "/dashboard") {
+    return pathname === "/dashboard";
+  }
+  return pathname === itemHref || pathname.startsWith(itemHref + "/");
 }
 
 const MAIN_NAV_ITEMS: NavItem[] = [
@@ -129,12 +138,100 @@ function NavSection({
         <NavLink
           key={item.href}
           item={item}
-          isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
+          isActive={isNavItemActive(item.href, pathname)}
           collapsed={collapsed}
           onClick={onClickItem}
         />
       ))}
     </>
+  );
+}
+
+interface CollapsibleNavGroupProps {
+  label: string;
+  icon: React.ElementType;
+  items: NavItem[];
+  pathname: string;
+  defaultOpen?: boolean;
+  collapsed?: boolean;
+  onClickItem?: () => void;
+}
+
+function CollapsibleNavGroup({
+  label,
+  icon: GroupIcon,
+  items,
+  pathname,
+  defaultOpen = false,
+  collapsed = false,
+  onClickItem,
+}: CollapsibleNavGroupProps) {
+  const isActiveGroup = items.some((item) => isNavItemActive(item.href, pathname));
+  const [isOpen, setIsOpen] = useState(defaultOpen || isActiveGroup);
+
+  if (collapsed) {
+    // In collapsed sidebar mode, render items as plain nav links (icons only)
+    return (
+      <>
+        {items.map((item) => (
+          <NavLink
+            key={item.href}
+            item={item}
+            isActive={isNavItemActive(item.href, pathname)}
+            collapsed={true}
+            onClick={onClickItem}
+          />
+        ))}
+      </>
+    );
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={cn(
+          "flex w-full items-center justify-between rounded-sm px-3 py-2 text-sm transition-colors duration-[120ms] hover:bg-hover",
+          isActiveGroup ? "text-primary font-semibold" : "text-foreground-2"
+        )}
+      >
+        <span className="flex items-center gap-3">
+          <GroupIcon className="h-4 w-4 shrink-0" />
+          {label}
+        </span>
+        {isOpen ? (
+          <ChevronDown className="h-3 w-3 shrink-0" />
+        ) : (
+          <ChevronRight className="h-3 w-3 shrink-0" />
+        )}
+      </button>
+
+      {isOpen && (
+        <div className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-3">
+          {items.map((item) => {
+            const Icon = item.icon;
+            const isActive = isNavItemActive(item.href, pathname);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onClickItem}
+                className={cn(
+                  "flex items-center gap-2 rounded-sm px-3 py-1.5 text-sm transition-colors duration-[120ms] hover:bg-hover hover:text-foreground",
+                  isActive
+                    ? "border-l-[3px] border-primary bg-primary/[0.08] text-primary font-semibold"
+                    : "text-foreground-2"
+                )}
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                {item.label}
+              </Link>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -150,8 +247,16 @@ function SidebarContent({
   return (
     <nav className="flex flex-col gap-1 px-2 py-4 flex-1 overflow-y-auto">
       <NavSection items={MAIN_NAV_ITEMS} pathname={pathname} collapsed={collapsed} onClickItem={onClickItem} />
-      <SectionLabel label="Distribute" collapsed={collapsed} />
-      <NavSection items={DISTRIBUTE_NAV_ITEMS} pathname={pathname} collapsed={collapsed} onClickItem={onClickItem} />
+      {!collapsed && <SectionLabel label="Distribute" collapsed={false} />}
+      {collapsed && <hr className="my-2 border-sidebar-border" />}
+      <CollapsibleNavGroup
+        label="Distribute"
+        icon={Share2}
+        items={DISTRIBUTE_NAV_ITEMS}
+        pathname={pathname}
+        collapsed={collapsed}
+        onClickItem={onClickItem}
+      />
       <SectionLabel label="Manage" collapsed={collapsed} />
       <NavSection items={MANAGE_NAV_ITEMS} pathname={pathname} collapsed={collapsed} onClickItem={onClickItem} />
     </nav>
@@ -323,7 +428,7 @@ export function Sidebar() {
           )}
         </div>
 
-        {/* New Project button */}
+        {/* New Article button */}
         <div className="px-2 py-2">
           <Link
             href="/dashboard/new-session"
@@ -331,10 +436,10 @@ export function Sidebar() {
               "flex items-center justify-center gap-2 rounded-sm bg-primary text-primary-foreground font-semibold h-10 transition-opacity hover:opacity-90",
               collapsed ? "w-10 mx-auto px-0" : "w-full"
             )}
-            title={collapsed ? "New Project" : undefined}
+            title={collapsed ? "New Article" : undefined}
           >
             <Plus className="h-4 w-4 shrink-0" />
-            {!collapsed && <span>New Project</span>}
+            {!collapsed && <span>New Article</span>}
           </Link>
         </div>
 

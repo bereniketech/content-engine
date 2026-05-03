@@ -1,8 +1,11 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Library } from 'lucide-react'
 import { ContentLibrary } from '@/components/sections/ContentLibrary'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Button } from '@/components/ui/button'
 import { getSupabaseBrowserClient } from '@/lib/supabase'
 
 interface ROIItem {
@@ -33,38 +36,53 @@ function LibraryContent() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
-      setError(null)
+  const loadLibrary = useCallback(async () => {
+    setLoading(true)
+    setError(null)
 
-      try {
-        const supabase = getSupabaseBrowserClient()
-        const { data: sessionData } = await supabase.auth.getSession()
-        const token = sessionData.session?.access_token
+    try {
+      const supabase = getSupabaseBrowserClient()
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData.session?.access_token
 
-        const res = await fetch(`/api/roi?page=${page}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        })
+      const response = await fetch(`/api/roi?page=${page}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
 
-        const json = (await res.json()) as ROIResponse
-
-        if (!res.ok || !json.data) {
-          setError(json.error?.message ?? 'Failed to load library')
-          return
-        }
-
-        setItems(json.data)
-        setTotal(json.meta?.total ?? 0)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load library')
-      } finally {
-        setLoading(false)
+      if (!response.ok) {
+        // Don't try to parse error body — just show a friendly message
+        setError('Unable to load library. Please try again.')
+        return
       }
-    }
 
-    void fetchData()
+      const text = await response.text()
+      let json: ROIResponse
+      try {
+        json = JSON.parse(text) as ROIResponse
+      } catch {
+        // Server returned non-JSON (e.g. HTML error page)
+        setError('Unable to load library. Please try again.')
+        return
+      }
+
+      if (!json.data) {
+        setError('Unable to load library. Please try again.')
+        return
+      }
+
+      setItems(json.data)
+      setTotal(json.meta?.total ?? 0)
+    } catch {
+      // Network failure
+      setError('Unable to load library. Check your connection and try again.')
+    } finally {
+      setLoading(false)
+    }
   }, [page])
+
+  useEffect(() => {
+    void loadLibrary()
+  }, [loadLibrary])
 
   const pageSize = 25
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
@@ -106,10 +124,26 @@ function LibraryContent() {
     return (
       <div className="space-y-4">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">Content Library</h1>
-        <p className="text-destructive">{error}</p>
-        <button className="text-sm underline text-primary" onClick={() => window.location.reload()}>
-          Retry
-        </button>
+        <div className="flex flex-col items-center gap-3 py-12">
+          <p className="text-sm text-muted-foreground">{error}</p>
+          <Button variant="outline" size="sm" onClick={() => void loadLibrary()}>
+            Try again
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  if (items.length === 0) {
+    return (
+      <div className="space-y-4">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground">Content Library</h1>
+        <EmptyState
+          icon={Library}
+          heading="Your library is empty"
+          body="Published articles will appear here once you start creating content."
+          cta={{ label: "Create content", href: "/dashboard/new-session" }}
+        />
       </div>
     )
   }

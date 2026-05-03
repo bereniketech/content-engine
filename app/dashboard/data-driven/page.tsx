@@ -776,11 +776,6 @@ export default function DataDrivenDashboardPage() {
 					</div>
 
 					<div className="space-y-1">
-						<p className="text-sm font-medium text-foreground">Session ID</p>
-						<p className="text-sm text-muted-foreground">{sessionId}</p>
-					</div>
-
-					<div className="space-y-1">
 						<p className="text-sm font-medium text-foreground">Source</p>
 						<p className="whitespace-pre-wrap text-sm text-muted-foreground">{sourceSummary}</p>
 					</div>

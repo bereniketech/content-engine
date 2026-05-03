@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger';
 import { SUPABASE_AUTH_COOKIE } from '@/lib/auth';
 
 export const config = {
-  matcher: ['/api/((?!auth/magic-link/callback|webhooks|email/validate).*)'],
+  matcher: ['/', '/api/((?!auth/magic-link/callback|webhooks|email/validate).*)'],
 };
 
 let _redis: Redis | null = null;
@@ -66,7 +66,7 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  const publicRoutes = ['/api/auth/signup', '/api/auth/magic-link', '/api/auth/verify-email', '/api/email/validate', '/api/pricing'];
+  const publicRoutes = ['/', '/api/auth/signup', '/api/auth/magic-link', '/api/auth/verify-email', '/api/email/validate', '/api/pricing'];
   if (publicRoutes.some((r) => pathname.startsWith(r))) {
     const res = NextResponse.next();
     res.headers.set('x-client-ip', ip);

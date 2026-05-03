@@ -14,3 +14,6 @@ Kit content: `.kit/` (agents · commands · hooks · contexts · rules · skills
 
 ## Bug Log
 `bug-log.md` — date · what broke · root cause · fix · files.
+
+## Context
+Business context: `context/` — run `/aios-onboard` to populate · `/aios-audit` to score Four C's.

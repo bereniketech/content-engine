@@ -1,5 +1,6 @@
 import React from "react";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 interface StatCardProps {
@@ -42,9 +43,17 @@ export function StatCard({
         )}
       </div>
 
-      <div className="text-[32px] font-bold text-foreground leading-tight">
+      <div className="text-2xl font-bold tabular-nums text-foreground leading-tight">
         {value}
       </div>
+      {(value === "0" || value === 0) && (
+        <Link
+          href="/dashboard/new-session"
+          className="text-xs text-primary hover:underline"
+        >
+          Get Started →
+        </Link>
+      )}
 
       <div className="text-[11px] font-semibold uppercase tracking-wider text-foreground-3">
         {label}

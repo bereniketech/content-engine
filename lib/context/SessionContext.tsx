@@ -22,6 +22,7 @@ interface CreateSessionResult {
 
 interface SessionContextValue {
   sessionId: string | null;
+  sessionTitle: string | null;
   inputType: SessionInputType | null;
   inputData: SessionInputData | null;
   improvedArticle: string | null;
@@ -52,6 +53,7 @@ const SessionContext = createContext<SessionContextValue | undefined>(undefined)
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessionTitle, setSessionTitle] = useState<string | null>(null);
   const [inputType, setInputType] = useState<SessionInputType | null>(null);
   const [inputData, setInputData] = useState<SessionInputData | null>(null);
   const [improvedArticle, setImprovedArticle] = useState<string | null>(null);
@@ -87,6 +89,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           const authErrorMessage = userError?.message ?? "You must be logged in.";
           setError(authErrorMessage);
           setSessionId(null);
+          setSessionTitle(null);
           return { sessionId: null, error: authErrorMessage };
         }
 
@@ -103,15 +106,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         if (insertError) {
           setError(insertError.message);
           setSessionId(null);
+          setSessionTitle(null);
           return { sessionId: null, error: insertError.message };
         }
 
+        const title =
+          ("topic" in nextInputData && nextInputData.topic) ||
+          ("title" in nextInputData && nextInputData.title) ||
+          "New Article";
+        setSessionTitle(typeof title === "string" ? title : "New Article");
         setSessionId(data.id);
         return { sessionId: data.id, error: null };
       } catch {
         const fallbackError = "Failed to create a session. Please try again.";
         setError(fallbackError);
         setSessionId(null);
+        setSessionTitle(null);
         return { sessionId: null, error: fallbackError };
       } finally {
         setIsSubmitting(false);
@@ -135,6 +145,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const clearSession = useCallback(() => {
     setSessionId(null);
+    setSessionTitle(null);
     setInputType(null);
     setInputData(null);
     setImprovedArticle(null);
@@ -205,6 +216,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const value = useMemo<SessionContextValue>(
     () => ({
       sessionId,
+      sessionTitle,
       inputType,
       inputData,
       improvedArticle,
@@ -223,6 +235,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }),
     [
       sessionId,
+      sessionTitle,
       inputType,
       inputData,
       improvedArticle,

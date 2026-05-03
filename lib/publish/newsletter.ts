@@ -27,7 +27,7 @@ export async function dispatchMailchimp(
       recipients: { list_id: audienceId },
       settings: {
         subject_line: subjectLine,
-        from_name: 'Content Engine',
+        from_name: 'Content Studio',
         reply_to: 'noreply@contentengine.app',
         title: `CE: ${subjectLine.slice(0, 40)}`,
       },
@@ -86,7 +86,7 @@ export async function dispatchSendGrid(
     },
     body: JSON.stringify({
       personalizations: [{ to: [{ email: recipientEmail }] }],
-      from: { email: 'noreply@contentengine.app', name: 'Content Engine' },
+      from: { email: 'noreply@contentengine.app', name: 'Content Studio' },
       subject: subjectLine,
       content: [{ type: 'text/html', value: htmlBody }],
     }),

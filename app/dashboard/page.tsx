@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, FileText, Eye, TrendingUp, Zap } from "lucide-react";
+import { EmptyState } from "@/components/ui/EmptyState";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -53,7 +54,7 @@ export default function DashboardPage() {
         if (sessionError || !session) {
           if (isActive) {
             setHistory([]);
-            setHistoryError(sessionError?.message ?? "Sign in to load your session history.");
+            setHistoryError(sessionError?.message ?? "Sign in to load your article history.");
           }
           return;
         }
@@ -67,7 +68,7 @@ export default function DashboardPage() {
         ]);
 
         if (!sessionsResponse.ok) {
-          let message = "Failed to load session history.";
+          let message = "Failed to load article history.";
           try {
             const body = await sessionsResponse.json() as { error?: { message?: string } };
             message = body.error?.message ?? message;
@@ -115,7 +116,7 @@ export default function DashboardPage() {
         if (isActive) {
           setHistory([]);
           setHistoryError(
-            error instanceof Error ? error.message : "Failed to load session history.",
+            error instanceof Error ? error.message : "Failed to load article history.",
           );
         }
       } finally {
@@ -252,7 +253,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stat cards grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard value={String(history.length)}                                                                      label="Articles" icon={FileText}   iconColor="primary"   />
         <StatCard value={traffic !== null ? (traffic >= 1000 ? `${(traffic / 1000).toFixed(1)}k` : String(traffic)) : "0"} label="Traffic"  icon={Eye}        iconColor="secondary" />
         <StatCard value={seoAvg !== null ? String(seoAvg) : "0"}                                                       label="SEO Avg"  icon={TrendingUp} iconColor="primary"   />
@@ -262,7 +263,7 @@ export default function DashboardPage() {
       {/* Quick actions */}
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" className="rounded-full px-4 py-2.5 text-[13px] font-medium" onClick={() => router.push("/dashboard/new-session?tab=topic")}>
-          New from Topic
+          New Article from Topic
         </Button>
         <Button variant="outline" className="rounded-full px-4 py-2.5 text-[13px] font-medium" onClick={() => router.push("/dashboard/new-session?tab=upload")}>
           Upload Article
@@ -278,26 +279,32 @@ export default function DashboardPage() {
       {/* Recent sessions */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Recent Sessions</CardTitle>
+          <CardTitle className="text-lg">Recent Articles</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {isHistoryLoading && (
             <div className="flex items-center gap-2 text-sm text-foreground-3">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading session history...
+              Loading article history...
             </div>
           )}
 
           {!isHistoryLoading && historyError && (
-            <p className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {historyError}
-            </p>
+            <div className="flex flex-col items-center gap-3 py-12">
+              <p className="text-sm text-muted-foreground">Unable to load articles.</p>
+              <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                Retry
+              </Button>
+            </div>
           )}
 
           {!isHistoryLoading && !historyError && history.length === 0 && (
-            <p className="rounded-md border border-dashed border-border px-3 py-6 text-center text-sm text-foreground-3">
-              No sessions yet — start your first generation above.
-            </p>
+            <EmptyState
+              icon={FileText}
+              heading="No articles yet"
+              body="Create your first article to start building your content library."
+              cta={{ label: "Create your first article", href: "/dashboard/new-session" }}
+            />
           )}
 
           {!isHistoryLoading &&
@@ -336,7 +343,7 @@ export default function DashboardPage() {
                   </div>
                   <p className="mt-2 text-sm text-foreground">{getSessionLabel(session)}</p>
                   {isRestoring && (
-                    <p className="mt-2 text-xs text-foreground-3">Restoring session...</p>
+                    <p className="mt-2 text-xs text-foreground-3">Loading article...</p>
                   )}
                 </button>
               );

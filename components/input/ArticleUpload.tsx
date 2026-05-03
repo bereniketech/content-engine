@@ -222,10 +222,8 @@ export function ArticleUpload() {
 
 					{error ? <p className="text-sm text-destructive">{error}</p> : null}
 					{!error && sessionError ? <p className="text-sm text-destructive">{sessionError}</p> : null}
-					{success && sessionId ? (
-						<p className="text-sm text-primary">
-							{success} Session ID: <span className="font-mono">{sessionId}</span>
-						</p>
+					{success ? (
+						<p className="text-sm text-primary">{success}</p>
 					) : null}
 
 					<Button type="submit" disabled={isSubmitting || isImproving}>

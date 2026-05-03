@@ -8,6 +8,12 @@ Kit: d:/content-engine/.kit/
 
 ### Core (always)
 - skills/core/karpathy-principles
+- skills/core/aios-onboard
+- skills/core/aios-audit
+- skills/core/aios-level-up
+- skills/core/aios-cadence
+- skills/core/aios-connect
+- skills/ai-platform/api-vs-mcp-decision
 
 ### Development
 - skills/development/code-writing-software-development

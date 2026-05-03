@@ -8,6 +8,8 @@ import {
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { getAuthToken } from '@/lib/auth-browser'
+import { ConnectCard } from '@/components/dashboard/ConnectCard'
+import { BarChart2, Search } from 'lucide-react'
 
 interface GA4Data {
   period: string
@@ -28,7 +30,13 @@ interface SCData {
   fromCache: boolean
 }
 
-type LoadState<T> = { status: 'loading' } | { status: 'error'; message: string } | { status: 'success'; data: T }
+type ErrorKind = 'not_connected' | 'error'
+
+type LoadState<T> =
+  | { status: 'loading' }
+  | { status: 'not_connected' }
+  | { status: 'error'; message: string }
+  | { status: 'success'; data: T }
 
 function SkeletonCard() {
   return (
@@ -47,22 +55,36 @@ function SkeletonCard() {
   )
 }
 
-function ErrorCard({ title, message }: { title: string; message: string }) {
+function FetchErrorCard({ title, message, onRetry }: { title: string; message: string; onRetry: () => void }) {
   return (
-    <Card className="border-destructive">
+    <Card>
       <CardHeader>
-        <CardTitle className="text-base text-destructive">{title}</CardTitle>
+        <CardTitle className="text-base">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-3">
         <p className="text-sm text-muted-foreground">{message}</p>
+        <button
+          onClick={onRetry}
+          className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          Retry
+        </button>
       </CardContent>
     </Card>
   )
 }
 
+function classifyError(status: number, errorCode?: string): ErrorKind {
+  if (status === 401 || status === 403 || errorCode === 'config_error') {
+    return 'not_connected'
+  }
+  return 'error'
+}
+
 export function AnalyticsDashboard() {
   const [ga4State, setGa4State] = useState<LoadState<GA4Data>>({ status: 'loading' })
   const [scState, setScState] = useState<LoadState<SCData>>({ status: 'loading' })
+  const [retryCount, setRetryCount] = useState(0)
   const appConfig = useAppConfig()
   const seoTop = appConfig.seo_rank_thresholds?.top ?? 3
   const seoMid = appConfig.seo_rank_thresholds?.mid ?? 10
@@ -71,11 +93,14 @@ export function AnalyticsDashboard() {
     let cancelled = false
 
     async function load() {
+      setGa4State({ status: 'loading' })
+      setScState({ status: 'loading' })
+
       const token = await getAuthToken()
       if (!token) {
         if (!cancelled) {
-          setGa4State({ status: 'error', message: 'Not authenticated' })
-          setScState({ status: 'error', message: 'Not authenticated' })
+          setGa4State({ status: 'not_connected' })
+          setScState({ status: 'not_connected' })
         }
         return
       }
@@ -83,34 +108,50 @@ export function AnalyticsDashboard() {
       const headers = { Authorization: `Bearer ${token}` }
 
       const [ga4Result, scResult] = await Promise.allSettled([
-        fetch('/api/analytics/ga4', { headers }).then(r => r.json()),
-        fetch('/api/analytics/search-console', { headers }).then(r => r.json()),
+        fetch('/api/analytics/ga4', { headers }).then(async r => ({ httpStatus: r.status, body: await r.json() })),
+        fetch('/api/analytics/search-console', { headers }).then(async r => ({ httpStatus: r.status, body: await r.json() })),
       ])
 
       if (cancelled) return
 
-      if (ga4Result.status === 'fulfilled' && ga4Result.value?.data) {
-        setGa4State({ status: 'success', data: ga4Result.value.data })
+      if (ga4Result.status === 'fulfilled' && ga4Result.value.body?.data) {
+        setGa4State({ status: 'success', data: ga4Result.value.body.data })
+      } else if (ga4Result.status === 'fulfilled') {
+        const { httpStatus, body } = ga4Result.value
+        const errorCode = body?.error?.code
+        const kind = classifyError(httpStatus, errorCode)
+        if (kind === 'not_connected') {
+          setGa4State({ status: 'not_connected' })
+        } else {
+          setGa4State({ status: 'error', message: body?.error?.message ?? 'Failed to load GA4 data' })
+        }
       } else {
-        const msg = ga4Result.status === 'fulfilled'
-          ? (ga4Result.value?.error?.message ?? 'Failed to load GA4 data')
-          : 'Network error loading GA4 data'
-        setGa4State({ status: 'error', message: msg })
+        setGa4State({ status: 'error', message: 'Network error loading GA4 data' })
       }
 
-      if (scResult.status === 'fulfilled' && scResult.value?.data) {
-        setScState({ status: 'success', data: scResult.value.data })
+      if (scResult.status === 'fulfilled' && scResult.value.body?.data) {
+        setScState({ status: 'success', data: scResult.value.body.data })
+      } else if (scResult.status === 'fulfilled') {
+        const { httpStatus, body } = scResult.value
+        const errorCode = body?.error?.code
+        const kind = classifyError(httpStatus, errorCode)
+        if (kind === 'not_connected') {
+          setScState({ status: 'not_connected' })
+        } else {
+          setScState({ status: 'error', message: body?.error?.message ?? 'Failed to load Search Console data' })
+        }
       } else {
-        const msg = scResult.status === 'fulfilled'
-          ? (scResult.value?.error?.message ?? 'Failed to load Search Console data')
-          : 'Network error loading Search Console data'
-        setScState({ status: 'error', message: msg })
+        setScState({ status: 'error', message: 'Network error loading Search Console data' })
       }
     }
 
     load()
     return () => { cancelled = true }
-  }, [])
+  }, [retryCount])
+
+  function handleRetry() {
+    setRetryCount(c => c + 1)
+  }
 
   const sparklineData = ga4State.status === 'success'
     ? ga4State.data.topPages.map((p, i) => ({ name: `P${i + 1}`, views: p.views }))
@@ -127,8 +168,16 @@ export function AnalyticsDashboard() {
     <div className="grid gap-4 md:grid-cols-2">
       {ga4State.status === 'loading' ? (
         <SkeletonCard />
+      ) : ga4State.status === 'not_connected' ? (
+        <ConnectCard
+          icon={BarChart2}
+          title="Connect Google Analytics 4"
+          description="Link your GA4 property to see traffic, sessions, and top-performing pages directly in your dashboard."
+          ctaLabel="Connect GA4"
+          ctaHref="/dashboard/settings?tab=integrations"
+        />
       ) : ga4State.status === 'error' ? (
-        <ErrorCard title="Traffic Overview" message={ga4State.message} />
+        <FetchErrorCard title="Traffic Overview" message={ga4State.message} onRetry={handleRetry} />
       ) : (
         <Card>
           <CardHeader>
@@ -153,8 +202,16 @@ export function AnalyticsDashboard() {
 
       {ga4State.status === 'loading' ? (
         <SkeletonCard />
+      ) : ga4State.status === 'not_connected' ? (
+        <ConnectCard
+          icon={BarChart2}
+          title="Top Performing Content"
+          description="Once GA4 is connected, you'll see which pages drive the most traffic and engagement."
+          ctaLabel="Connect GA4"
+          ctaHref="/dashboard/settings?tab=integrations"
+        />
       ) : ga4State.status === 'error' ? (
-        <ErrorCard title="Top Performing Content" message={ga4State.message} />
+        <FetchErrorCard title="Top Performing Content" message={ga4State.message} onRetry={handleRetry} />
       ) : (
         <Card>
           <CardHeader>
@@ -181,8 +238,16 @@ export function AnalyticsDashboard() {
 
       {scState.status === 'loading' ? (
         <SkeletonCard />
+      ) : scState.status === 'not_connected' ? (
+        <ConnectCard
+          icon={Search}
+          title="Connect Search Console"
+          description="Link Google Search Console to view CTR, impressions, and your top search queries."
+          ctaLabel="Connect Search Console"
+          ctaHref="/dashboard/settings?tab=integrations"
+        />
       ) : scState.status === 'error' ? (
-        <ErrorCard title="CTR by Query" message={scState.message} />
+        <FetchErrorCard title="CTR by Query" message={scState.message} onRetry={handleRetry} />
       ) : (
         <Card>
           <CardHeader>
@@ -207,8 +272,16 @@ export function AnalyticsDashboard() {
 
       {scState.status === 'loading' ? (
         <SkeletonCard />
+      ) : scState.status === 'not_connected' ? (
+        <ConnectCard
+          icon={Search}
+          title="Search Visibility"
+          description="Connect Search Console to track keyword rankings, clicks, and search visibility over time."
+          ctaLabel="Connect Search Console"
+          ctaHref="/dashboard/settings?tab=integrations"
+        />
       ) : scState.status === 'error' ? (
-        <ErrorCard title="Search Visibility" message={scState.message} />
+        <FetchErrorCard title="Search Visibility" message={scState.message} onRetry={handleRetry} />
       ) : (
         <Card>
           <CardHeader>

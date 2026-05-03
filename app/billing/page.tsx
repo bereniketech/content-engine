@@ -96,7 +96,7 @@ export default function BillingPage() {
         order_id: razorpay_order_id,
         amount,
         currency,
-        name: 'Content Engine',
+        name: 'Content Studio',
         description: `${pack.name} — ${pack.credits_granted.toLocaleString()} credits`,
         theme: { color: '#6366f1' },
         handler: () => {

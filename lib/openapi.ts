@@ -271,7 +271,7 @@ export function generateOpenApiDocument() {
     openapi: '3.1.0',
     info: {
       version: '1.0.0',
-      title: 'Content Engine API',
+      title: 'Content Studio API',
       description: 'AI-powered content generation and distribution API',
     },
     servers: [{ url: process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000' }],

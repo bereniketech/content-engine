@@ -1,8 +1,11 @@
 "use client";
 
+import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import { Sidebar } from "@/components/dashboard/Sidebar";
+import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { SessionProvider } from "@/lib/context/SessionContext";
+import { OAuthCodeCleaner } from "@/components/dashboard/OAuthCodeCleaner";
 
 function getPageTitle(pathname: string): string {
   const routeTitleMap: Record<string, string> = {
@@ -45,9 +48,13 @@ export default function DashboardLayout({
 
   return (
     <SessionProvider>
+      <Suspense fallback={null}>
+        <OAuthCodeCleaner />
+      </Suspense>
       <div className="flex min-h-screen bg-background">
         <Sidebar />
         <div className="flex flex-1 flex-col min-w-0">
+          <DashboardHeader />
           {/* Content area */}
           <main className="flex-1 overflow-y-auto px-6 py-6 md:px-10 md:py-8">
             {children}

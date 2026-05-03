@@ -41,6 +41,8 @@ export default function WorkspacePage() {
   const [currentUserEmail, setCurrentUserEmail] = React.useState<string>('')
   const [creating, setCreating] = React.useState(false)
 
+  const timeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null)
+
   const activeWorkspace = workspaces[0] ?? null
 
   const userRole: 'writer' | 'editor' | 'admin' = React.useMemo(() => {
@@ -52,42 +54,59 @@ export default function WorkspacePage() {
   }, [members, currentUserEmail])
 
   React.useEffect(() => {
-    async function load() {
-      setLoading(true)
-      setError(null)
-      try {
-        // Get current user
-        const userRes = await fetch('/api/auth/me')
-        if (userRes.ok) {
-          const userData = (await userRes.json()) as { id?: string; email?: string }
-          setCurrentUserId(userData.id ?? '')
-          setCurrentUserEmail(userData.email ?? '')
-        }
-
-        // Fetch workspaces
-        const wsList = await apiFetch<WorkspaceListItem[]>('/api/workspace')
-        setWorkspaces(wsList)
-
-        if (wsList.length > 0) {
-          const ws = wsList[0]
-
-          // Fetch members and approvals in parallel
-          const [membersList, approvalsList] = await Promise.all([
-            apiFetch<WorkspaceMember[]>(`/api/workspace/${ws.id}/members`),
-            apiFetch<ContentApproval[]>(`/api/approval?workspaceId=${ws.id}`),
-          ])
-          setMembers(membersList)
-          setApprovals(approvalsList)
-        }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load workspace data')
-      } finally {
+    if (loading) {
+      timeoutRef.current = setTimeout(() => {
         setLoading(false)
+        setError('Workspace took too long to load. Please try again.')
+      }, 8000)
+    } else {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
       }
     }
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [loading])
 
-    void load()
+  const load = React.useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      // Get current user
+      const userRes = await fetch('/api/auth/me')
+      if (userRes.ok) {
+        const userData = (await userRes.json()) as { id?: string; email?: string }
+        setCurrentUserId(userData.id ?? '')
+        setCurrentUserEmail(userData.email ?? '')
+      }
+
+      // Fetch workspaces
+      const wsList = await apiFetch<WorkspaceListItem[]>('/api/workspace')
+      setWorkspaces(wsList)
+
+      if (wsList.length > 0) {
+        const ws = wsList[0]
+
+        // Fetch members and approvals in parallel
+        const [membersList, approvalsList] = await Promise.all([
+          apiFetch<WorkspaceMember[]>(`/api/workspace/${ws.id}/members`),
+          apiFetch<ContentApproval[]>(`/api/approval?workspaceId=${ws.id}`),
+        ])
+        setMembers(membersList)
+        setApprovals(approvalsList)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load workspace data')
+    } finally {
+      setLoading(false)
+    }
   }, [])
+
+  React.useEffect(() => {
+    void load()
+  }, [load])
 
   async function handleCreateWorkspace() {
     setCreating(true)
@@ -188,8 +207,8 @@ export default function WorkspacePage() {
   if (error) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p className="text-sm text-destructive">{error}</p>
-        <Button variant="outline" onClick={() => window.location.reload()}>
+        <p className="text-sm text-muted-foreground">{error}</p>
+        <Button variant="outline" onClick={() => void load()}>
           Retry
         </Button>
       </div>

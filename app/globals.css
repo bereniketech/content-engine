@@ -97,3 +97,28 @@ body {
   color: hsl(var(--foreground));
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@layer base {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="url"],
+  input[type="number"],
+  input[type="tel"],
+  textarea,
+  select {
+    background-color: #ffffff;
+  }
+  .dark input[type="text"],
+  .dark input[type="email"],
+  .dark input[type="password"],
+  .dark input[type="search"],
+  .dark input[type="url"],
+  .dark input[type="number"],
+  .dark input[type="tel"],
+  .dark textarea,
+  .dark select {
+    background-color: hsl(var(--card));
+  }
+}

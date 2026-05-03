@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSessionContext } from "@/lib/context/SessionContext";
@@ -14,6 +15,7 @@ const toneOptions: Array<{ label: string; value: TopicTone }> = [
 ];
 
 export function TopicForm() {
+	const router = useRouter();
 	const { createSession, isSubmitting, error: sessionError, sessionId, inputType, inputData } = useSessionContext();
 	const prefilledTopicData =
 		inputType === "topic" && isTopicInputData(inputData) ? inputData : null;
@@ -53,10 +55,12 @@ export function TopicForm() {
 
 		const result = await createSession("topic", payload);
 		if (result.error) {
+			setError(result.error ?? "Failed to create article.");
 			return;
 		}
 
-		setSuccess("Session created successfully for topic workflow.");
+		setSuccess(`Article created: "${payload.topic}"`);
+		router.push(`/dashboard/workspace?session=${result.sessionId}`);
 	};
 
 	return (
@@ -159,14 +163,12 @@ export function TopicForm() {
 
 					{error ? <p className="text-sm text-destructive">{error}</p> : null}
 					{!error && sessionError ? <p className="text-sm text-destructive">{sessionError}</p> : null}
-					{success && sessionId ? (
-						<p className="text-sm text-primary">
-							{success} Session ID: <span className="font-mono">{sessionId}</span>
-						</p>
+					{success ? (
+						<p className="text-sm text-primary">{success}</p>
 					) : null}
 
 					<Button type="submit" disabled={isSubmitting}>
-						{isSubmitting ? "Creating session..." : "Create Topic Session"}
+						{isSubmitting ? "Creating article..." : "Create Article"}
 					</Button>
 				</form>
 			</CardContent>

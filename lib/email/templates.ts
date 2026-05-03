@@ -42,7 +42,7 @@ export function buildEmail(
       };
     case 'welcome':
       return {
-        subject: 'Welcome to Content Engine',
+        subject: 'Welcome to Content Studio',
         html: `<p>Hi ${data.email}, your account is ready. You have ${data.credits} free credits to get started.</p>`,
         text: `Welcome! You have ${data.credits} free credits to get started.`,
       };

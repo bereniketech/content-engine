@@ -46,7 +46,7 @@ Generate a JSON response with EXACTLY this structure (no markdown, pure JSON):
   "articleSchema": {
     "headline": "Article headline",
     "description": "Short description",
-    "author": "Content Engine",
+    "author": "Content Studio",
     "datePublished": "YYYY-MM-DD"
   },
   "seoScore": <0-100>,

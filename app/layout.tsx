@@ -13,12 +13,18 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Content Studio",
-  description: "AI-powered content generation platform",
+  title: {
+    default: "Content Studio",
+    template: "%s — Content Studio",
+  },
+  description: "AI-powered content creation, research, and distribution.",
   icons: {
-    icon: "/icon.png",
-    apple: "/apple-icon.png",
-    shortcut: "/icon.png",
+    icon: "/favicon.ico",
+    apple: "/apple-touch-icon.png",
+  },
+  openGraph: {
+    siteName: "Content Studio",
+    type: "website",
   },
 };
 
