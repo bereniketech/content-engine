@@ -39,8 +39,7 @@ async function fetchUserCount(): Promise<number> {
 }
 
 export const aiosAnalyticsSnapshot = inngest.createFunction(
-  { id: 'aios-analytics-snapshot', name: 'AIOS Analytics Snapshot' },
-  { cron: '0 9 * * 1' },
+  { id: 'aios-analytics-snapshot', name: 'AIOS Analytics Snapshot', triggers: [{ cron: '0 9 * * 1' }] },
   async ({ step }) => {
     const ga4Data = await step.run('fetch-ga4', async () => {
       try {

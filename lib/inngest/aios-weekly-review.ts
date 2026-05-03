@@ -50,8 +50,7 @@ async function commitToRepo(path: string, content: string): Promise<void> {
 }
 
 export const aiosWeeklyReview = inngest.createFunction(
-  { id: 'aios-weekly-review', name: 'AIOS Weekly Review' },
-  { cron: '0 9 * * 1' },
+  { id: 'aios-weekly-review', name: 'AIOS Weekly Review', triggers: [{ cron: '0 9 * * 1' }] },
   async ({ step }) => {
     const priorities = await step.run('fetch-priorities', fetchPrioritiesFromRepo)
     const recentDecisions = await step.run('fetch-decisions', fetchRecentDecisions)

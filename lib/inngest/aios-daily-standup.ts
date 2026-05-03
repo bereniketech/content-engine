@@ -35,8 +35,7 @@ async function commitToRepo(path: string, content: string): Promise<void> {
 }
 
 export const aiosDailyStandup = inngest.createFunction(
-  { id: 'aios-daily-standup', name: 'AIOS Daily Stand-Up' },
-  { cron: '0 8 * * *' },
+  { id: 'aios-daily-standup', name: 'AIOS Daily Stand-Up', triggers: [{ cron: '0 8 * * *' }] },
   async ({ step }) => {
     const issues = await step.run('fetch-github-issues', fetchOpenIssues)
 
